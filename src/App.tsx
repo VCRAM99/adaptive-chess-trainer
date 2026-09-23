@@ -1,122 +1,185 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+
+import { useState } from "react";
+import { Chess, type Square } from "chess.js";
+import { Chessboard } from "react-chessboard";
+
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Store the current chess game in React state.
+  const [game, setGame] = useState(() => new Chess());
 
+  // Create a copy while preserving the game's move history.
+  function copyGame(): Chess {
+    const copy = new Chess();
+
+    for (const move of game.history()) {
+      copy.move(move);
+    }
+
+    return copy;
+  }
+
+  // Attempt to make a legal chess move.
+  function makeMove(source: Square, target: Square): boolean {
+    if (game.isGameOver()) {
+      return false;
+    }
+
+    const gameCopy = copyGame();
+
+    try {
+      gameCopy.move({
+        from: source,
+        to: target,
+        promotion: "q",
+      });
+
+      setGame(gameCopy);
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Start a completely new game.
+  function startNewGame() {
+    setGame(new Chess());
+  }
+
+  // Undo the most recent move.
+  function undoMove() {
+    const gameCopy = copyGame();
+
+    if (gameCopy.undo() !== null) {
+      setGame(gameCopy);
+    }
+  }
+
+  // Determine which player's turn it is.
+  function getGameStatus(): string {
+    if (game.isCheckmate()) {
+      const winner = game.turn() === "w" ? "Black" : "White";
+      return `Checkmate! ${winner} wins.`;
+    }
+
+    if (game.isDraw()) {
+      return "Game over! Draw.";
+    }
+
+    const currentPlayer = game.turn() === "w" ? "White" : "Black";
+
+    if (game.isCheck()) {
+      return `${currentPlayer} is in check!`;
+    }
+
+    return `${currentPlayer} to move`;
+  }
+
+  // Configure the interactive chessboard.
+  const chessboardOptions = {
+    position: game.fen(),
+
+    onPieceDrop: ({
+      sourceSquare,
+      targetSquare,
+    }: {
+      sourceSquare: string;
+      targetSquare: string | null;
+    }) => {
+      if (!targetSquare) {
+        return false;
+      }
+
+      return makeMove(
+        sourceSquare as Square,
+        targetSquare as Square
+      );
+    },
+
+    boardOrientation: "white" as const,
+
+    lightSquareStyle: {
+      backgroundColor: "#eeeed2",
+    },
+
+    darkSquareStyle: {
+      backgroundColor: "#769656",
+    },
+
+    boardStyle: {
+      borderRadius: "4px",
+      overflow: "hidden",
+    },
+  };
+
+  // Display the application.
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app">
+      <header className="app-header">
+        <h1>Adaptive Chess Trainer</h1>
+        <p>Play. Analyze. Improve.</p>
+      </header>
 
-      <div className="ticks"></div>
+      <main className="game-layout">
+        <section className="board-section">
+          <div className="player-info">
+            <span>Black</span>
+            <span>Computer opponent coming soon</span>
+          </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          <div className="chessboard-container">
+            <Chessboard options={chessboardOptions} />
+          </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <div className="player-info">
+            <span>White</span>
+            <span>Estimated Elo: 1000 (provisional)</span>
+          </div>
+        </section>
+
+        <aside className="game-panel">
+          <h2>Game information</h2>
+
+          <div className="status-box">
+            <h3>Game status</h3>
+            <p>{getGameStatus()}</p>
+          </div>
+
+          <div className="moves-box">
+            <h3>Move history</h3>
+
+            <div className="move-history">
+              {game.history().length === 0 ? (
+                <p>No moves played yet.</p>
+              ) : (
+                <ol>
+                  {game.history().map((move, index) => (
+                    <li key={index}>
+                      {index % 2 === 0 ? "White" : "Black"}:
+                      {" "}
+                      {move}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+
+          <div className="game-controls">
+            <button onClick={undoMove}>
+              Undo move
+            </button>
+
+            <button onClick={startNewGame}>
+              New game
+            </button>
+          </div>
+        </aside>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
