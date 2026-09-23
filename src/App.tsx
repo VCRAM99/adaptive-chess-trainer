@@ -9,6 +9,9 @@ function App() {
   // Store the current chess game in React state.
   const [game, setGame] = useState(() => new Chess());
 
+  const [boardOrientation, setBoardOrientation] =
+  useState<"white" | "black">("white");
+
   // Create a copy while preserving the game's move history.
   function copyGame(): Chess {
     const copy = new Chess();
@@ -57,6 +60,13 @@ function App() {
     }
   }
 
+  // Flip the board orientation.
+  function flipBoard() {
+    setBoardOrientation((current) =>
+      current === "white" ? "black" : "white"
+    );
+  }
+
   // Determine which player's turn it is.
   function getGameStatus(): string {
     if (game.isCheckmate()) {
@@ -98,7 +108,7 @@ function App() {
       );
     },
 
-    boardOrientation: "white" as const,
+    boardOrientation: boardOrientation,
 
     lightSquareStyle: {
       backgroundColor: "#eeeed2",
@@ -171,7 +181,9 @@ function App() {
             <button onClick={undoMove}>
               Undo move
             </button>
-
+            <button onClick={flipBoard}>
+              Flip board
+            </button>
             <button onClick={startNewGame}>
               New game
             </button>
