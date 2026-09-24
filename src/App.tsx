@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
+import PromotionDialog from "./components/PromotionDialog";
 
 import "./App.css";
 
@@ -202,63 +203,15 @@ function App() {
           onNewGame={startNewGame}
           onFlipBoard={flipBoard}
         />
-
-        {pendingPromotion && (
-          <div className="promotion-overlay">
-            <div
-              className="promotion-dialog"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Choose a promotion piece"
-            >
-              <h2>Choose your promotion</h2>
-
-              <p>Select the piece your pawn will become.</p>
-
-              <div className="promotion-options">
-                {(
-                  [
-                    ["q", "Queen"],
-                    ["r", "Rook"],
-                    ["b", "Bishop"],
-                    ["n", "Knight"],
-                  ] as const
-                ).map(([piece, name]) => (
-                  <button
-                    key={piece}
-                    onClick={() => completePromotion(piece)}
-                  >
-                    <span className="promotion-symbol">
-                      {game.turn() === "w"
-                        ? {
-                            q: "♕",
-                            r: "♖",
-                            b: "♗",
-                            n: "♘",
-                          }[piece]
-                        : {
-                            q: "♛",
-                            r: "♜",
-                            b: "♝",
-                            n: "♞",
-                          }[piece]}
-                    </span>
-
-                    <span>{name}</span>
-                  </button>
-                ))}
-              </div>
-
-              <button
-                className="cancel-promotion"
-                onClick={() => setPendingPromotion(null)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
       </main>
+      
+      {pendingPromotion && (
+        <PromotionDialog
+          color={game.turn()}
+          onSelect={completePromotion}
+          onCancel={() => setPendingPromotion(null)}
+        />
+      )}
     </div>
   );
 }
