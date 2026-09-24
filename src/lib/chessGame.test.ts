@@ -7,6 +7,7 @@ import {
   copyGame,
   isLegalMove,
   requiresPromotion,
+  undoLastMove,
 } from "./chessGame";
 
 describe("chess game logic", () => {
@@ -82,5 +83,44 @@ describe("chess game logic", () => {
     expect(nextGame?.get("a8")?.type).toBe("n");
     expect(nextGame?.get("a8")?.color).toBe("w");
     expect(game.get("a7")?.type).toBe("p");
+  });
+  
+  it("undoes the last move without changing the original game", () => {
+    const game = new Chess();
+    game.move("e4");
+    game.move("e5");
+  
+    const previousGame = undoLastMove(game);
+  
+    expect(previousGame?.history()).toEqual(["e4"]);
+    expect(previousGame?.get("e5")?.type).toBeUndefined();
+    expect(previousGame?.get("e7")?.type).toBe("p");
+  
+    // The original game remains unchanged.
+    expect(game.history()).toEqual(["e4", "e5"]);
+  });
+  
+  it("returns null when there are no moves to undo", () => {
+    const game = new Chess();
+  
+    expect(undoLastMove(game)).toBeNull();
+  });
+  
+  it("undoes a move from a custom starting position", () => {
+    const game = new Chess(
+      "4k3/P7/8/8/8/8/8/4K3 w - - 0 1"
+    );
+  
+    game.move({
+      from: "a7",
+      to: "a8",
+      promotion: "n",
+    });
+  
+    const previousGame = undoLastMove(game);
+  
+    expect(previousGame?.get("a7")?.type).toBe("p");
+    expect(previousGame?.get("a8")).toBeUndefined();
+    expect(game.get("a8")?.type).toBe("n");
   });
 });

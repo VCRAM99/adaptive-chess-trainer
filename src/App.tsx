@@ -4,7 +4,7 @@ import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
 import PromotionDialog from "./components/PromotionDialog";
-import { applyMove, isLegalMove, requiresPromotion } from "./lib/chessGame";
+import { applyMove, isLegalMove, requiresPromotion, undoLastMove } from "./lib/chessGame";
 
 import "./App.css";
 
@@ -27,17 +27,6 @@ function App() {
 
   // Store the pending promotion piece.
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
-
-  // Create a copy while preserving the game's move history.
-  function copyGame(): Chess {
-    const copy = new Chess();
-
-    for (const move of game.history()) {
-      copy.move(move);
-    }
-
-    return copy;
-  }
 
   //checka if the move is legal and if it requires a promotion. and updates the game state.
   function makeMove(
@@ -109,11 +98,12 @@ function App() {
 
   // Undo the most recent move.
   function undoMove() {
-    const gameCopy = copyGame();
     setPendingPromotion(null);
-
-    if (gameCopy.undo() !== null) {
-      setGame(gameCopy);
+  
+    const previousGame = undoLastMove(game);
+  
+    if (previousGame) {
+      setGame(previousGame);
     }
   }
 

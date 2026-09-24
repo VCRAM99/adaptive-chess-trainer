@@ -98,3 +98,18 @@ export function applyMove(
     return null;
   }
 }
+
+/**
+ * Returns a new game with its last move undone.
+ * Returns null when there are no moves to undo.
+ */
+export function undoLastMove(game: Chess): Chess | null {
+  if (game.history().length === 0) {
+    return null;
+  }
+
+  const previousGame = copyGame(game);
+  previousGame.undo();
+
+  return previousGame;
+}
