@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Chess, type Square } from "chess.js";
-import { Chessboard } from "react-chessboard";
+import ChessBoard from "./components/ChessBoard";
 
 import "./App.css";
 
@@ -167,43 +167,6 @@ function App() {
     return `${currentPlayer} to move`;
   }
 
-  // Configure the interactive chessboard.
-  const chessboardOptions = {
-    position: game.fen(),
-
-    onPieceDrop: ({
-      sourceSquare,
-      targetSquare,
-    }: {
-      sourceSquare: string;
-      targetSquare: string | null;
-    }) => {
-      if (!targetSquare) {
-        return false;
-      }
-
-      return makeMove(
-        sourceSquare as Square,
-        targetSquare as Square
-      );
-    },
-
-    boardOrientation: boardOrientation,
-
-    lightSquareStyle: {
-      backgroundColor: "#eeeed2",
-    },
-
-    darkSquareStyle: {
-      backgroundColor: "#769656",
-    },
-
-    boardStyle: {
-      borderRadius: "4px",
-      overflow: "hidden",
-    },
-  };
-
   // Display the application.
   return (
     <div className="app">
@@ -219,9 +182,11 @@ function App() {
             <span>Computer opponent coming soon</span>
           </div>
 
-          <div className="chessboard-container">
-            <Chessboard options={chessboardOptions} />
-          </div>
+          <ChessBoard
+            position={game.fen()}
+            orientation={boardOrientation}
+            onMove={makeMove}
+          />
 
           <div className="player-info">
             <span>White</span>
