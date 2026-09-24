@@ -1,13 +1,31 @@
 
 import { useState } from "react";
 import { Chess, type Square } from "chess.js";
-import { Chessboard } from "react-chessboard";
+import ChessBoard from "./components/ChessBoard";
+import GamePanel from "./components/GamePanel";
+import PromotionDialog from "./components/PromotionDialog";
 
 import "./App.css";
+
+
+// Types for the promotion piece and pending promotion.
+type PromotionPiece = "q" | "r" | "b" | "n";
+
+type PendingPromotion = {
+  from: Square;
+  to: Square;
+};
 
 function App() {
   // Store the current chess game in React state.
   const [game, setGame] = useState(() => new Chess());
+
+  const [boardOrientation, setBoardOrientation] =
+  useState<"white" | "black">("white");
+
+
+  // Store the pending promotion piece.
+  const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
 
   // Create a copy while preserving the game's move history.
   function copyGame(): Chess {
@@ -20,41 +38,115 @@ function App() {
     return copy;
   }
 
-  // Attempt to make a legal chess move.
-  function makeMove(source: Square, target: Square): boolean {
-    if (game.isGameOver()) {
+
+  function makeMove(
+    source: Square,
+    target: Square,
+    promotion?: PromotionPiece
+  ): boolean {
+    if (game.isGameOver() || pendingPromotion) {
       return false;
     }
-
+  
+    const piece = game.get(source);
+  
+    if (!piece) {
+      return false;
+    }
+  
+    const promotionRank =
+      piece.color === "w" ? "8" : "1";
+  
+    const requiresPromotion =
+      piece.type === "p" &&
+      target[1] === promotionRank;
+  
+    // Check whether the requested move is legal.
+    const legalMoves = game.moves({
+      square: source,
+      verbose: true,
+    });
+  
+    const isLegal = legalMoves.some(
+      (move) =>
+        move.to === target &&
+        (!requiresPromotion || move.promotion !== undefined)
+    );
+  
+    if (!isLegal) {
+      return false;
+    }
+  
+    // Wait for the player to select a promotion piece.
+    if (requiresPromotion && !promotion) {
+      setPendingPromotion({
+        from: source,
+        to: target,
+      });
+  
+      return false;
+    }
+  
     const gameCopy = copyGame();
-
+  
     try {
       gameCopy.move({
         from: source,
         to: target,
-        promotion: "q",
+        ...(promotion ? { promotion } : {}),
       });
-
+  
       setGame(gameCopy);
-
+  
       return true;
     } catch {
       return false;
     }
   }
 
+
+  function completePromotion(piece: PromotionPiece) {
+    if (!pendingPromotion) {
+      return;
+    }
+
+    const gameCopy = copyGame();
+
+    try {
+      gameCopy.move({
+        from: pendingPromotion.from,
+        to: pendingPromotion.to,
+        promotion: piece,
+      });
+
+      setGame(gameCopy);
+      setPendingPromotion(null);
+    } catch {
+      setPendingPromotion(null);
+    }
+  }
+
   // Start a completely new game.
   function startNewGame() {
     setGame(new Chess());
+    setPendingPromotion(null);
   }
 
   // Undo the most recent move.
   function undoMove() {
     const gameCopy = copyGame();
+    setPendingPromotion(null);
 
     if (gameCopy.undo() !== null) {
       setGame(gameCopy);
     }
+  }
+
+  // Flip the board orientation.
+  function flipBoard() {
+    setBoardOrientation((current) =>
+      current === "white" ? "black" : "white"
+    );
   }
 
   // Determine which player's turn it is.
@@ -77,43 +169,6 @@ function App() {
     return `${currentPlayer} to move`;
   }
 
-  // Configure the interactive chessboard.
-  const chessboardOptions = {
-    position: game.fen(),
-
-    onPieceDrop: ({
-      sourceSquare,
-      targetSquare,
-    }: {
-      sourceSquare: string;
-      targetSquare: string | null;
-    }) => {
-      if (!targetSquare) {
-        return false;
-      }
-
-      return makeMove(
-        sourceSquare as Square,
-        targetSquare as Square
-      );
-    },
-
-    boardOrientation: "white" as const,
-
-    lightSquareStyle: {
-      backgroundColor: "#eeeed2",
-    },
-
-    darkSquareStyle: {
-      backgroundColor: "#769656",
-    },
-
-    boardStyle: {
-      borderRadius: "4px",
-      overflow: "hidden",
-    },
-  };
-
   // Display the application.
   return (
     <div className="app">
@@ -129,9 +184,11 @@ function App() {
             <span>Computer opponent coming soon</span>
           </div>
 
-          <div className="chessboard-container">
-            <Chessboard options={chessboardOptions} />
-          </div>
+          <ChessBoard
+            position={game.fen()}
+            orientation={boardOrientation}
+            onMove={makeMove}
+          />
 
           <div className="player-info">
             <span>White</span>
@@ -139,45 +196,22 @@ function App() {
           </div>
         </section>
 
-        <aside className="game-panel">
-          <h2>Game information</h2>
-
-          <div className="status-box">
-            <h3>Game status</h3>
-            <p>{getGameStatus()}</p>
-          </div>
-
-          <div className="moves-box">
-            <h3>Move history</h3>
-
-            <div className="move-history">
-              {game.history().length === 0 ? (
-                <p>No moves played yet.</p>
-              ) : (
-                <ol>
-                  {game.history().map((move, index) => (
-                    <li key={index}>
-                      {index % 2 === 0 ? "White" : "Black"}:
-                      {" "}
-                      {move}
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </div>
-          </div>
-
-          <div className="game-controls">
-            <button onClick={undoMove}>
-              Undo move
-            </button>
-
-            <button onClick={startNewGame}>
-              New game
-            </button>
-          </div>
-        </aside>
+        <GamePanel
+          status={getGameStatus()}
+          moveHistory={game.history()}
+          onUndo={undoMove}
+          onNewGame={startNewGame}
+          onFlipBoard={flipBoard}
+        />
       </main>
+      
+      {pendingPromotion && (
+        <PromotionDialog
+          color={game.turn()}
+          onSelect={completePromotion}
+          onCancel={() => setPendingPromotion(null)}
+        />
+      )}
     </div>
   );
 }
