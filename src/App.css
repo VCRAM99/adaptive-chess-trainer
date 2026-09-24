@@ -138,3 +138,82 @@
     font-size: 26px;
   }
 }
+
+/* Promotion overlay */
+.promotion-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 20px;
+  z-index: 1000;
+}
+
+.promotion-dialog {
+  background-color: #27272a;
+  border: 1px solid #52525b;
+  border-radius: 12px;
+
+  padding: 28px;
+  width: 100%;
+  max-width: 460px;
+
+  text-align: center;
+}
+
+.promotion-dialog h2 {
+  margin-top: 0;
+}
+
+.promotion-dialog p {
+  color: #a1a1aa;
+  margin-bottom: 24px;
+}
+
+.promotion-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.promotion-options button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  background-color: #3f3f46;
+  color: white;
+
+  border: 1px solid #52525b;
+  border-radius: 8px;
+
+  padding: 12px 4px;
+  cursor: pointer;
+}
+
+.promotion-options button:hover {
+  background-color: #4f7942;
+}
+
+.promotion-symbol {
+  font-size: 42px;
+  line-height: 1.2;
+}
+
+.cancel-promotion {
+  margin-top: 20px;
+  padding: 10px 20px;
+
+  background-color: transparent;
+  color: #d4d4d8;
+
+  border: 1px solid #52525b;
+  border-radius: 8px;
+
+  cursor: pointer;
+}
