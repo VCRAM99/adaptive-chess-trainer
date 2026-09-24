@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
+import GamePanel from "./components/GamePanel";
 
 import "./App.css";
 
@@ -194,46 +195,14 @@ function App() {
           </div>
         </section>
 
-        <aside className="game-panel">
-          <h2>Game information</h2>
+        <GamePanel
+          status={getGameStatus()}
+          moveHistory={game.history()}
+          onUndo={undoMove}
+          onNewGame={startNewGame}
+          onFlipBoard={flipBoard}
+        />
 
-          <div className="status-box">
-            <h3>Game status</h3>
-            <p>{getGameStatus()}</p>
-          </div>
-
-          <div className="moves-box">
-            <h3>Move history</h3>
-
-            <div className="move-history">
-              {game.history().length === 0 ? (
-                <p>No moves played yet.</p>
-              ) : (
-                <ol>
-                  {game.history().map((move, index) => (
-                    <li key={index}>
-                      {index % 2 === 0 ? "White" : "Black"}:
-                      {" "}
-                      {move}
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </div>
-          </div>
-
-          <div className="game-controls">
-            <button onClick={undoMove}>
-              Undo move
-            </button>
-            <button onClick={flipBoard}>
-              Flip board
-            </button>
-            <button onClick={startNewGame}>
-              New game
-            </button>
-          </div>
-        </aside>
         {pendingPromotion && (
           <div className="promotion-overlay">
             <div
