@@ -4,6 +4,7 @@ import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
 import PromotionDialog from "./components/PromotionDialog";
+import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus as getChessGameStatus, getMoveHistory } from "./lib/chessGame";
 
 import "./App.css";
 
@@ -27,18 +28,7 @@ function App() {
   // Store the pending promotion piece.
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
 
-  // Create a copy while preserving the game's move history.
-  function copyGame(): Chess {
-    const copy = new Chess();
-
-    for (const move of game.history()) {
-      copy.move(move);
-    }
-
-    return copy;
-  }
-
-
+  //checka if the move is legal and if it requires a promotion. and updates the game state.
   function makeMove(
     source: Square,
     target: Square,
@@ -48,82 +38,56 @@ function App() {
       return false;
     }
   
-    const piece = game.get(source);
-  
-    if (!piece) {
+    if (!isLegalMove(game, source, target)) {
       return false;
     }
   
-    const promotionRank =
-      piece.color === "w" ? "8" : "1";
-  
-    const requiresPromotion =
-      piece.type === "p" &&
-      target[1] === promotionRank;
-  
-    // Check whether the requested move is legal.
-    const legalMoves = game.moves({
-      square: source,
-      verbose: true,
-    });
-  
-    const isLegal = legalMoves.some(
-      (move) =>
-        move.to === target &&
-        (!requiresPromotion || move.promotion !== undefined)
-    );
-  
-    if (!isLegal) {
-      return false;
-    }
-  
-    // Wait for the player to select a promotion piece.
-    if (requiresPromotion && !promotion) {
+    if (
+      requiresPromotion(game, source, target) &&
+      !promotion
+    ) {
       setPendingPromotion({
         from: source,
         to: target,
       });
   
+      // The move waits until a promotion piece is selected.
       return false;
     }
   
-    const gameCopy = copyGame();
+    const nextGame = applyMove(
+      game,
+      source,
+      target,
+      promotion
+    );
   
-    try {
-      gameCopy.move({
-        from: source,
-        to: target,
-        ...(promotion ? { promotion } : {}),
-      });
-  
-      setGame(gameCopy);
-  
-      return true;
-    } catch {
+    if (!nextGame) {
       return false;
     }
+  
+    setGame(nextGame);
+    return true;
   }
 
-
+  // Completes the promotion by applying the move to the game state.
   function completePromotion(piece: PromotionPiece) {
     if (!pendingPromotion) {
       return;
     }
-
-    const gameCopy = copyGame();
-
-    try {
-      gameCopy.move({
-        from: pendingPromotion.from,
-        to: pendingPromotion.to,
-        promotion: piece,
-      });
-
-      setGame(gameCopy);
-      setPendingPromotion(null);
-    } catch {
-      setPendingPromotion(null);
+  
+    const nextGame = applyMove(
+      game,
+      pendingPromotion.from,
+      pendingPromotion.to,
+      piece
+    );
+  
+    if (nextGame) {
+      setGame(nextGame);
     }
+  
+    setPendingPromotion(null);
   }
 
   // Start a completely new game.
@@ -134,11 +98,12 @@ function App() {
 
   // Undo the most recent move.
   function undoMove() {
-    const gameCopy = copyGame();
     setPendingPromotion(null);
-
-    if (gameCopy.undo() !== null) {
-      setGame(gameCopy);
+  
+    const previousGame = undoLastMove(game);
+  
+    if (previousGame) {
+      setGame(previousGame);
     }
   }
 
@@ -147,26 +112,6 @@ function App() {
     setBoardOrientation((current) =>
       current === "white" ? "black" : "white"
     );
-  }
-
-  // Determine which player's turn it is.
-  function getGameStatus(): string {
-    if (game.isCheckmate()) {
-      const winner = game.turn() === "w" ? "Black" : "White";
-      return `Checkmate! ${winner} wins.`;
-    }
-
-    if (game.isDraw()) {
-      return "Game over! Draw.";
-    }
-
-    const currentPlayer = game.turn() === "w" ? "White" : "Black";
-
-    if (game.isCheck()) {
-      return `${currentPlayer} is in check!`;
-    }
-
-    return `${currentPlayer} to move`;
   }
 
   // Display the application.
@@ -197,8 +142,8 @@ function App() {
         </section>
 
         <GamePanel
-          status={getGameStatus()}
-          moveHistory={game.history()}
+          status={getChessGameStatus(game)}
+          moveHistory={getMoveHistory(game)}
           onUndo={undoMove}
           onNewGame={startNewGame}
           onFlipBoard={flipBoard}
