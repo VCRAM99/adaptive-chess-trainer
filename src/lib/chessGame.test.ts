@@ -8,6 +8,8 @@ import {
   isLegalMove,
   requiresPromotion,
   undoLastMove,
+  getGameStatus,
+  getMoveHistory,
 } from "./chessGame";
 
 describe("chess game logic", () => {
@@ -122,5 +124,72 @@ describe("chess game logic", () => {
     expect(previousGame?.get("a7")?.type).toBe("p");
     expect(previousGame?.get("a8")).toBeUndefined();
     expect(game.get("a8")?.type).toBe("n");
+  });
+
+  it("shows whose turn it is at the start of a game", () => {
+    const game = new Chess();
+  
+    expect(getGameStatus(game)).toBe("White to move.");
+  });
+  
+  it("updates the status after a move", () => {
+    const game = new Chess();
+    game.move("e4");
+  
+    expect(getGameStatus(game)).toBe("Black to move.");
+  });
+  
+  it("identifies checkmate and the winner", () => {
+    const game = new Chess();
+  
+    game.move("f3");
+    game.move("e5");
+    game.move("g4");
+    game.move("Qh4#");
+  
+    expect(getGameStatus(game)).toBe(
+      "Checkmate! Black wins."
+    );
+  });
+  
+  it("identifies a drawn game", () => {
+    const game = new Chess(
+      "7k/5Q2/6K1/8/8/8/8/8 b - - 0 1"
+    );
+  
+    expect(getGameStatus(game)).toBe("Game drawn.");
+  });
+  
+  it("returns an empty move history for a new game", () => {
+    const game = new Chess();
+  
+    expect(getMoveHistory(game)).toEqual([]);
+  });
+  
+  it("returns moves in the order they were played", () => {
+    const game = new Chess();
+  
+    game.move("e4");
+    game.move("e5");
+    game.move("Nf3");
+  
+    expect(getMoveHistory(game)).toEqual([
+      "e4",
+      "e5",
+      "Nf3",
+    ]);
+  });
+  
+  it("updates move history after undo", () => {
+    const game = new Chess();
+  
+    game.move("e4");
+    game.move("e5");
+  
+    const previousGame = undoLastMove(game);
+  
+    expect(previousGame).not.toBeNull();
+    expect(getMoveHistory(previousGame!)).toEqual(["e4"]);
+    expect(getMoveHistory(game)).toEqual(["e4", "e5"]);
   });
 });

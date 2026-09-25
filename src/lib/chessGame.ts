@@ -113,3 +113,35 @@ export function undoLastMove(game: Chess): Chess | null {
 
   return previousGame;
 }
+
+/**
+ * Returns a message describing the current game state.
+ */
+export function getGameStatus(game: Chess): string {
+  if (game.isCheckmate()) {
+    const winner =
+      game.turn() === "w" ? "Black" : "White";
+
+    return `Checkmate! ${winner} wins.`;
+  }
+
+  if (game.isDraw()) {
+    return "Game drawn.";
+  }
+
+  const currentPlayer =
+    game.turn() === "w" ? "White" : "Black";
+
+  if (game.isCheck()) {
+    return `${currentPlayer} is in check.`;
+  }
+
+  return `${currentPlayer} to move.`;
+}
+
+/**
+ * Returns the game's moves in standard algebraic notation.
+ */
+export function getMoveHistory(game: Chess): string[] {
+  return game.history();
+}

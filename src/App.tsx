@@ -4,7 +4,7 @@ import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
 import PromotionDialog from "./components/PromotionDialog";
-import { applyMove, isLegalMove, requiresPromotion, undoLastMove } from "./lib/chessGame";
+import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus as getChessGameStatus, getMoveHistory } from "./lib/chessGame";
 
 import "./App.css";
 
@@ -114,26 +114,6 @@ function App() {
     );
   }
 
-  // Determine which player's turn it is.
-  function getGameStatus(): string {
-    if (game.isCheckmate()) {
-      const winner = game.turn() === "w" ? "Black" : "White";
-      return `Checkmate! ${winner} wins.`;
-    }
-
-    if (game.isDraw()) {
-      return "Game over! Draw.";
-    }
-
-    const currentPlayer = game.turn() === "w" ? "White" : "Black";
-
-    if (game.isCheck()) {
-      return `${currentPlayer} is in check!`;
-    }
-
-    return `${currentPlayer} to move`;
-  }
-
   // Display the application.
   return (
     <div className="app">
@@ -162,8 +142,8 @@ function App() {
         </section>
 
         <GamePanel
-          status={getGameStatus()}
-          moveHistory={game.history()}
+          status={getChessGameStatus(game)}
+          moveHistory={getMoveHistory(game)}
           onUndo={undoMove}
           onNewGame={startNewGame}
           onFlipBoard={flipBoard}
