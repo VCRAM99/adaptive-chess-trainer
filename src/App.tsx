@@ -1,10 +1,10 @@
-
-import { useState } from "react";
+import { useState, useEffect} from "react";
 import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
 import PromotionDialog from "./components/PromotionDialog";
 import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus as getChessGameStatus, getMoveHistory } from "./lib/chessGame";
+import { useStockfish } from "./hooks/useStockfish";
 
 import "./App.css";
 
@@ -18,6 +18,15 @@ type PendingPromotion = {
 };
 
 function App() {
+  const {
+    status: engineStatus,
+    bestMove,
+    requestMove,
+    cancelMove,
+    clearBestMove,
+  } = useStockfish();
+
+  
   // Store the current chess game in React state.
   const [game, setGame] = useState(() => new Chess());
 
@@ -28,13 +37,56 @@ function App() {
   // Store the pending promotion piece.
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
 
+
+  useEffect(() => {
+    if (!bestMove || game.turn() !== "b") {
+      return;
+    }
+
+    if (game.isGameOver()) {
+      clearBestMove();
+      return;
+    }
+
+    const source = bestMove.slice(0, 2) as Square;
+    const target = bestMove.slice(2, 4) as Square;
+
+    const promotion = bestMove.slice(4, 5) as
+      | PromotionPiece
+      | "";
+
+    const nextGame = applyMove(
+      game,
+      source,
+      target,
+      promotion || undefined
+    );
+
+    if (nextGame) {
+      setGame(nextGame);
+    } else {
+      console.error(
+        "Stockfish returned an invalid move:",
+        bestMove
+      );
+    }
+
+    clearBestMove();
+  }, [bestMove, game, clearBestMove]);
+
   //checka if the move is legal and if it requires a promotion. and updates the game state.
   function makeMove(
     source: Square,
     target: Square,
     promotion?: PromotionPiece
   ): boolean {
-    if (game.isGameOver() || pendingPromotion) {
+    
+    if (
+      game.isGameOver() ||
+      pendingPromotion ||
+      game.turn() !== "w" ||
+      engineStatus !== "ready"
+    ) {
       return false;
     }
   
@@ -67,6 +119,11 @@ function App() {
     }
   
     setGame(nextGame);
+
+    if (!nextGame.isGameOver()) {
+      requestMove(nextGame.fen());
+    }
+    
     return true;
   }
 
@@ -85,6 +142,10 @@ function App() {
   
     if (nextGame) {
       setGame(nextGame);
+    
+      if (!nextGame.isGameOver()) {
+        requestMove(nextGame.fen());
+      }
     }
   
     setPendingPromotion(null);
@@ -92,19 +153,27 @@ function App() {
 
   // Start a completely new game.
   function startNewGame() {
+    cancelMove();
     setGame(new Chess());
     setPendingPromotion(null);
   }
 
-  // Undo the most recent move.
+  // Undo the most recent move. 
   function undoMove() {
+    cancelMove();
     setPendingPromotion(null);
-  
-    const previousGame = undoLastMove(game);
-  
-    if (previousGame) {
-      setGame(previousGame);
+
+    // If Stockfish has moved, undo Black's move first.
+    const afterFirstUndo = undoLastMove(game);
+
+    if (!afterFirstUndo) {
+      return;
     }
+
+    // Then undo White's preceding move, if one exists.
+    const afterSecondUndo = undoLastMove(afterFirstUndo);
+
+    setGame(afterSecondUndo ?? afterFirstUndo);
   }
 
   // Flip the board orientation.
