@@ -217,3 +217,18 @@
 
   cursor: pointer;
 }
+
+.engine-status {
+  padding: 12px 16px;
+  border: 1px solid #52525b;
+  border-radius: 8px;
+  background-color: #27272a;
+}
+
+.engine-status h3 {
+  margin: 0 0 8px;
+}
+
+.engine-status p {
+  margin: 0;
+}

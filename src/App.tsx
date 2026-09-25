@@ -5,6 +5,7 @@ import GamePanel from "./components/GamePanel";
 import PromotionDialog from "./components/PromotionDialog";
 import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus as getChessGameStatus, getMoveHistory } from "./lib/chessGame";
 import { useStockfish } from "./hooks/useStockfish";
+import { parseUciMove } from "./engine/uci";
 
 import "./App.css";
 
@@ -48,18 +49,23 @@ function App() {
       return;
     }
 
-    const source = bestMove.slice(0, 2) as Square;
-    const target = bestMove.slice(2, 4) as Square;
+    const parsedMove = parseUciMove(bestMove);
 
-    const promotion = bestMove.slice(4, 5) as
-      | PromotionPiece
-      | "";
+    if (!parsedMove) {
+      console.error(
+        "Stockfish returned an invalid move:",
+        bestMove
+      );
+
+      clearBestMove();
+      return;
+    }
 
     const nextGame = applyMove(
       game,
-      source,
-      target,
-      promotion || undefined
+      parsedMove.source,
+      parsedMove.target,
+      parsedMove.promotion
     );
 
     if (nextGame) {
@@ -213,6 +219,7 @@ function App() {
         <GamePanel
           status={getChessGameStatus(game)}
           moveHistory={getMoveHistory(game)}
+          engineStatus={engineStatus}
           onUndo={undoMove}
           onNewGame={startNewGame}
           onFlipBoard={flipBoard}
