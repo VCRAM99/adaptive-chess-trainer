@@ -8,7 +8,7 @@ import { useStockfish } from "./hooks/useStockfish";
 import { parseUciMove } from "./engine/uci";
 
 import type { TrainingMode } from "./lib/trainingDifficulty";
-import {getTargetOpponentRating, getStockfishRating} from "./lib/trainingDifficulty";
+import { createOpponentConfig } from "./lib/trainingDifficulty";
 
 import "./App.css";
 
@@ -42,18 +42,19 @@ function App() {
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
   
 
-  // Check if the game has started.
-  const gameHasStarted = game.history().length > 0;
-
   // Store the training mode.
   const [trainingMode, setTrainingMode] = useState<TrainingMode>("medium");
 
   // Store the estimated player rating.
   const estimatedPlayerRating = 1200;
 
-  // Calculate the target opponent rating based on the training mode and estimated player rating.
-  const targetOpponentRating = getTargetOpponentRating(estimatedPlayerRating,trainingMode);
-  const stockfishRating = getStockfishRating(targetOpponentRating);
+  const opponentConfig = createOpponentConfig(
+    estimatedPlayerRating,
+    trainingMode
+  );
+
+  // Store whether the game has started.
+  const gameHasStarted = game.history().length > 0;
 
 
   useEffect(() => {
@@ -144,7 +145,7 @@ function App() {
     setGame(nextGame);
 
     if (!nextGame.isGameOver()) {
-      requestMove(nextGame.fen(), stockfishRating);
+      requestMove(nextGame.fen(), opponentConfig.stockfishRating);
     }
     
     return true;
@@ -167,7 +168,7 @@ function App() {
       setGame(nextGame);
     
       if (!nextGame.isGameOver()) {
-        requestMove(nextGame.fen(), stockfishRating);
+        requestMove(nextGame.fen(), opponentConfig.stockfishRating);
       }
     }
   
@@ -279,12 +280,12 @@ function App() {
           </p>
 
           <p>
-            Target opponent: {targetOpponentRating}
+            Target opponent: {opponentConfig.targetRating}
           </p>
-          {stockfishRating !== targetOpponentRating && (
+          {opponentConfig.stockfishRating !== opponentConfig.targetRating && (
             <p>
               Stockfish's current Elo mode is limited to
-              ratings of {stockfishRating} or higher.
+              ratings of {opponentConfig.stockfishRating} or higher.
             </p>
           )}
 

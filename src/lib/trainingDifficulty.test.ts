@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getStockfishRating,
   getTargetOpponentRating,
+  createOpponentConfig,
 } from "./trainingDifficulty";
 
 describe("training difficulty", () => {
@@ -47,5 +48,48 @@ describe("training difficulty", () => {
   
   it("clamps ratings above Stockfish's maximum", () => {
     expect(getStockfishRating(4000)).toBe(3190);
+  });
+  it("creates an easy opponent configuration", () => {
+    expect(
+      createOpponentConfig(1500, "easy")
+    ).toEqual({
+      mode: "easy",
+      playerRating: 1500,
+      targetRating: 1425,
+      stockfishRating: 1425,
+    });
+  });
+  
+  it("creates a medium opponent configuration", () => {
+    expect(
+      createOpponentConfig(1500, "medium")
+    ).toEqual({
+      mode: "medium",
+      playerRating: 1500,
+      targetRating: 1500,
+      stockfishRating: 1500,
+    });
+  });
+  
+  it("creates a hard opponent configuration", () => {
+    expect(
+      createOpponentConfig(1500, "hard")
+    ).toEqual({
+      mode: "hard",
+      playerRating: 1500,
+      targetRating: 1575,
+      stockfishRating: 1575,
+    });
+  });
+  
+  it("preserves the target when Stockfish must clamp it", () => {
+    expect(
+      createOpponentConfig(1200, "easy")
+    ).toEqual({
+      mode: "easy",
+      playerRating: 1200,
+      targetRating: 1125,
+      stockfishRating: 1320,
+    });
   });
 });

@@ -24,3 +24,27 @@ export function getStockfishRating(
     Math.max(MIN_STOCKFISH_ELO, targetRating)
   );
 }
+
+export type OpponentConfig = {
+  mode: TrainingMode;
+  playerRating: number;
+  targetRating: number;
+  stockfishRating: number;
+};
+
+export function createOpponentConfig(
+  playerRating: number,
+  mode: TrainingMode
+): OpponentConfig {
+  const targetRating = getTargetOpponentRating(
+    playerRating,
+    mode
+  );
+
+  return {
+    mode,
+    playerRating,
+    targetRating,
+    stockfishRating: getStockfishRating(targetRating),
+  };
+}
