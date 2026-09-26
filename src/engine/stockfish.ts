@@ -84,6 +84,22 @@ export class StockfishEngine {
     this.worker.postMessage(command);
   }
 
+  setStrength(elo: number) {
+    if (!this.ready) {
+      return false;
+    }
+  
+    this.send(
+      "setoption name UCI_LimitStrength value true"
+    );
+  
+    this.send(
+      `setoption name UCI_Elo value ${elo}`
+    );
+  
+    return true;
+  }
+  
   analyzePosition(fen: string) {
     if (!this.ready) {
       return false;

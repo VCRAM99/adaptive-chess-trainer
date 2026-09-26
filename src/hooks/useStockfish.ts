@@ -102,7 +102,7 @@ import {
       };
     }, [createEngine]);
   
-    const requestMove = useCallback((fen: string) => {
+    const requestMove = useCallback((fen: string, elo: number) => {
       const engine = engineRef.current;
   
       if (
@@ -117,6 +117,13 @@ import {
       setBestMove(null);
       setStatus("thinking");
   
+      const configured = engine.setStrength(elo);
+
+      if (!configured) {
+        pendingRequestRef.current = false;
+        setStatus("error");
+        return false;
+      }
       const started = engine.analyzePosition(fen);
   
       if (!started) {

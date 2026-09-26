@@ -215,4 +215,29 @@ import {
   
       engine.stop();
     });
+
+    it("configures limited strength with an Elo rating", () => {
+      const engine = new StockfishEngine();
+    
+      engine.start();
+      getWorker().emitMessage("readyok");
+    
+      const configured = engine.setStrength(1500);
+    
+      expect(configured).toBe(true);
+    
+      expect(
+        getWorker().postMessage
+      ).toHaveBeenCalledWith(
+        "setoption name UCI_LimitStrength value true"
+      );
+    
+      expect(
+        getWorker().postMessage
+      ).toHaveBeenCalledWith(
+        "setoption name UCI_Elo value 1500"
+      );
+    
+      engine.stop();
+    });
   });

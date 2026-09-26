@@ -8,7 +8,7 @@ import { useStockfish } from "./hooks/useStockfish";
 import { parseUciMove } from "./engine/uci";
 
 import type { TrainingMode } from "./lib/trainingDifficulty";
-import {getTargetOpponentRating} from "./lib/trainingDifficulty";
+import {getTargetOpponentRating, getStockfishRating} from "./lib/trainingDifficulty";
 
 import "./App.css";
 
@@ -53,6 +53,7 @@ function App() {
 
   // Calculate the target opponent rating based on the training mode and estimated player rating.
   const targetOpponentRating = getTargetOpponentRating(estimatedPlayerRating,trainingMode);
+  const stockfishRating = getStockfishRating(targetOpponentRating);
 
 
   useEffect(() => {
@@ -143,7 +144,7 @@ function App() {
     setGame(nextGame);
 
     if (!nextGame.isGameOver()) {
-      requestMove(nextGame.fen());
+      requestMove(nextGame.fen(), stockfishRating);
     }
     
     return true;
@@ -166,7 +167,7 @@ function App() {
       setGame(nextGame);
     
       if (!nextGame.isGameOver()) {
-        requestMove(nextGame.fen());
+        requestMove(nextGame.fen(), stockfishRating);
       }
     }
   
@@ -280,6 +281,12 @@ function App() {
           <p>
             Target opponent: {targetOpponentRating}
           </p>
+          {stockfishRating !== targetOpponentRating && (
+            <p>
+              Stockfish's current Elo mode is limited to
+              ratings of {stockfishRating} or higher.
+            </p>
+          )}
 
           {gameHasStarted && (
             <p>
