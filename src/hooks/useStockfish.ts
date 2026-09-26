@@ -7,6 +7,7 @@ import {
   } from "react";
   
   import { StockfishEngine } from "../engine/stockfish";
+  import { parseUciResponse } from "../engine/uciResponse";
   
   type EngineStatus =
     | "starting"
@@ -37,28 +38,53 @@ import {
   
       setStatus("starting");
   
+      
       engine.onMessage((message) => {
-        // Ignore messages from an engine that has been replaced.
-        if (
-          generation !== engineGenerationRef.current
-        ) {
+        // Ignore messages from an engine that was replaced.
+        if (generation !== engineGenerationRef.current) {
           return;
         }
-  
-        if (message === "readyok") {
-          setStatus("ready");
+
+        const response = parseUciResponse(message);
+
+        if (response.type === "ready") {
+          // A readiness message must not interrupt an active search.
+          if (!pendingRequestRef.current) {
+            setStatus("ready");
+          }
+
+          return;
         }
-  
+
         if (
-          message.startsWith("bestmove ") &&
+          response.type === "bestmove" &&
           pendingRequestRef.current
         ) {
-          const move = message.split(" ")[1];
-  
           pendingRequestRef.current = false;
-          setBestMove(move);
+
+          if (response.move === "(none)") {
+            // No legal move is available, or the engine could
+            // not produce a move. Don't pass "(none)" to chess.js.
+            setBestMove(null);
+            setStatus("error");
+            return;
+          }
+
+          setBestMove(response.move);
           setStatus("ready");
         }
+      });
+
+      engine.onError((error) => {
+        if (generation !== engineGenerationRef.current) {
+          return;
+        }
+
+        console.error("Stockfish engine error:", error);
+
+        pendingRequestRef.current = false;
+        setBestMove(null);
+        setStatus("error");
       });
   
       engine.start();

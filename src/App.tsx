@@ -7,6 +7,9 @@ import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus 
 import { useStockfish } from "./hooks/useStockfish";
 import { parseUciMove } from "./engine/uci";
 
+import type { TrainingMode } from "./lib/trainingDifficulty";
+import {getTargetOpponentRating} from "./lib/trainingDifficulty";
+
 import "./App.css";
 
 
@@ -37,6 +40,19 @@ function App() {
 
   // Store the pending promotion piece.
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null);
+  
+
+  // Check if the game has started.
+  const gameHasStarted = game.history().length > 0;
+
+  // Store the training mode.
+  const [trainingMode, setTrainingMode] = useState<TrainingMode>("medium");
+
+  // Store the estimated player rating.
+  const estimatedPlayerRating = 1200;
+
+  // Calculate the target opponent rating based on the training mode and estimated player rating.
+  const targetOpponentRating = getTargetOpponentRating(estimatedPlayerRating,trainingMode);
 
 
   useEffect(() => {
@@ -224,6 +240,53 @@ function App() {
           onNewGame={startNewGame}
           onFlipBoard={flipBoard}
         />
+        
+        <div className="training-settings">
+          <h3>Training difficulty</h3>
+
+          <div className="training-options">
+            <button
+              type="button"
+              onClick={() => setTrainingMode("easy")}
+              disabled={gameHasStarted}
+              aria-pressed={trainingMode === "easy"}
+            >
+              Easy
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTrainingMode("medium")}
+              disabled={gameHasStarted}
+              aria-pressed={trainingMode === "medium"}
+            >
+              Medium
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTrainingMode("hard")}
+              disabled={gameHasStarted}
+              aria-pressed={trainingMode === "hard"}
+            >
+              Hard
+            </button>
+          </div>
+
+          <p>
+            Estimated skill: {estimatedPlayerRating}
+          </p>
+
+          <p>
+            Target opponent: {targetOpponentRating}
+          </p>
+
+          {gameHasStarted && (
+            <p>
+              Training difficulty is locked for this game.
+            </p>
+          )}
+        </div>
       </main>
       
       {pendingPromotion && (
