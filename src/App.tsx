@@ -46,7 +46,7 @@ function App() {
   const [trainingMode, setTrainingMode] = useState<TrainingMode>("medium");
 
   // Store the estimated player rating.
-  const estimatedPlayerRating = 1200;
+  const [estimatedPlayerRating] = useState(1200);
 
   const opponentConfig = createOpponentConfig(
     estimatedPlayerRating,

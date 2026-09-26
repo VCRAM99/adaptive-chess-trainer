@@ -3,6 +3,7 @@ import {
   getStockfishRating,
   getTargetOpponentRating,
   createOpponentConfig,
+  MIN_STOCKFISH_ELO,
 } from "./trainingDifficulty";
 
 describe("training difficulty", () => {
@@ -91,5 +92,16 @@ describe("training difficulty", () => {
       targetRating: 1125,
       stockfishRating: 1320,
     });
+  });
+
+  it("keeps player skill separate from Stockfish limits", () => {
+    const config = createOpponentConfig(900, "easy");
+  
+    expect(config.playerRating).toBe(900);
+    expect(config.targetRating).toBe(825);
+  
+    expect(config.stockfishRating).toBe(
+      MIN_STOCKFISH_ELO
+    );
   });
 });
