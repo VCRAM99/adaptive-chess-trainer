@@ -39,6 +39,8 @@ type AnalyzePlayerMoveInput = {
   
     beforeFen: string;
     afterFen: string;
+
+    legalMoveCount: number;
 };
 
 type AnalysisJob = {
@@ -181,6 +183,9 @@ export function useMoveAnalysis() {
           
                 afterEvaluation:
                   afterPlayer,
+
+                legalMoveCount:
+                  job.input.legalMoveCount,
               });
           
             setLatestAnalysis(analysis);

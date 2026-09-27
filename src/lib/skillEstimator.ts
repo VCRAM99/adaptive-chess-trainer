@@ -1,3 +1,8 @@
+import type {
+  DecisionDifficulty,
+} from "./decisionDifficulty";
+
+
 export type SkillEvidence =
   | "strong"
   | "neutral"
@@ -51,14 +56,28 @@ export function updateEstimatedSkill(
 }
 
 export function updateSkillFromMove(
-    currentSkill: number,
-    centipawnLoss: number
-  ): number {
-    const evidence =
-      getSkillEvidence(centipawnLoss);
-  
-    return updateEstimatedSkill(
-      currentSkill,
-      evidence
-    );
+  currentSkill: number,
+  centipawnLoss: number,
+  difficulty: DecisionDifficulty
+): number {
+  const evidence =
+    getSkillEvidence(centipawnLoss);
+
+  if (difficulty === "forced") {
+    return currentSkill;
+  }
+
+  if (difficulty === "limited") {
+    if (evidence === "strong") {
+      return updateEstimatedSkill(
+        currentSkill,
+        "neutral"
+      );
+    }
+  }
+
+  return updateEstimatedSkill(
+    currentSkill,
+    evidence
+  );
 }

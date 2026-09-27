@@ -150,6 +150,7 @@ function App() {
   
     // Position before the player's move.
     const beforeFen = game.fen();
+    const legalMoveCount = game.moves().length;
   
     const nextGame = applyMove(
       game,
@@ -181,6 +182,7 @@ function App() {
         playerMove,
         beforeFen,
         afterFen,
+        legalMoveCount,
       });
     }
   
@@ -203,6 +205,7 @@ function App() {
   
     // Save the position BEFORE the promotion move.
     const beforeFen = game.fen();
+    const legalMoveCount = game.moves().length;
   
     const nextGame = applyMove(
       game,
@@ -232,6 +235,7 @@ function App() {
           playerMove,
           beforeFen,
           afterFen,
+          legalMoveCount,
         });
       }
   

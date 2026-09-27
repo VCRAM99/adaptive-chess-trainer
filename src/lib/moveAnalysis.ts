@@ -19,6 +19,8 @@ export type MoveAnalysis = {
     beforeEvaluation: number;
     afterEvaluation: number;
 
+    legalMoveCount: number;
+
     centipawnLoss: number;
 
     quality: MoveQuality;
@@ -61,6 +63,8 @@ type CreateMoveAnalysisInput = {
   
     beforeEvaluation: number;
     afterEvaluation: number;
+
+    legalMoveCount: number;
 };
   
 export function createMoveAnalysis(

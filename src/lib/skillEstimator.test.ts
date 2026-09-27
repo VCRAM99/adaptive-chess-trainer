@@ -104,26 +104,59 @@ import {
   });
   
   describe("updateSkillFromMove", () => {
-    it("updates skill directly from centipawn loss", () => {
+    it("updates skill from move evidence", () => {
       expect(
         updateSkillFromMove(
           1200,
-          10
+          10,
+          "normal"
         )
       ).toBe(1208);
   
       expect(
         updateSkillFromMove(
           1208,
-          50
+          50,
+          "normal"
         )
       ).toBe(1208);
   
       expect(
         updateSkillFromMove(
           1208,
-          120
+          120,
+          "normal"
         )
       ).toBe(1200);
+    });
+  
+    it("ignores forced moves", () => {
+      expect(
+        updateSkillFromMove(
+          1200,
+          0,
+          "forced"
+        )
+      ).toBe(1200);
+    });
+  
+    it("does not reward strong moves with limited choices", () => {
+      expect(
+        updateSkillFromMove(
+          1200,
+          5,
+          "limited"
+        )
+      ).toBe(1200);
+    });
+  
+    it("still penalizes a bad move with limited choices", () => {
+      expect(
+        updateSkillFromMove(
+          1200,
+          200,
+          "limited"
+        )
+      ).toBe(1192);
     });
   });

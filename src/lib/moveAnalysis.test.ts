@@ -78,6 +78,7 @@ describe("classifyMoveQuality", () => {
           bestMove: "g1f3",
           beforeEvaluation: 40,
           afterEvaluation: 38,
+          legalMoveCount: 25,
         })
       ).toEqual({
         moveNumber: 5,
@@ -86,6 +87,7 @@ describe("classifyMoveQuality", () => {
         bestMove: "g1f3",
         beforeEvaluation: 40,
         afterEvaluation: 38,
+        legalMoveCount: 25,
         centipawnLoss: 2,
         quality: "excellent",
       });
@@ -100,6 +102,7 @@ describe("classifyMoveQuality", () => {
           bestMove: "g8f6",
           beforeEvaluation: 20,
           afterEvaluation: -180,
+          legalMoveCount: 18,
         });
   
       expect(
