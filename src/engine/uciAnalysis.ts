@@ -44,3 +44,36 @@ export function parseEngineEvaluation(
 
   return null;
 }
+
+export type CandidateMoveEvaluation = {
+  rank: number;
+  move: string;
+  evaluation: EngineEvaluation;
+};
+
+export function parseCandidateMoveEvaluation(
+  message: string
+): CandidateMoveEvaluation | null {
+  const evaluation =
+    parseEngineEvaluation(message);
+
+  if (!evaluation) {
+    return null;
+  }
+
+  const multiPvMatch =
+    /\bmultipv\s+(\d+)/.exec(message);
+
+  const pvMatch =
+    /\bpv\s+(\S+)/.exec(message);
+
+  if (!multiPvMatch || !pvMatch) {
+    return null;
+  }
+
+  return {
+    rank: Number(multiPvMatch[1]),
+    move: pvMatch[1],
+    evaluation,
+  };
+}

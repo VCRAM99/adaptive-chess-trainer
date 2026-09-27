@@ -149,6 +149,12 @@ import {
       ).toHaveBeenCalledWith(
         "go depth 12"
       );
+
+      expect(
+        getWorker().postMessage
+      ).toHaveBeenCalledWith(
+        "setoption name MultiPV value 3"
+      );
   
       engine.stop();
     });
@@ -185,6 +191,7 @@ import {
           depth: 12,
         },
         bestMove: "e2e4",
+        candidates: [],
       });
   
       engine.stop();
@@ -242,5 +249,77 @@ import {
       ).toHaveBeenCalledTimes(1);
   
       expect(engine.isReady()).toBe(false);
+    });
+
+    it("collects candidate moves from MultiPV analysis", () => {
+      const engine =
+        new StockfishAnalysisEngine();
+    
+      const handler = vi.fn();
+    
+      engine.onResult(handler);
+    
+      engine.start();
+      getWorker().emitMessage("readyok");
+    
+      engine.analyze("test-fen");
+    
+      getWorker().emitMessage(
+        "info depth 12 multipv 1 score cp 31 pv e2e4 e7e5"
+      );
+    
+      getWorker().emitMessage(
+        "info depth 12 multipv 2 score cp 28 pv d2d4 d7d5"
+      );
+    
+      getWorker().emitMessage(
+        "info depth 12 multipv 3 score cp 24 pv g1f3 d7d5"
+      );
+    
+      getWorker().emitMessage(
+        "bestmove e2e4"
+      );
+    
+      expect(handler).toHaveBeenCalledWith({
+        evaluation: {
+          type: "cp",
+          value: 31,
+          depth: 12,
+        },
+    
+        bestMove: "e2e4",
+    
+        candidates: [
+          {
+            rank: 1,
+            move: "e2e4",
+            evaluation: {
+              type: "cp",
+              value: 31,
+              depth: 12,
+            },
+          },
+          {
+            rank: 2,
+            move: "d2d4",
+            evaluation: {
+              type: "cp",
+              value: 28,
+              depth: 12,
+            },
+          },
+          {
+            rank: 3,
+            move: "g1f3",
+            evaluation: {
+              type: "cp",
+              value: 24,
+              depth: 12,
+            },
+          },
+        ],
+      });
+    
+      engine.stop();
     });
   });

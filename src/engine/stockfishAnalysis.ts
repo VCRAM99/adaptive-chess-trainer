@@ -1,9 +1,11 @@
 import type {
     EngineEvaluation,
+    CandidateMoveEvaluation,
   } from "./uciAnalysis";
   
   import {
     parseEngineEvaluation,
+    parseCandidateMoveEvaluation,
   } from "./uciAnalysis";
   
   import {
@@ -13,6 +15,7 @@ import type {
   export type AnalysisResult = {
     evaluation: EngineEvaluation | null;
     bestMove: string;
+    candidates: CandidateMoveEvaluation[];
   };
   
   export type AnalysisResultHandler = (
@@ -32,6 +35,8 @@ import type {
   
     private latestEvaluation: EngineEvaluation | null =
       null;
+
+    private candidates = new Map<number, CandidateMoveEvaluation>();
   
     private resultHandler:
       | AnalysisResultHandler
@@ -96,9 +101,14 @@ import type {
   
       this.analyzing = true;
       this.latestEvaluation = null;
+      this.candidates.clear();
   
       this.send(
         "setoption name UCI_LimitStrength value false"
+      );
+
+      this.send(
+        "setoption name MultiPV value 3"
       );
   
       this.send(`position fen ${fen}`);
@@ -139,9 +149,22 @@ import type {
       }
   
       const evaluation =
-        parseEngineEvaluation(message);
-  
-      if (evaluation) {
+      parseEngineEvaluation(message);
+    
+      const candidate =
+        parseCandidateMoveEvaluation(message);
+      
+      if (candidate) {
+        this.candidates.set(
+          candidate.rank,
+          candidate
+        );
+      
+        if (candidate.rank === 1) {
+          this.latestEvaluation =
+            candidate.evaluation;
+        }
+      } else if (evaluation) {
         this.latestEvaluation = evaluation;
       }
   
@@ -154,6 +177,12 @@ import type {
         this.resultHandler?.({
           evaluation: this.latestEvaluation,
           bestMove: response.move,
+        
+          candidates: Array.from(
+            this.candidates.values()
+          ).sort(
+            (a, b) => a.rank - b.rank
+          ),
         });
       }
     }
