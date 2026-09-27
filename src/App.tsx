@@ -1,4 +1,4 @@
-import { useState, useEffect} from "react";
+import { useState, useEffect, useRef} from "react";
 import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
@@ -7,6 +7,7 @@ import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus 
 import { useStockfish } from "./hooks/useStockfish";
 import { parseUciMove } from "./engine/uci";
 import { useMoveAnalysis } from "./hooks/useMoveAnalysis";
+import { updateSkillFromAnalysis } from "./lib/skillEstimator";
 
 import type { TrainingMode } from "./lib/trainingDifficulty";
 import { createOpponentConfig } from "./lib/trainingDifficulty";
@@ -38,17 +39,58 @@ function App() {
     analyzePlayerMove,
   } = useMoveAnalysis();
 
+  
+
   //TEMPORARY LOG FOR TESTING
+  // useEffect(() => {
+  //   if (!latestAnalysis) {
+  //     return;
+  //   }
+  
+  //   setEstimatedPlayerRating(
+  //     (currentSkill) =>
+  //       updateSkillFromAnalysis(
+  //         currentSkill,
+  //         latestAnalysis
+  //       )
+  //   );
+  // }, [latestAnalysis]);
+
+  const lastRatedMoveRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (latestAnalysis) {
-      console.log(
-        "Latest move analysis:",
-        latestAnalysis
-      );
+    if (!latestAnalysis) {
+      return;
     }
+  
+    const analysisId =
+      `${latestAnalysis.moveNumber}-` +
+      `${latestAnalysis.playerColor}-` +
+      `${latestAnalysis.playerMove}`;
+  
+    if (
+      lastRatedMoveRef.current ===
+      analysisId
+    ) {
+      return;
+    }
+  
+    lastRatedMoveRef.current =
+      analysisId;
+  
+    setEstimatedPlayerRating(
+      (currentSkill) => {
+        const nextSkill =
+          updateSkillFromAnalysis(
+            currentSkill,
+            latestAnalysis
+          );
+  
+        return nextSkill;
+      }
+    );
   }, [latestAnalysis]);
 
-  
   // Store the current chess game in React state.
   const [game, setGame] = useState(() => new Chess());
 
@@ -64,7 +106,7 @@ function App() {
   const [trainingMode, setTrainingMode] = useState<TrainingMode>("medium");
 
   // Store the estimated player rating.
-  const [estimatedPlayerRating] = useState(1200);
+  const [estimatedPlayerRating, setEstimatedPlayerRating] = useState(1200);
 
   const opponentConfig = createOpponentConfig(
     estimatedPlayerRating,
@@ -115,6 +157,7 @@ function App() {
 
     clearBestMove();
   }, [bestMove, game, clearBestMove]);
+
 
   //checka if the move is legal and if it requires a promotion. and updates the game state.
   function makeMove(
@@ -254,6 +297,9 @@ function App() {
   // Start a completely new game.
   function startNewGame() {
     cancelMove();
+
+    lastRatedMoveRef.current = null;
+
     setGame(new Chess());
     setPendingPromotion(null);
   }
@@ -261,6 +307,7 @@ function App() {
   // Undo the most recent move. 
   function undoMove() {
     cancelMove();
+
     setPendingPromotion(null);
 
     // If Stockfish has moved, undo Black's move first.
