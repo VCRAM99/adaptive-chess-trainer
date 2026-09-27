@@ -4,7 +4,16 @@ import {
     useRef,
     useState,
 } from "react";
-  
+
+import {
+  getDecisionImportance,
+} from "../lib/decisionDifficulty";
+
+import type {
+  DecisionImportance,
+} from "../lib/decisionDifficulty";
+
+
 import {
     StockfishAnalysisEngine,
 } from "../engine/stockfishAnalysis";
@@ -59,6 +68,27 @@ function getSideToMove(
     return parts[1] === "b"
       ? "black"
       : "white";
+}
+
+
+function getCandidatePlayerEvaluation(
+  evaluation: AnalysisResult["candidates"][number]["evaluation"],
+  fen: string,
+  playerColor: PlayerColor
+): number {
+  const sideToMove =
+    getSideToMove(fen);
+
+  const whiteEvaluation =
+    normalizeToWhitePerspective(
+      evaluation,
+      sideToMove
+    );
+
+  return getPlayerPerspectiveEvaluation(
+    whiteEvaluation,
+    playerColor
+  );
 }
 
 export function useMoveAnalysis() {
@@ -164,7 +194,46 @@ export function useMoveAnalysis() {
                 afterWhite,
                 job.input.playerColor
               );
-          
+              
+
+              const candidates =
+              job.beforeResult.candidates;
+              
+            let decisionImportance:
+              DecisionImportance = "low";
+            
+            if (candidates.length >= 2) {
+              const bestCandidate =
+                candidates[0];
+            
+              const secondCandidate =
+                candidates[1];
+            
+              const bestEvaluation =
+                getCandidatePlayerEvaluation(
+                  bestCandidate.evaluation,
+                  job.input.beforeFen,
+                  job.input.playerColor
+                );
+            
+              const secondEvaluation =
+                getCandidatePlayerEvaluation(
+                  secondCandidate.evaluation,
+                  job.input.beforeFen,
+                  job.input.playerColor
+                );
+            
+              decisionImportance =
+                getDecisionImportance(
+                  bestEvaluation,
+                  secondEvaluation
+                );
+            }
+
+            if (job.input.legalMoveCount <= 1) {
+              decisionImportance = "low";
+            }
+            
             const analysis =
               createMoveAnalysis({
                 moveNumber: job.input.moveNumber,
@@ -186,6 +255,8 @@ export function useMoveAnalysis() {
 
                 legalMoveCount:
                   job.input.legalMoveCount,
+
+                decisionImportance,
               });
           
             setLatestAnalysis(analysis);

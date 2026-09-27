@@ -79,6 +79,7 @@ describe("classifyMoveQuality", () => {
           beforeEvaluation: 40,
           afterEvaluation: 38,
           legalMoveCount: 25,
+          decisionImportance: "medium",
         })
       ).toEqual({
         moveNumber: 5,
@@ -88,6 +89,7 @@ describe("classifyMoveQuality", () => {
         beforeEvaluation: 40,
         afterEvaluation: 38,
         legalMoveCount: 25,
+        decisionImportance: "medium",
         centipawnLoss: 2,
         quality: "excellent",
       });
@@ -103,6 +105,7 @@ describe("classifyMoveQuality", () => {
           beforeEvaluation: 20,
           afterEvaluation: -180,
           legalMoveCount: 18,
+          decisionImportance: "medium",
         });
   
       expect(

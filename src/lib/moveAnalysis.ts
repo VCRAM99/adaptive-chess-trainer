@@ -1,5 +1,6 @@
 import type {PlayerColor, } from "./moveQuality";
 import {calculateCentipawnLoss,} from "./moveQuality";
+import type { DecisionImportance } from "./decisionDifficulty";
   
 export type MoveQuality =
 | "excellent"
@@ -20,6 +21,8 @@ export type MoveAnalysis = {
     afterEvaluation: number;
 
     legalMoveCount: number;
+
+    decisionImportance: DecisionImportance;
 
     centipawnLoss: number;
 
@@ -65,6 +68,7 @@ type CreateMoveAnalysisInput = {
     afterEvaluation: number;
 
     legalMoveCount: number;
+    decisionImportance: DecisionImportance;
 };
   
 export function createMoveAnalysis(
