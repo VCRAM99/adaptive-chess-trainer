@@ -39,57 +39,13 @@ function App() {
     analyzePlayerMove,
   } = useMoveAnalysis();
 
-  
-
-  //TEMPORARY LOG FOR TESTING
-  // useEffect(() => {
-  //   if (!latestAnalysis) {
-  //     return;
-  //   }
-  
-  //   setEstimatedPlayerRating(
-  //     (currentSkill) =>
-  //       updateSkillFromAnalysis(
-  //         currentSkill,
-  //         latestAnalysis
-  //       )
-  //   );
-  // }, [latestAnalysis]);
+  const [
+    pendingOpponentFen,
+    setPendingOpponentFen,
+  ] = useState<string | null>(null);
 
   const lastRatedMoveRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (!latestAnalysis) {
-      return;
-    }
-  
-    const analysisId =
-      `${latestAnalysis.moveNumber}-` +
-      `${latestAnalysis.playerColor}-` +
-      `${latestAnalysis.playerMove}`;
-  
-    if (
-      lastRatedMoveRef.current ===
-      analysisId
-    ) {
-      return;
-    }
-  
-    lastRatedMoveRef.current =
-      analysisId;
-  
-    setEstimatedPlayerRating(
-      (currentSkill) => {
-        const nextSkill =
-          updateSkillFromAnalysis(
-            currentSkill,
-            latestAnalysis
-          );
-  
-        return nextSkill;
-      }
-    );
-  }, [latestAnalysis]);
 
   // Store the current chess game in React state.
   const [game, setGame] = useState(() => new Chess());
@@ -116,6 +72,57 @@ function App() {
   // Store whether the game has started.
   const gameHasStarted = game.history().length > 0;
 
+  useEffect(() => {
+    if (!latestAnalysis) {
+      return;
+    }
+  
+    const analysisId =
+      `${latestAnalysis.moveNumber}-` +
+      `${latestAnalysis.playerColor}-` +
+      `${latestAnalysis.playerMove}`;
+  
+    if (
+      lastRatedMoveRef.current ===
+      analysisId
+    ) {
+      return;
+    }
+  
+    lastRatedMoveRef.current =
+      analysisId;
+  
+    const nextSkill =
+      updateSkillFromAnalysis(
+        estimatedPlayerRating,
+        latestAnalysis
+      );
+  
+    const nextOpponentConfig =
+      createOpponentConfig(
+        nextSkill,
+        trainingMode
+      );
+  
+    setEstimatedPlayerRating(
+      nextSkill
+    );
+  
+    if (pendingOpponentFen) {
+      requestMove(
+        pendingOpponentFen,
+        nextOpponentConfig.stockfishRating
+      );
+  
+      setPendingOpponentFen(null);
+    }
+  }, [
+    latestAnalysis,
+    pendingOpponentFen,
+    estimatedPlayerRating,
+    trainingMode,
+    requestMove,
+  ]);
 
   useEffect(() => {
     if (!bestMove || game.turn() !== "b") {
@@ -214,6 +221,7 @@ function App() {
       `${source}${target}`;
   
     setGame(nextGame);
+    setPendingOpponentFen(afterFen);
   
     // Analyze the player's move.
     if (analysisReady && !isAnalyzing) {
@@ -227,14 +235,13 @@ function App() {
         afterFen,
         legalMoveCount,
       });
-    }
-  
-    // Existing opponent behavior.
-    if (!nextGame.isGameOver()) {
+    } else {
       requestMove(
-        nextGame.fen(),
+        afterFen,
         opponentConfig.stockfishRating
       );
+    
+      setPendingOpponentFen(null);
     }
   
     return true;
@@ -267,6 +274,7 @@ function App() {
         `${pendingPromotion.from}${pendingPromotion.to}${piece}`;
   
       setGame(nextGame);
+      setPendingOpponentFen(afterFen);
   
       // Send the move to our analysis engine.
       if (analysisReady && !isAnalyzing) {
@@ -280,14 +288,12 @@ function App() {
           afterFen,
           legalMoveCount,
         });
-      }
-  
-      // Keep the existing game-engine behavior.
-      if (!nextGame.isGameOver()) {
+      } else {
         requestMove(
-          nextGame.fen(),
+          afterFen,
           opponentConfig.stockfishRating
         );
+        setPendingOpponentFen(null);
       }
     }
   
@@ -299,6 +305,7 @@ function App() {
     cancelMove();
 
     lastRatedMoveRef.current = null;
+    setPendingOpponentFen(null);
 
     setGame(new Chess());
     setPendingPromotion(null);
@@ -309,6 +316,7 @@ function App() {
     cancelMove();
 
     setPendingPromotion(null);
+    setPendingOpponentFen(null);
 
     // If Stockfish has moved, undo Black's move first.
     const afterFirstUndo = undoLastMove(game);
