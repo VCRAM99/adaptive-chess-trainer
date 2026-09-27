@@ -6,6 +6,7 @@ import PromotionDialog from "./components/PromotionDialog";
 import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus as getChessGameStatus, getMoveHistory } from "./lib/chessGame";
 import { useStockfish } from "./hooks/useStockfish";
 import { parseUciMove } from "./engine/uci";
+import { useMoveAnalysis } from "./hooks/useMoveAnalysis";
 
 import type { TrainingMode } from "./lib/trainingDifficulty";
 import { createOpponentConfig } from "./lib/trainingDifficulty";
@@ -29,6 +30,23 @@ function App() {
     cancelMove,
     clearBestMove,
   } = useStockfish();
+
+  const {
+    isReady: analysisReady,
+    isAnalyzing,
+    latestAnalysis,
+    analyzePlayerMove,
+  } = useMoveAnalysis();
+
+  //TEMPORARY LOG FOR TESTING
+  useEffect(() => {
+    if (latestAnalysis) {
+      console.log(
+        "Latest move analysis:",
+        latestAnalysis
+      );
+    }
+  }, [latestAnalysis]);
 
   
   // Store the current chess game in React state.
@@ -104,7 +122,6 @@ function App() {
     target: Square,
     promotion?: PromotionPiece
   ): boolean {
-    
     if (
       game.isGameOver() ||
       pendingPromotion ||
@@ -131,6 +148,9 @@ function App() {
       return false;
     }
   
+    // Position before the player's move.
+    const beforeFen = game.fen();
+  
     const nextGame = applyMove(
       game,
       source,
@@ -138,16 +158,40 @@ function App() {
       promotion
     );
   
+    // applyMove can return null, so check this first.
     if (!nextGame) {
       return false;
     }
   
+    // We now know nextGame exists.
+    const afterFen = nextGame.fen();
+  
+    const playerMove =
+      `${source}${target}`;
+  
     setGame(nextGame);
-
-    if (!nextGame.isGameOver()) {
-      requestMove(nextGame.fen(), opponentConfig.stockfishRating);
+  
+    // Analyze the player's move.
+    if (analysisReady && !isAnalyzing) {
+      analyzePlayerMove({
+        moveNumber: Math.ceil(
+          nextGame.history().length / 2
+        ),
+        playerColor: "white",
+        playerMove,
+        beforeFen,
+        afterFen,
+      });
     }
-    
+  
+    // Existing opponent behavior.
+    if (!nextGame.isGameOver()) {
+      requestMove(
+        nextGame.fen(),
+        opponentConfig.stockfishRating
+      );
+    }
+  
     return true;
   }
 
@@ -157,6 +201,9 @@ function App() {
       return;
     }
   
+    // Save the position BEFORE the promotion move.
+    const beforeFen = game.fen();
+  
     const nextGame = applyMove(
       game,
       pendingPromotion.from,
@@ -165,10 +212,35 @@ function App() {
     );
   
     if (nextGame) {
+      // Save the position AFTER the promotion move.
+      const afterFen = nextGame.fen();
+  
+      // UCI promotion moves include the promoted piece.
+      // Example: e7e8q
+      const playerMove =
+        `${pendingPromotion.from}${pendingPromotion.to}${piece}`;
+  
       setGame(nextGame);
-    
+  
+      // Send the move to our analysis engine.
+      if (analysisReady && !isAnalyzing) {
+        analyzePlayerMove({
+          moveNumber: Math.ceil(
+            nextGame.history().length / 2
+          ),
+          playerColor: "white",
+          playerMove,
+          beforeFen,
+          afterFen,
+        });
+      }
+  
+      // Keep the existing game-engine behavior.
       if (!nextGame.isGameOver()) {
-        requestMove(nextGame.fen(), opponentConfig.stockfishRating);
+        requestMove(
+          nextGame.fen(),
+          opponentConfig.stockfishRating
+        );
       }
     }
   
