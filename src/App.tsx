@@ -1,4 +1,4 @@
-import { useState, useEffect} from "react";
+import { useState, useEffect, useRef} from "react";
 import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
@@ -6,6 +6,8 @@ import PromotionDialog from "./components/PromotionDialog";
 import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus as getChessGameStatus, getMoveHistory } from "./lib/chessGame";
 import { useStockfish } from "./hooks/useStockfish";
 import { parseUciMove } from "./engine/uci";
+import { useMoveAnalysis } from "./hooks/useMoveAnalysis";
+import { updateSkillFromAnalysis } from "./lib/skillEstimator";
 
 import type { TrainingMode } from "./lib/trainingDifficulty";
 import { createOpponentConfig } from "./lib/trainingDifficulty";
@@ -30,7 +32,21 @@ function App() {
     clearBestMove,
   } = useStockfish();
 
-  
+  const {
+    isReady: analysisReady,
+    isAnalyzing,
+    latestAnalysis,
+    analyzePlayerMove,
+  } = useMoveAnalysis();
+
+  const [
+    pendingOpponentFen,
+    setPendingOpponentFen,
+  ] = useState<string | null>(null);
+
+  const lastRatedMoveRef = useRef<string | null>(null);
+
+
   // Store the current chess game in React state.
   const [game, setGame] = useState(() => new Chess());
 
@@ -46,7 +62,7 @@ function App() {
   const [trainingMode, setTrainingMode] = useState<TrainingMode>("medium");
 
   // Store the estimated player rating.
-  const [estimatedPlayerRating] = useState(1200);
+  const [estimatedPlayerRating, setEstimatedPlayerRating] = useState(1200);
 
   const opponentConfig = createOpponentConfig(
     estimatedPlayerRating,
@@ -56,6 +72,61 @@ function App() {
   // Store whether the game has started.
   const gameHasStarted = game.history().length > 0;
 
+  useEffect(() => {
+    if (!latestAnalysis) {
+      return;
+    }
+  
+    const analysisId =
+      `${latestAnalysis.moveNumber}-` +
+      `${latestAnalysis.playerColor}-` +
+      `${latestAnalysis.playerMove}`;
+  
+    let nextSkill =
+      estimatedPlayerRating;
+  
+    // Only apply the skill evidence once.
+    if (
+      lastRatedMoveRef.current !==
+      analysisId
+    ) {
+      nextSkill =
+        updateSkillFromAnalysis(
+          estimatedPlayerRating,
+          latestAnalysis
+        );
+  
+      lastRatedMoveRef.current =
+        analysisId;
+  
+      setEstimatedPlayerRating(
+        nextSkill
+      );
+    }
+  
+    // Black's response is separate from whether
+    // this analysis changed/updated the rating.
+    if (pendingOpponentFen) {
+      const nextOpponentConfig =
+        createOpponentConfig(
+          nextSkill,
+          trainingMode
+        );
+  
+      requestMove(
+        pendingOpponentFen,
+        nextOpponentConfig.stockfishRating
+      );
+  
+      setPendingOpponentFen(null);
+    }
+  }, [
+    latestAnalysis,
+    pendingOpponentFen,
+    estimatedPlayerRating,
+    trainingMode,
+    requestMove,
+  ]);
 
   useEffect(() => {
     if (!bestMove || game.turn() !== "b") {
@@ -98,13 +169,13 @@ function App() {
     clearBestMove();
   }, [bestMove, game, clearBestMove]);
 
+
   //checka if the move is legal and if it requires a promotion. and updates the game state.
   function makeMove(
     source: Square,
     target: Square,
     promotion?: PromotionPiece
   ): boolean {
-    
     if (
       game.isGameOver() ||
       pendingPromotion ||
@@ -131,6 +202,10 @@ function App() {
       return false;
     }
   
+    // Position before the player's move.
+    const beforeFen = game.fen();
+    const legalMoveCount = game.moves().length;
+  
     const nextGame = applyMove(
       game,
       source,
@@ -138,16 +213,41 @@ function App() {
       promotion
     );
   
+    // applyMove can return null, so check this first.
     if (!nextGame) {
       return false;
     }
   
+    // We now know nextGame exists.
+    const afterFen = nextGame.fen();
+  
+    const playerMove =
+      `${source}${target}`;
+  
     setGame(nextGame);
-
-    if (!nextGame.isGameOver()) {
-      requestMove(nextGame.fen(), opponentConfig.stockfishRating);
-    }
+    setPendingOpponentFen(afterFen);
+  
+    // Analyze the player's move.
+    if (analysisReady && !isAnalyzing) {
+      analyzePlayerMove({
+        moveNumber: Math.ceil(
+          nextGame.history().length / 2
+        ),
+        playerColor: "white",
+        playerMove,
+        beforeFen,
+        afterFen,
+        legalMoveCount,
+      });
+    } else {
+      requestMove(
+        afterFen,
+        opponentConfig.stockfishRating
+      );
     
+      setPendingOpponentFen(null);
+    }
+  
     return true;
   }
 
@@ -157,6 +257,10 @@ function App() {
       return;
     }
   
+    // Save the position BEFORE the promotion move.
+    const beforeFen = game.fen();
+    const legalMoveCount = game.moves().length;
+  
     const nextGame = applyMove(
       game,
       pendingPromotion.from,
@@ -165,10 +269,35 @@ function App() {
     );
   
     if (nextGame) {
+      // Save the position AFTER the promotion move.
+      const afterFen = nextGame.fen();
+  
+      // UCI promotion moves include the promoted piece.
+      // Example: e7e8q
+      const playerMove =
+        `${pendingPromotion.from}${pendingPromotion.to}${piece}`;
+  
       setGame(nextGame);
-    
-      if (!nextGame.isGameOver()) {
-        requestMove(nextGame.fen(), opponentConfig.stockfishRating);
+      setPendingOpponentFen(afterFen);
+  
+      // Send the move to our analysis engine.
+      if (analysisReady && !isAnalyzing) {
+        analyzePlayerMove({
+          moveNumber: Math.ceil(
+            nextGame.history().length / 2
+          ),
+          playerColor: "white",
+          playerMove,
+          beforeFen,
+          afterFen,
+          legalMoveCount,
+        });
+      } else {
+        requestMove(
+          afterFen,
+          opponentConfig.stockfishRating
+        );
+        setPendingOpponentFen(null);
       }
     }
   
@@ -178,6 +307,10 @@ function App() {
   // Start a completely new game.
   function startNewGame() {
     cancelMove();
+
+    lastRatedMoveRef.current = null;
+    setPendingOpponentFen(null);
+
     setGame(new Chess());
     setPendingPromotion(null);
   }
@@ -185,7 +318,9 @@ function App() {
   // Undo the most recent move. 
   function undoMove() {
     cancelMove();
+
     setPendingPromotion(null);
+    setPendingOpponentFen(null);
 
     // If Stockfish has moved, undo Black's move first.
     const afterFirstUndo = undoLastMove(game);

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   parseEngineEvaluation,
+  parseCandidateMoveEvaluation,
 } from "./uciAnalysis";
 
 describe("parseEngineEvaluation", () => {
@@ -83,3 +84,72 @@ describe("parseEngineEvaluation", () => {
     ).toBeNull();
   });
 });
+
+describe(
+  "parseCandidateMoveEvaluation",
+  () => {
+    it("parses the first candidate move", () => {
+      expect(
+        parseCandidateMoveEvaluation(
+          "info depth 12 multipv 1 score cp 31 nodes 500 pv e2e4 e7e5"
+        )
+      ).toEqual({
+        rank: 1,
+        move: "e2e4",
+        evaluation: {
+          type: "cp",
+          value: 31,
+          depth: 12,
+        },
+      });
+    });
+
+    it("parses another candidate move", () => {
+      expect(
+        parseCandidateMoveEvaluation(
+          "info depth 12 multipv 3 score cp 18 pv g1f3 d7d5"
+        )
+      ).toEqual({
+        rank: 3,
+        move: "g1f3",
+        evaluation: {
+          type: "cp",
+          value: 18,
+          depth: 12,
+        },
+      });
+    });
+
+    it("supports mate evaluations", () => {
+      expect(
+        parseCandidateMoveEvaluation(
+          "info depth 15 multipv 1 score mate 3 pv h5h7"
+        )
+      ).toEqual({
+        rank: 1,
+        move: "h5h7",
+        evaluation: {
+          type: "mate",
+          value: 3,
+          depth: 15,
+        },
+      });
+    });
+
+    it("ignores normal info messages without multipv", () => {
+      expect(
+        parseCandidateMoveEvaluation(
+          "info depth 12 score cp 31 pv e2e4"
+        )
+      ).toBeNull();
+    });
+
+    it("ignores messages without a principal variation", () => {
+      expect(
+        parseCandidateMoveEvaluation(
+          "info depth 12 multipv 1 score cp 31"
+        )
+      ).toBeNull();
+    });
+  }
+);
