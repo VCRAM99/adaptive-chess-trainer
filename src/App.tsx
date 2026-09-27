@@ -82,33 +82,37 @@ function App() {
       `${latestAnalysis.playerColor}-` +
       `${latestAnalysis.playerMove}`;
   
+    let nextSkill =
+      estimatedPlayerRating;
+  
+    // Only apply the skill evidence once.
     if (
-      lastRatedMoveRef.current ===
+      lastRatedMoveRef.current !==
       analysisId
     ) {
-      return;
+      nextSkill =
+        updateSkillFromAnalysis(
+          estimatedPlayerRating,
+          latestAnalysis
+        );
+  
+      lastRatedMoveRef.current =
+        analysisId;
+  
+      setEstimatedPlayerRating(
+        nextSkill
+      );
     }
   
-    lastRatedMoveRef.current =
-      analysisId;
-  
-    const nextSkill =
-      updateSkillFromAnalysis(
-        estimatedPlayerRating,
-        latestAnalysis
-      );
-  
-    const nextOpponentConfig =
-      createOpponentConfig(
-        nextSkill,
-        trainingMode
-      );
-  
-    setEstimatedPlayerRating(
-      nextSkill
-    );
-  
+    // Black's response is separate from whether
+    // this analysis changed/updated the rating.
     if (pendingOpponentFen) {
+      const nextOpponentConfig =
+        createOpponentConfig(
+          nextSkill,
+          trainingMode
+        );
+  
       requestMove(
         pendingOpponentFen,
         nextOpponentConfig.stockfishRating
