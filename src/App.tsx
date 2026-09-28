@@ -8,7 +8,7 @@ import { useStockfish } from "./hooks/useStockfish";
 import { parseUciMove } from "./engine/uci";
 import { useMoveAnalysis } from "./hooks/useMoveAnalysis";
 import { updateSkillFromAnalysis } from "./lib/skillEstimator";
-import { createOpponentCandidates } from "./lib/opponentCandidateAnalysis";
+import { useOpponentAnalysis,} from "./hooks/useOpponentAnalysis";
 
 
 import type { TrainingMode } from "./lib/trainingDifficulty";
@@ -27,11 +27,11 @@ type PendingPromotion = {
 
 function App() {
   const gameIdRef = useRef(0);
+  
 
   const {
     status: engineStatus,
     bestMove,
-    opponentAnalysis,
     requestMove,
     cancelMove,
     clearBestMove,
@@ -77,36 +77,39 @@ function App() {
   // Store whether the game has started.
   const gameHasStarted = game.history().length > 0;
 
-  //temporary logging of opponent analysis
-  useEffect(() => {
-    if (!opponentAnalysis) {
-      return;
-    }
+  const {
+    isReady:
+      opponentAnalysisReady,
   
-    console.log(
-      "Opponent candidates:",
-      opponentAnalysis
-    );
-  }, [opponentAnalysis]);
+    isAnalyzing:
+      opponentAnalysisRunning,
+  
+    analyze:
+      analyzeOpponentPosition,
 
-  //temporary logging of scored opponent candidates
+    cancel:
+      cancelOpponentAnalysis,
+  } = useOpponentAnalysis();
+
+  //temporarily analyze the opponent position
   useEffect(() => {
-    if (!opponentAnalysis) {
+    if (
+      !pendingOpponentFen ||
+      !opponentAnalysisReady ||
+      opponentAnalysisRunning
+    ) {
       return;
     }
   
-    const candidates =
-      createOpponentCandidates(
-        opponentAnalysis.candidates,
-        "black",
-        "black"
-      );
-  
-    console.log(
-      "Scored opponent candidates:",
-      candidates
+    analyzeOpponentPosition(
+      pendingOpponentFen
     );
-  }, [opponentAnalysis]);
+  }, [
+    pendingOpponentFen,
+    opponentAnalysisReady,
+    opponentAnalysisRunning,
+    analyzeOpponentPosition,
+  ]);
 
   useEffect(() => {
     if (!latestAnalysis) {
@@ -356,6 +359,7 @@ function App() {
   // Start a completely new game.
   function startNewGame() {
     cancelMove();
+    cancelOpponentAnalysis();
 
     gameIdRef.current += 1;
 
@@ -368,6 +372,7 @@ function App() {
   // Undo the most recent move. 
   function undoMove() {
     cancelMove();
+    cancelOpponentAnalysis();
 
     setPendingPromotion(null);
     setPendingOpponentFen(null);
