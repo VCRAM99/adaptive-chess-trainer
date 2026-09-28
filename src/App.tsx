@@ -24,6 +24,8 @@ type PendingPromotion = {
 };
 
 function App() {
+  const gameIdRef = useRef(0);
+
   const {
     status: engineStatus,
     bestMove,
@@ -76,11 +78,16 @@ function App() {
     if (!latestAnalysis) {
       return;
     }
+
+    if (!pendingOpponentFen) {
+      return;
+    }
   
     const analysisId =
-      `${latestAnalysis.moveNumber}-` +
-      `${latestAnalysis.playerColor}-` +
-      `${latestAnalysis.playerMove}`;
+    `${gameIdRef.current}-` +
+    `${latestAnalysis.moveNumber}-` +
+    `${latestAnalysis.playerColor}-` +
+    `${latestAnalysis.playerMove}`;
   
     let nextSkill =
       estimatedPlayerRating;
@@ -106,20 +113,19 @@ function App() {
   
     // Black's response is separate from whether
     // this analysis changed/updated the rating.
-    if (pendingOpponentFen) {
-      const nextOpponentConfig =
-        createOpponentConfig(
-          nextSkill,
-          trainingMode
-        );
-  
-      requestMove(
-        pendingOpponentFen,
-        nextOpponentConfig.stockfishRating
+    const nextOpponentConfig =
+      createOpponentConfig(
+        nextSkill,
+        trainingMode
       );
-  
-      setPendingOpponentFen(null);
-    }
+
+    requestMove(
+      pendingOpponentFen,
+      nextOpponentConfig.stockfishRating
+    );
+
+    setPendingOpponentFen(null);
+
   }, [
     latestAnalysis,
     pendingOpponentFen,
@@ -225,7 +231,11 @@ function App() {
       `${source}${target}`;
   
     setGame(nextGame);
-    setPendingOpponentFen(afterFen);
+    if (!nextGame.isGameOver()) {
+      setPendingOpponentFen(afterFen);
+    } else {
+      setPendingOpponentFen(null);
+    }
   
     // Analyze the player's move.
     if (analysisReady && !isAnalyzing) {
@@ -239,7 +249,7 @@ function App() {
         afterFen,
         legalMoveCount,
       });
-    } else {
+    } else if (!nextGame.isGameOver()) {
       requestMove(
         afterFen,
         opponentConfig.stockfishRating
@@ -278,7 +288,11 @@ function App() {
         `${pendingPromotion.from}${pendingPromotion.to}${piece}`;
   
       setGame(nextGame);
-      setPendingOpponentFen(afterFen);
+      if (!nextGame.isGameOver()) {
+        setPendingOpponentFen(afterFen);
+      } else {
+        setPendingOpponentFen(null);
+      }
   
       // Send the move to our analysis engine.
       if (analysisReady && !isAnalyzing) {
@@ -292,11 +306,12 @@ function App() {
           afterFen,
           legalMoveCount,
         });
-      } else {
+      } else if (!nextGame.isGameOver()) {
         requestMove(
           afterFen,
           opponentConfig.stockfishRating
         );
+      
         setPendingOpponentFen(null);
       }
     }
@@ -308,7 +323,8 @@ function App() {
   function startNewGame() {
     cancelMove();
 
-    lastRatedMoveRef.current = null;
+    gameIdRef.current += 1;
+
     setPendingOpponentFen(null);
 
     setGame(new Chess());
