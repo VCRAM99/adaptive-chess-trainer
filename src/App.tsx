@@ -8,6 +8,8 @@ import { useStockfish } from "./hooks/useStockfish";
 import { parseUciMove } from "./engine/uci";
 import { useMoveAnalysis } from "./hooks/useMoveAnalysis";
 import { updateSkillFromAnalysis } from "./lib/skillEstimator";
+import { createOpponentCandidates } from "./lib/opponentCandidateAnalysis";
+
 
 import type { TrainingMode } from "./lib/trainingDifficulty";
 import { createOpponentConfig } from "./lib/trainingDifficulty";
@@ -84,6 +86,25 @@ function App() {
     console.log(
       "Opponent candidates:",
       opponentAnalysis
+    );
+  }, [opponentAnalysis]);
+
+  //temporary logging of scored opponent candidates
+  useEffect(() => {
+    if (!opponentAnalysis) {
+      return;
+    }
+  
+    const candidates =
+      createOpponentCandidates(
+        opponentAnalysis.candidates,
+        "black",
+        "black"
+      );
+  
+    console.log(
+      "Scored opponent candidates:",
+      candidates
     );
   }, [opponentAnalysis]);
 
