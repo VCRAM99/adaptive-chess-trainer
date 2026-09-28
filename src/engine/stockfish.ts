@@ -1,3 +1,15 @@
+import {
+  parseCandidateMoveEvaluation,
+  type CandidateMoveEvaluation,
+} from "./uciAnalysis";
+
+export const OPPONENT_MULTIPV = 8;
+
+export type OpponentAnalysisResult = {
+  bestMove: string;
+  candidates: CandidateMoveEvaluation[];
+};
+
 export type StockfishMessageHandler = (
   message: string
 ) => void;
@@ -7,6 +19,8 @@ export type StockfishErrorHandler = (
 ) => void;
 
 export class StockfishEngine {
+  private candidates = new Map<number,CandidateMoveEvaluation>();
+
   private worker: Worker | null = null;
 
   private messageHandler: StockfishMessageHandler | null =
@@ -16,6 +30,23 @@ export class StockfishEngine {
     null;
 
   private ready = false;
+
+  private opponentAnalysisHandler:
+  | ((
+      result: OpponentAnalysisResult
+    ) => void)
+  | null = null;
+
+  onOpponentAnalysis(
+    handler:
+      | ((
+          result: OpponentAnalysisResult
+        ) => void)
+      | null
+  ) {
+    this.opponentAnalysisHandler =
+      handler;
+  }
 
   start() {
     if (this.worker) {
@@ -40,13 +71,48 @@ export class StockfishEngine {
 
     this.worker.onmessage = (event: MessageEvent) => {
       const message = String(event.data);
-
+    
       console.log("[Stockfish]", message);
-
+    
       if (message.trim() === "readyok") {
         this.ready = true;
       }
-
+    
+      const candidate =
+        parseCandidateMoveEvaluation(
+          message
+        );
+    
+      if (candidate) {
+        this.candidates.set(
+          candidate.rank,
+          candidate
+        );
+      }
+    
+      if (message.startsWith("bestmove ")) {
+        const bestMove =
+          message.split(/\s+/)[1];
+    
+        if (
+          bestMove &&
+          bestMove !== "(none)"
+        ) {
+          const candidates =
+            Array.from(
+              this.candidates.values()
+            ).sort(
+              (a, b) =>
+                a.rank - b.rank
+            );
+    
+          this.opponentAnalysisHandler?.({
+            bestMove,
+            candidates,
+          });
+        }
+      }
+    
       this.messageHandler?.(message);
     };
 
@@ -104,10 +170,16 @@ export class StockfishEngine {
     if (!this.ready) {
       return false;
     }
-
+  
+    this.candidates.clear();
+  
+    this.send(
+      `setoption name MultiPV value ${OPPONENT_MULTIPV}`
+    );
+  
     this.send(`position fen ${fen}`);
     this.send("go depth 8");
-
+  
     return true;
   }
 

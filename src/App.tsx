@@ -29,6 +29,7 @@ function App() {
   const {
     status: engineStatus,
     bestMove,
+    opponentAnalysis,
     requestMove,
     cancelMove,
     clearBestMove,
@@ -73,6 +74,18 @@ function App() {
 
   // Store whether the game has started.
   const gameHasStarted = game.history().length > 0;
+
+  //temporary logging of opponent analysis
+  useEffect(() => {
+    if (!opponentAnalysis) {
+      return;
+    }
+  
+    console.log(
+      "Opponent candidates:",
+      opponentAnalysis
+    );
+  }, [opponentAnalysis]);
 
   useEffect(() => {
     if (!latestAnalysis) {
