@@ -7,7 +7,9 @@ import {
     parseUciResponse,
   } from "./uciResponse";
   
-  export const OPPONENT_ANALYSIS_MULTIPV = 8;
+  export const DEFAULT_OPPONENT_MULTIPV = 8;
+
+  export const MAX_OPPONENT_MULTIPV = 20;
   
   export type OpponentCandidateAnalysisResult = {
     bestMove: string;
@@ -151,13 +153,18 @@ import {
       return this.analyzing;
     }
   
-    analyze(fen: string) {
+    analyze(fen: string, candidateCount = DEFAULT_OPPONENT_MULTIPV) {
       if (
         !this.ready ||
         this.analyzing
       ) {
         return false;
       }
+
+      const multiPv =
+      getOpponentMultiPv(
+        candidateCount
+      );
   
       this.analyzing = true;
       this.candidates.clear();
@@ -170,7 +177,7 @@ import {
       );
   
       this.send(
-        `setoption name MultiPV value ${OPPONENT_ANALYSIS_MULTIPV}`
+        `setoption name MultiPV value ${multiPv}`
       );
   
       this.send(
@@ -204,4 +211,16 @@ import {
   
       this.worker.postMessage(command);
     }
+  }
+
+  export function getOpponentMultiPv(
+    legalMoveCount: number
+  ): number {
+    return Math.max(
+      1,
+      Math.min(
+        MAX_OPPONENT_MULTIPV,
+        Math.floor(legalMoveCount)
+      )
+    );
   }

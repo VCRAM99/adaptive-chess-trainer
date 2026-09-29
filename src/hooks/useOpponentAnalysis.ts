@@ -126,7 +126,7 @@ import {
   
     const analyze =
       useCallback(
-        (fen: string) => {
+        (fen: string, candidateCount?: number) => {
           const engine =
             engineRef.current;
   
@@ -142,7 +142,7 @@ import {
           setIsAnalyzing(true);
   
           const started =
-            engine.analyze(fen);
+            engine.analyze(fen, candidateCount);
   
           if (!started) {
             setIsAnalyzing(false);

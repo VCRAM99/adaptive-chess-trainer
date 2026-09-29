@@ -49,6 +49,11 @@ function App() {
     setPendingOpponentFen,
   ] = useState<string | null>(null);
 
+  const [
+    pendingOpponentLegalMoves,
+    setPendingOpponentLegalMoves,
+  ] = useState(0);
+
   const lastRatedMoveRef = useRef<string | null>(null);
 
 
@@ -91,7 +96,9 @@ function App() {
       cancelOpponentAnalysis,
   } = useOpponentAnalysis();
 
-  //temporarily analyze the opponent position
+
+  // Analyze the opponent position with the
+  // full-strength objective analysis engine.
   useEffect(() => {
     if (
       !pendingOpponentFen ||
@@ -102,10 +109,12 @@ function App() {
     }
   
     analyzeOpponentPosition(
-      pendingOpponentFen
+      pendingOpponentFen,
+      pendingOpponentLegalMoves
     );
   }, [
     pendingOpponentFen,
+    pendingOpponentLegalMoves,
     opponentAnalysisReady,
     opponentAnalysisRunning,
     analyzeOpponentPosition,
@@ -162,7 +171,7 @@ function App() {
     );
 
     setPendingOpponentFen(null);
-
+    setPendingOpponentLegalMoves(0);
   }, [
     latestAnalysis,
     pendingOpponentFen,
@@ -270,8 +279,13 @@ function App() {
     setGame(nextGame);
     if (!nextGame.isGameOver()) {
       setPendingOpponentFen(afterFen);
+    
+      setPendingOpponentLegalMoves(
+        nextGame.moves().length
+      );
     } else {
       setPendingOpponentFen(null);
+      setPendingOpponentLegalMoves(0);
     }
   
     // Analyze the player's move.
@@ -293,6 +307,7 @@ function App() {
       );
     
       setPendingOpponentFen(null);
+      setPendingOpponentLegalMoves(0);
     }
   
     return true;
@@ -327,8 +342,13 @@ function App() {
       setGame(nextGame);
       if (!nextGame.isGameOver()) {
         setPendingOpponentFen(afterFen);
+      
+        setPendingOpponentLegalMoves(
+          nextGame.moves().length
+        );
       } else {
         setPendingOpponentFen(null);
+        setPendingOpponentLegalMoves(0);
       }
   
       // Send the move to our analysis engine.
@@ -350,6 +370,7 @@ function App() {
         );
       
         setPendingOpponentFen(null);
+        setPendingOpponentLegalMoves(0);
       }
     }
   
@@ -364,6 +385,7 @@ function App() {
     gameIdRef.current += 1;
 
     setPendingOpponentFen(null);
+    setPendingOpponentLegalMoves(0);
 
     setGame(new Chess());
     setPendingPromotion(null);
@@ -376,6 +398,7 @@ function App() {
 
     setPendingPromotion(null);
     setPendingOpponentFen(null);
+    setPendingOpponentLegalMoves(0);
 
     // If Stockfish has moved, undo Black's move first.
     const afterFirstUndo = undoLastMove(game);
