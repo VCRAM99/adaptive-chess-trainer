@@ -336,7 +336,6 @@ function App() {
     estimatedPlayerRating,
   ]);
 
-
   //checka if the move is legal and if it requires a promotion. and updates the game state.
   function makeMove(
     source: Square,
@@ -610,7 +609,7 @@ function App() {
               disabled={gameHasStarted}
               aria-pressed={trainingMode === "hard"}
             >
-              Hard
+              Hard  
             </button>
           </div>
 
