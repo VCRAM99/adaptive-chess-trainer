@@ -56,12 +56,14 @@ import {
           move: "g8f6",
           evaluation: 15,
           bestEvaluation: 50,
+          mate: null,
         })
       ).toEqual({
         rank: 3,
         move: "g8f6",
         evaluation: 15,
         centipawnLoss: 35,
+        mate: null,
       });
     });
   });
@@ -73,24 +75,28 @@ import {
         move: "e7e5",
         evaluation: 20,
         centipawnLoss: 0,
+        mate: null,
       },
       {
         rank: 2,
         move: "c7c5",
         evaluation: 5,
         centipawnLoss: 15,
+        mate: null,
       },
       {
         rank: 3,
         move: "a7a6",
         evaluation: -40,
         centipawnLoss: 60,
+        mate: null,
       },
       {
         rank: 4,
         move: "f7f6",
         evaluation: -250,
         centipawnLoss: 270,
+        mate: null,
       },
     ];
   
@@ -140,6 +146,7 @@ import {
           move: "e7e5",
           evaluation: 20,
           centipawnLoss: 0,
+          mate: null,
         },
       ];
     

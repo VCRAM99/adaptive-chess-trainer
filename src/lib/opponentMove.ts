@@ -3,6 +3,7 @@ export type OpponentCandidate = {
     move: string;
     evaluation: number;
     centipawnLoss: number;
+    mate: number | null;
   };
 
 export function calculateCandidateLoss(
@@ -20,6 +21,7 @@ type CreateOpponentCandidateInput = {
     move: string;
     evaluation: number;
     bestEvaluation: number;
+    mate?: number | null;
 };
   
 export function createOpponentCandidate(
@@ -35,6 +37,7 @@ export function createOpponentCandidate(
             input.bestEvaluation,
             input.evaluation
         ),
+        mate: input.mate ?? null,
     };
 }
 

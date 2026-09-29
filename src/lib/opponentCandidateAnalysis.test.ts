@@ -56,6 +56,7 @@ import {
           move: "c7c5",
           evaluation: 40,
           centipawnLoss: 0,
+          mate: null,
         });
       
         expect(result[1]).toEqual({
@@ -63,6 +64,7 @@ import {
           move: "e7e5",
           evaluation: 20,
           centipawnLoss: 20,
+          mate: null,
         });
       });
 
@@ -165,6 +167,98 @@ import {
         expect(
           result[1].centipawnLoss
         ).toBe(0);
+      });
+
+      it("preserves a winning mate from the black opponent perspective", () => {
+        const candidates = [
+          {
+            rank: 1,
+            move: "d8h4",
+            evaluation: {
+              type: "mate" as const,
+              value: 3,
+              depth: 12,
+            },
+          },
+        ];
+      
+        const result =
+          createOpponentCandidates(
+            candidates,
+            "black",
+            "black"
+          );
+      
+        expect(result[0].mate).toBe(3);
+      });
+
+      it("preserves a losing mate from the black opponent perspective", () => {
+        const candidates = [
+          {
+            rank: 1,
+            move: "a7a6",
+            evaluation: {
+              type: "mate" as const,
+              value: -3,
+              depth: 12,
+            },
+          },
+        ];
+      
+        const result =
+          createOpponentCandidates(
+            candidates,
+            "black",
+            "black"
+          );
+      
+        expect(result[0].mate).toBe(-3);
+      });
+
+      it("preserves a winning mate from the white opponent perspective", () => {
+        const candidates = [
+          {
+            rank: 1,
+            move: "d1h5",
+            evaluation: {
+              type: "mate" as const,
+              value: 2,
+              depth: 12,
+            },
+          },
+        ];
+      
+        const result =
+          createOpponentCandidates(
+            candidates,
+            "white",
+            "white"
+          );
+      
+        expect(result[0].mate).toBe(2);
+      });
+
+      it("flips mate perspective when the opponent color differs from the side to move", () => {
+        const candidates = [
+          {
+            rank: 1,
+            move: "e2e4",
+            evaluation: {
+              type: "mate" as const,
+              value: 4,
+              depth: 12,
+            },
+          },
+        ];
+      
+        const result =
+          createOpponentCandidates(
+            candidates,
+            "white",
+            "black"
+          );
+      
+        expect(result[0].mate).toBe(-4);
       });
   });
 

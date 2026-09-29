@@ -22,36 +22,42 @@ import {
       move: "e7e5",
       evaluation: -17,
       centipawnLoss: 0,
+      mate: null,
     },
     {
       rank: 2,
       move: "e7e6",
       evaluation: -27,
       centipawnLoss: 10,
+      mate: null,
     },
     {
       rank: 3,
       move: "c7c5",
       evaluation: -41,
       centipawnLoss: 24,
+      mate: null,
     },
     {
       rank: 4,
       move: "b8c6",
       evaluation: -54,
       centipawnLoss: 37,
+      mate: null,
     },
     {
       rank: 5,
       move: "b8a6",
       evaluation: -108,
       centipawnLoss: 91,
+      mate: null,
     },
     {
       rank: 6,
       move: "f7f5",
       evaluation: -206,
       centipawnLoss: 189,
+      mate: null,
     },
   ];
 

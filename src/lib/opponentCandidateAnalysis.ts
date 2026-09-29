@@ -65,6 +65,35 @@ export function createOpponentCandidates(
           move: candidate.move,
           evaluation,
           bestEvaluation,
+          mate: getCandidateMate(
+            candidate,
+            sideToMove,
+            opponentColor
+          ),
         })
     );
+  }
+
+  function getCandidateMate(
+    candidate: CandidateMoveEvaluation,
+    sideToMove: PlayerColor,
+    opponentColor: PlayerColor
+  ): number | null {
+    if (
+      candidate.evaluation.type !== "mate"
+    ) {
+      return null;
+    }
+  
+    const mate =
+      candidate.evaluation.value;
+  
+    const whiteMate =
+      sideToMove === "white"
+        ? mate
+        : -mate;
+  
+    return opponentColor === "white"
+      ? whiteMate
+      : -whiteMate;
   }
