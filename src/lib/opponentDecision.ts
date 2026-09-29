@@ -7,7 +7,7 @@ import type {
   } from "./opponentMoveSafeguards";
   
   import {
-    chooseOpponentMove,
+    chooseOpponentMoveByDesiredCpl,
   } from "./opponentMoveSelector";
   
   export type OpponentDecision = {
@@ -18,7 +18,8 @@ import type {
   export function chooseAdaptiveOpponentMove(
     candidates: OpponentCandidate[],
     targetSkill: number,
-    randomValue = Math.random()
+    randomValue1 = Math.random(),
+    randomValue2 = Math.random(),
   ): OpponentDecision {
     const safePool =
       createSafeOpponentCandidatePool(
@@ -42,10 +43,11 @@ import type {
   
     return {
       candidate:
-        chooseOpponentMove(
+        chooseOpponentMoveByDesiredCpl(
           safePool.candidates,
           targetSkill,
-          randomValue
+          randomValue1,
+          randomValue2
         ),
       bypassedSelection: false,
     };

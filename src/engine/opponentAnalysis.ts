@@ -10,6 +10,7 @@ import {
   export const DEFAULT_OPPONENT_MULTIPV = 8;
 
   export const MAX_OPPONENT_MULTIPV = 20;
+  export const OPPONENT_ANALYSIS_TIME_MS = 500;
   
   export type OpponentCandidateAnalysisResult = {
     bestMove: string;
@@ -106,8 +107,8 @@ import {
             ).sort(
               (a, b) =>
                 a.rank - b.rank
-            );
-  
+          );
+
           this.resultHandler?.({
             bestMove: response.move,
             candidates,
@@ -153,7 +154,7 @@ import {
       return this.analyzing;
     }
   
-    analyze(fen: string, candidateCount = DEFAULT_OPPONENT_MULTIPV) {
+    analyze(fen: string, candidateCount = DEFAULT_OPPONENT_MULTIPV, analysisTimeMs = OPPONENT_ANALYSIS_TIME_MS) {
       if (
         !this.ready ||
         this.analyzing
@@ -184,7 +185,9 @@ import {
         `position fen ${fen}`
       );
   
-      this.send("go depth 12");
+      this.send(
+        `go movetime ${analysisTimeMs}`
+      );
   
       return true;
     }

@@ -16,6 +16,9 @@ import {
     getTargetCentipawnLoss,
     selectWeightedOpponentMove,
     weightOpponentCandidates,
+    chooseOpponentMoveByDesiredCpl,
+    sampleDesiredCentipawnLoss,
+    selectCandidateNearestCpl,
   } from "./opponentMoveSelector";
 
 
@@ -332,5 +335,88 @@ describe(
           totalProbability
         ).toBeCloseTo(1);
       });
+    }
+  );
+
+  describe(
+    "desired-CPL opponent selection",
+    () => {
+      it(
+        "selects the candidate nearest the desired CPL",
+        () => {
+          const selected =
+            selectCandidateNearestCpl(
+              candidates,
+              35
+            );
+  
+          expect(
+            selected?.centipawnLoss
+          ).toBe(37);
+        }
+      );
+  
+      it(
+        "returns null for an empty candidate list",
+        () => {
+          expect(
+            selectCandidateNearestCpl(
+              [],
+              50
+            )
+          ).toBeNull();
+        }
+      );
+  
+      it(
+        "returns the only candidate when one exists",
+        () => {
+          const onlyCandidate = [
+            candidates[0],
+          ];
+  
+          expect(
+            chooseOpponentMoveByDesiredCpl(
+              onlyCandidate,
+              1200,
+              0.5,
+              0.5
+            )
+          ).toBe(
+            candidates[0]
+          );
+        }
+      );
+  
+      it(
+        "never samples a negative CPL",
+        () => {
+          const sampled =
+            sampleDesiredCentipawnLoss(
+              2400,
+              0.5,
+              0.5
+            );
+  
+          expect(sampled)
+            .toBeGreaterThanOrEqual(0);
+        }
+      );
+  
+      it(
+        "can choose from a normal candidate pool",
+        () => {
+          const selected =
+            chooseOpponentMoveByDesiredCpl(
+              candidates,
+              1200,
+              0.5,
+              0.5
+            );
+  
+          expect(candidates)
+            .toContain(selected);
+        }
+      );
     }
   );

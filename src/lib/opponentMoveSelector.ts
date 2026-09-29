@@ -109,6 +109,61 @@ export function getCentipawnLossWeight(
   );
 }
 
+export function sampleStandardNormal(
+  randomValue1 = Math.random(),
+  randomValue2 = Math.random()
+): number {
+  // Box-Muller cannot use zero for the first value.
+  const u1 = Math.max(
+    Number.EPSILON,
+    Math.min(1, randomValue1)
+  );
+
+  const u2 = Math.max(
+    0,
+    Math.min(1, randomValue2)
+  );
+
+  return (
+    Math.sqrt(
+      -2 * Math.log(u1)
+    ) *
+    Math.cos(
+      2 * Math.PI * u2
+    )
+  );
+}
+
+export function sampleDesiredCentipawnLoss(
+  targetSkill: number,
+  randomValue1 = Math.random(),
+  randomValue2 = Math.random()
+): number {
+  const targetLoss =
+    getTargetCentipawnLoss(
+      targetSkill
+    );
+
+  const spread =
+    getCentipawnLossSpread(
+      targetSkill
+    );
+
+  const standardNormal =
+    sampleStandardNormal(
+      randomValue1,
+      randomValue2
+    );
+
+  const sampledLoss =
+    targetLoss +
+    standardNormal * spread;
+
+  return Math.abs(
+    sampledLoss
+  );
+}
+
 export type WeightedOpponentCandidate = {
 candidate: OpponentCandidate;
 quality: OpponentMoveQuality;
@@ -237,5 +292,72 @@ export function selectWeightedOpponentMove(
     return (
       candidate.weight /
       totalWeight
+    );
+  }
+
+  export function selectCandidateNearestCpl(
+    candidates: OpponentCandidate[],
+    desiredCpl: number
+  ): OpponentCandidate | null {
+    if (candidates.length === 0) {
+      return null;
+    }
+  
+    let selected =
+      candidates[0];
+  
+    let selectedDistance =
+      Math.abs(
+        selected.centipawnLoss -
+          desiredCpl
+      );
+  
+    for (
+      let index = 1;
+      index < candidates.length;
+      index += 1
+    ) {
+      const candidate =
+        candidates[index];
+  
+      const distance =
+        Math.abs(
+          candidate.centipawnLoss -
+            desiredCpl
+        );
+  
+      if (distance < selectedDistance) {
+        selected = candidate;
+        selectedDistance = distance;
+      }
+    }
+  
+    return selected;
+  }
+
+  export function chooseOpponentMoveByDesiredCpl(
+    candidates: OpponentCandidate[],
+    targetSkill: number,
+    randomValue1 = Math.random(),
+    randomValue2 = Math.random()
+  ): OpponentCandidate | null {
+    if (candidates.length === 0) {
+      return null;
+    }
+  
+    if (candidates.length === 1) {
+      return candidates[0];
+    }
+  
+    const desiredCpl =
+      sampleDesiredCentipawnLoss(
+        targetSkill,
+        randomValue1,
+        randomValue2
+      );
+  
+    return selectCandidateNearestCpl(
+      candidates,
+      desiredCpl
     );
   }

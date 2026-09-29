@@ -27,15 +27,15 @@ function GamePanel({
           <h3>Computer opponent</h3>
 
           {opponentStatus === "starting" && (
-            <p>Stockfish is starting...</p>
+            <p>Opponent is starting...</p>
           )}
 
           {opponentStatus === "ready" && (
-            <p>Stockfish is ready.</p>
+            <p>Opponent is ready.</p>
           )}
 
           {opponentStatus === "thinking" && (
-            <p>Stockfish is thinking...</p>
+            <p>Opponent is thinking...</p>
           )}
 
         </div>

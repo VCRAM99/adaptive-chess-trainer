@@ -9,9 +9,7 @@ import { useMoveAnalysis } from "./hooks/useMoveAnalysis";
 import { updateSkillFromAnalysis } from "./lib/skillEstimator";
 import { useOpponentAnalysis,} from "./hooks/useOpponentAnalysis";
 import { createOpponentCandidates, } from "./lib/opponentCandidateAnalysis";
-
 import { chooseAdaptiveOpponentMove, } from "./lib/opponentDecision";
-import { weightOpponentCandidates, } from "./lib/opponentMoveSelector";
 
 
 import type { TrainingMode } from "./lib/trainingDifficulty";
@@ -19,18 +17,21 @@ import { createOpponentConfig } from "./lib/trainingDifficulty";
 
 import "./App.css";
 
-
 // Types for the promotion piece and pending promotion.
 type PromotionPiece = "q" | "r" | "b" | "n";
 
 type PendingPromotion = {
-  from: Square;
+  from: Square;   
   to: Square;
 };
 
 function App() {
   const gameIdRef = useRef(0);
   const handledOpponentFenRef = useRef<string | null>(null);
+
+  //temporary logging of the time it takes to analyze the opponent and player moves.
+  const playerAnalysisStartedAtRef =
+  useRef<number | null>(null);
 
   const {
     isReady: analysisReady,
@@ -103,10 +104,10 @@ function App() {
   | "thinking" =
   !opponentAnalysisReady
     ? "starting"
-    : pendingOpponentFen ||
-        opponentAnalysisRunning
+    : pendingOpponentFen
       ? "thinking"
       : "ready";
+      
   // Analyze the opponent position with the
   // full-strength objective analysis engine.
   useEffect(() => {
@@ -142,6 +143,8 @@ function App() {
     if (
       opponentAnalysisResult.fen !==
       pendingOpponentFen
+
+      
     ) {
       return;
     }
@@ -173,38 +176,21 @@ function App() {
         pendingOpponentSkill,
         trainingMode
       );
-  
-    //temporary logging of the weighted candidates
-      const weightedCandidates =
-      weightOpponentCandidates(
-        candidates,
-        responseConfig.targetRating
-      );
 
-    //temporary logging of the weighted candidates
-    console.table(
-      weightedCandidates.map(
-        ({
-          candidate,
-          quality,
-          weight,
-        }) => ({
-          move: candidate.move,
-          cpl:
-            candidate.centipawnLoss,
-          quality,
-          weight:
-            Number(
-              weight.toFixed(3)
-            ),
-        })
-      )
+    //temporary logging of the time it takes to select the opponent move.
+    console.time(
+      "Opponent move selection"
     );
 
     const decision =
       chooseAdaptiveOpponentMove(
         candidates,
         responseConfig.targetRating
+      );
+
+    //temporary logging of the time it takes to select the opponent move.
+      console.timeEnd(
+        "Opponent move selection"
       );
 
       console.log(
@@ -292,6 +278,24 @@ function App() {
     if (!pendingOpponentFen) {
       return;
     }
+
+    //temporary logging of the time it takes to analyze the player's move.
+    if (
+      playerAnalysisStartedAtRef.current !==
+      null
+    ) {
+      console.log(
+        "Player move analysis:",
+        Math.round(
+          performance.now() -
+            playerAnalysisStartedAtRef.current
+        ),
+        "ms"
+      );
+    
+      playerAnalysisStartedAtRef.current =
+        null;
+    }
   
     const analysisId =
     `${gameIdRef.current}-` +
@@ -331,6 +335,7 @@ function App() {
     pendingOpponentFen,
     estimatedPlayerRating,
   ]);
+
 
   //checka if the move is legal and if it requires a promotion. and updates the game state.
   function makeMove(
@@ -409,6 +414,10 @@ function App() {
       analysisReady &&
       !isAnalyzing
     ) {
+      //temporary logging of the time it takes to analyze the player's move.
+      playerAnalysisStartedAtRef.current =
+      performance.now();
+
       analyzePlayerMove({
         moveNumber: Math.ceil(
           nextGame.history().length / 2
@@ -549,7 +558,7 @@ function App() {
         <section className="board-section">
           <div className="player-info">
             <span>Black</span>
-            <span>Computer opponent coming soon</span>
+            <span>ADAPTIVE OPPONENT</span>
           </div>
 
           <ChessBoard
@@ -560,7 +569,7 @@ function App() {
 
           <div className="player-info">
             <span>White</span>
-            <span>Estimated Elo: 1000 (provisional)</span>
+            <span>Estimated Skill: {estimatedPlayerRating}</span>
           </div>
         </section>
 
@@ -612,12 +621,6 @@ function App() {
           <p>
             Target opponent: {opponentConfig.targetRating}
           </p>
-          {opponentConfig.stockfishRating !== opponentConfig.targetRating && (
-            <p>
-              Stockfish's current Elo mode is limited to
-              ratings of {opponentConfig.stockfishRating} or higher.
-            </p>
-          )}
 
           {gameHasStarted && (
             <p>
