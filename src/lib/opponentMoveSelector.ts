@@ -9,6 +9,11 @@ import {
   type OpponentMoveQuality,
 } from "./opponentStrength";
 
+import {
+  getOpponentErrorScale,
+  type OpponentPositionContext,
+} from "./opponentPositionContext";
+
 
 const LOW_SKILL_TARGET_CPL = 100;
 const HIGH_SKILL_TARGET_CPL = 0;
@@ -162,6 +167,39 @@ export function sampleDesiredCentipawnLoss(
   return Math.abs(
     sampledLoss
   );
+}
+
+export function sampleContextualDesiredCentipawnLoss(
+  targetSkill: number,
+  context: OpponentPositionContext,
+  randomValue1 = Math.random(),
+  randomValue2 = Math.random()
+): number {
+  const errorScale =
+    getOpponentErrorScale(context);
+
+    const targetLoss =
+    getTargetCentipawnLoss(targetSkill) *
+    errorScale;
+  
+  const spreadScale =
+    0.5 + 0.5 * errorScale;
+  
+  const spread =
+    getCentipawnLossSpread(targetSkill) *
+    spreadScale;
+
+  const standardNormal =
+    sampleStandardNormal(
+      randomValue1,
+      randomValue2
+    );
+
+  const sampledLoss =
+    targetLoss +
+    standardNormal * spread;
+
+  return Math.abs(sampledLoss);
 }
 
 export type WeightedOpponentCandidate = {
@@ -352,6 +390,35 @@ export function selectWeightedOpponentMove(
     const desiredCpl =
       sampleDesiredCentipawnLoss(
         targetSkill,
+        randomValue1,
+        randomValue2
+      );
+  
+    return selectCandidateNearestCpl(
+      candidates,
+      desiredCpl
+    );
+  }
+
+  export function chooseOpponentMoveByContextualDesiredCpl(
+    candidates: OpponentCandidate[],
+    targetSkill: number,
+    context: OpponentPositionContext,
+    randomValue1 = Math.random(),
+    randomValue2 = Math.random()
+  ): OpponentCandidate | null {
+    if (candidates.length === 0) {
+      return null;
+    }
+  
+    if (candidates.length === 1) {
+      return candidates[0];
+    }
+  
+    const desiredCpl =
+      sampleContextualDesiredCentipawnLoss(
+        targetSkill,
+        context,
         randomValue1,
         randomValue2
       );

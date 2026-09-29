@@ -19,6 +19,7 @@ import {
     chooseOpponentMoveByDesiredCpl,
     sampleDesiredCentipawnLoss,
     selectCandidateNearestCpl,
+    sampleContextualDesiredCentipawnLoss,
   } from "./opponentMoveSelector";
 
 
@@ -418,5 +419,105 @@ describe(
             .toContain(selected);
         }
       );
+    }
+  );
+
+  describe(
+    "sampleContextualDesiredCentipawnLoss",
+    () => {
+      it("uses a lower centered target in forced positions", () => {
+        const forced =
+          sampleContextualDesiredCentipawnLoss(
+            1200,
+            "forced",
+            1,
+            0.25
+          );
+      
+        const wide =
+          sampleContextualDesiredCentipawnLoss(
+            1200,
+            "wide",
+            1,
+            0.25
+          );
+      
+        expect(forced).toBeLessThan(wide);
+      });
+      
+      it("uses a lower centered target in limited positions", () => {
+        const limited =
+          sampleContextualDesiredCentipawnLoss(
+            1200,
+            "limited",
+            1,
+            0.25
+          );
+      
+        const wide =
+          sampleContextualDesiredCentipawnLoss(
+            1200,
+            "wide",
+            1,
+            0.25
+          );
+      
+        expect(limited).toBeLessThan(wide);
+      });
+      
+      it("uses a lower centered target in flexible positions", () => {
+        const flexible =
+          sampleContextualDesiredCentipawnLoss(
+            1200,
+            "flexible",
+            1,
+            0.25
+          );
+      
+        const wide =
+          sampleContextualDesiredCentipawnLoss(
+            1200,
+            "wide",
+            1,
+            0.25
+          );
+      
+        expect(flexible).toBeLessThan(wide);
+      });
+  
+      it("preserves the full model for wide positions", () => {
+        const contextual =
+          sampleContextualDesiredCentipawnLoss(
+            1200,
+            "wide",
+            0.25,
+            0.75
+          );
+  
+        const normal =
+          sampleDesiredCentipawnLoss(
+            1200,
+            0.25,
+            0.75
+          );
+  
+        expect(contextual).toBeCloseTo(
+          normal
+        );
+      });
+  
+      it("never returns a negative CPL", () => {
+        const result =
+          sampleContextualDesiredCentipawnLoss(
+            1200,
+            "limited",
+            0.99,
+            0.5
+          );
+  
+        expect(result).toBeGreaterThanOrEqual(
+          0
+        );
+      });
     }
   );

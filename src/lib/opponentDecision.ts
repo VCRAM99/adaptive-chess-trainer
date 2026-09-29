@@ -7,8 +7,12 @@ import type {
   } from "./opponentMoveSafeguards";
   
   import {
-    chooseOpponentMoveByDesiredCpl,
+    chooseOpponentMoveByContextualDesiredCpl,
   } from "./opponentMoveSelector";
+
+  import {
+    getOpponentPositionContext,
+  } from "./opponentPositionContext";
   
   export type OpponentDecision = {
     candidate: OpponentCandidate | null;
@@ -41,14 +45,22 @@ import type {
       };
     }
   
-    return {
-      candidate:
-        chooseOpponentMoveByDesiredCpl(
-          safePool.candidates,
-          targetSkill,
-          randomValue1,
-          randomValue2
-        ),
-      bypassedSelection: false,
-    };
+    const positionContext =
+  getOpponentPositionContext(
+    safePool.candidates
+  );
+
+
+return {
+  candidate:
+    chooseOpponentMoveByContextualDesiredCpl(
+      safePool.candidates,
+      targetSkill,
+      positionContext.context,
+      randomValue1,
+      randomValue2
+    ),
+
+  bypassedSelection: false,
+};
   }
