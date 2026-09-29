@@ -4,11 +4,14 @@ import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
 import PromotionDialog from "./components/PromotionDialog";
 import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus as getChessGameStatus, getMoveHistory } from "./lib/chessGame";
-import { useStockfish } from "./hooks/useStockfish";
 import { parseUciMove } from "./engine/uci";
 import { useMoveAnalysis } from "./hooks/useMoveAnalysis";
 import { updateSkillFromAnalysis } from "./lib/skillEstimator";
 import { useOpponentAnalysis,} from "./hooks/useOpponentAnalysis";
+import { createOpponentCandidates, } from "./lib/opponentCandidateAnalysis";
+
+import { chooseAdaptiveOpponentMove, } from "./lib/opponentDecision";
+import { weightOpponentCandidates, } from "./lib/opponentMoveSelector";
 
 
 import type { TrainingMode } from "./lib/trainingDifficulty";
@@ -27,15 +30,7 @@ type PendingPromotion = {
 
 function App() {
   const gameIdRef = useRef(0);
-  
-
-  const {
-    status: engineStatus,
-    bestMove,
-    requestMove,
-    cancelMove,
-    clearBestMove,
-  } = useStockfish();
+  const handledOpponentFenRef = useRef<string | null>(null);
 
   const {
     isReady: analysisReady,
@@ -79,24 +74,39 @@ function App() {
     trainingMode
   );
 
+  const [
+    pendingOpponentSkill,
+    setPendingOpponentSkill,
+  ] = useState<number | null>(
+    null
+  );
+
   // Store whether the game has started.
   const gameHasStarted = game.history().length > 0;
 
   const {
     isReady:
       opponentAnalysisReady,
-  
     isAnalyzing:
       opponentAnalysisRunning,
-  
+    result:
+      opponentAnalysisResult,
     analyze:
       analyzeOpponentPosition,
-
     cancel:
       cancelOpponentAnalysis,
   } = useOpponentAnalysis();
 
-
+  const opponentStatus:
+  | "starting"
+  | "ready"
+  | "thinking" =
+  !opponentAnalysisReady
+    ? "starting"
+    : pendingOpponentFen ||
+        opponentAnalysisRunning
+      ? "thinking"
+      : "ready";
   // Analyze the opponent position with the
   // full-strength objective analysis engine.
   useEffect(() => {
@@ -118,6 +128,160 @@ function App() {
     opponentAnalysisReady,
     opponentAnalysisRunning,
     analyzeOpponentPosition,
+  ]);
+
+  useEffect(() => {
+    if (
+      !pendingOpponentFen ||
+      pendingOpponentSkill === null ||
+      !opponentAnalysisResult
+    ) {
+      return;
+    }
+  
+    if (
+      opponentAnalysisResult.fen !==
+      pendingOpponentFen
+    ) {
+      return;
+    }
+  
+    if (
+      handledOpponentFenRef.current ===
+      pendingOpponentFen
+    ) {
+      return;
+    }
+  
+    if (
+      game.turn() !== "b" ||
+      game.isGameOver()
+    ) {
+      return;
+    }
+  
+    const candidates =
+      createOpponentCandidates(
+        opponentAnalysisResult.analysis
+          .candidates,
+        "black",
+        "black"
+      );
+  
+    const responseConfig =
+      createOpponentConfig(
+        pendingOpponentSkill,
+        trainingMode
+      );
+  
+    //temporary logging of the weighted candidates
+      const weightedCandidates =
+      weightOpponentCandidates(
+        candidates,
+        responseConfig.targetRating
+      );
+
+    //temporary logging of the weighted candidates
+    console.table(
+      weightedCandidates.map(
+        ({
+          candidate,
+          quality,
+          weight,
+        }) => ({
+          move: candidate.move,
+          cpl:
+            candidate.centipawnLoss,
+          quality,
+          weight:
+            Number(
+              weight.toFixed(3)
+            ),
+        })
+      )
+    );
+
+    const decision =
+      chooseAdaptiveOpponentMove(
+        candidates,
+        responseConfig.targetRating
+      );
+
+      console.log(
+        "Adaptive opponent decision:",
+        {
+          estimatedPlayerSkill:
+            pendingOpponentSkill,
+          trainingMode,
+          targetSkill:
+            responseConfig.targetRating,
+          candidateCount:
+            candidates.length,
+          selectedMove:
+            decision.candidate?.move ??
+            null,
+          selectedCentipawnLoss:
+            decision.candidate
+              ?.centipawnLoss ??
+            null,
+          selectedMate:
+            decision.candidate?.mate ??
+            null,
+          bypassedSelection:
+            decision.bypassedSelection,
+        }
+      );
+  
+    if (!decision.candidate) {
+      console.error(
+        "Adaptive opponent could not select a move."
+      );
+      return;
+    }
+  
+    const parsedMove =
+      parseUciMove(
+        decision.candidate.move
+      );
+  
+    if (!parsedMove) {
+      console.error(
+        "Adaptive opponent selected an invalid UCI move:",
+        decision.candidate.move
+      );
+      return;
+    }
+  
+    const nextGame =
+      applyMove(
+        game,
+        parsedMove.source,
+        parsedMove.target,
+        parsedMove.promotion
+      );
+  
+    if (!nextGame) {
+      console.error(
+        "Adaptive opponent selected an illegal move:",
+        decision.candidate.move
+      );
+      return;
+    }
+  
+    handledOpponentFenRef.current =
+      pendingOpponentFen;
+  
+    setGame(nextGame);
+  
+    setPendingOpponentFen(null);
+    setPendingOpponentLegalMoves(0);
+    setPendingOpponentSkill(null);
+  }, [
+    pendingOpponentFen,
+    pendingOpponentSkill,
+    opponentAnalysisResult,
+    game,
+    trainingMode,
   ]);
 
   useEffect(() => {
@@ -159,68 +323,14 @@ function App() {
   
     // Black's response is separate from whether
     // this analysis changed/updated the rating.
-    const nextOpponentConfig =
-      createOpponentConfig(
-        nextSkill,
-        trainingMode
-      );
-
-    requestMove(
-      pendingOpponentFen,
-      nextOpponentConfig.stockfishRating
+    setPendingOpponentSkill(
+      nextSkill
     );
-
-    setPendingOpponentFen(null);
-    setPendingOpponentLegalMoves(0);
   }, [
     latestAnalysis,
     pendingOpponentFen,
     estimatedPlayerRating,
-    trainingMode,
-    requestMove,
   ]);
-
-  useEffect(() => {
-    if (!bestMove || game.turn() !== "b") {
-      return;
-    }
-
-    if (game.isGameOver()) {
-      clearBestMove();
-      return;
-    }
-
-    const parsedMove = parseUciMove(bestMove);
-
-    if (!parsedMove) {
-      console.error(
-        "Stockfish returned an invalid move:",
-        bestMove
-      );
-
-      clearBestMove();
-      return;
-    }
-
-    const nextGame = applyMove(
-      game,
-      parsedMove.source,
-      parsedMove.target,
-      parsedMove.promotion
-    );
-
-    if (nextGame) {
-      setGame(nextGame);
-    } else {
-      console.error(
-        "Stockfish returned an invalid move:",
-        bestMove
-      );
-    }
-
-    clearBestMove();
-  }, [bestMove, game, clearBestMove]);
-
 
   //checka if the move is legal and if it requires a promotion. and updates the game state.
   function makeMove(
@@ -232,7 +342,8 @@ function App() {
       game.isGameOver() ||
       pendingPromotion ||
       game.turn() !== "w" ||
-      engineStatus !== "ready"
+      !analysisReady ||
+      !opponentAnalysisReady
     ) {
       return false;
     }
@@ -278,6 +389,10 @@ function App() {
   
     setGame(nextGame);
     if (!nextGame.isGameOver()) {
+      handledOpponentFenRef.current =
+       null;
+
+      setPendingOpponentSkill(null);
       setPendingOpponentFen(afterFen);
     
       setPendingOpponentLegalMoves(
@@ -286,10 +401,14 @@ function App() {
     } else {
       setPendingOpponentFen(null);
       setPendingOpponentLegalMoves(0);
+      setPendingOpponentSkill(null);
     }
   
     // Analyze the player's move.
-    if (analysisReady && !isAnalyzing) {
+    if (
+      analysisReady &&
+      !isAnalyzing
+    ) {
       analyzePlayerMove({
         moveNumber: Math.ceil(
           nextGame.history().length / 2
@@ -300,14 +419,6 @@ function App() {
         afterFen,
         legalMoveCount,
       });
-    } else if (!nextGame.isGameOver()) {
-      requestMove(
-        afterFen,
-        opponentConfig.stockfishRating
-      );
-    
-      setPendingOpponentFen(null);
-      setPendingOpponentLegalMoves(0);
     }
   
     return true;
@@ -341,6 +452,11 @@ function App() {
   
       setGame(nextGame);
       if (!nextGame.isGameOver()) {
+
+        handledOpponentFenRef.current =
+          null;
+
+        setPendingOpponentSkill(null);
         setPendingOpponentFen(afterFen);
       
         setPendingOpponentLegalMoves(
@@ -349,10 +465,14 @@ function App() {
       } else {
         setPendingOpponentFen(null);
         setPendingOpponentLegalMoves(0);
+        setPendingOpponentSkill(null);
       }
   
       // Send the move to our analysis engine.
-      if (analysisReady && !isAnalyzing) {
+      if (
+        analysisReady &&
+        !isAnalyzing
+      ) {
         analyzePlayerMove({
           moveNumber: Math.ceil(
             nextGame.history().length / 2
@@ -363,14 +483,6 @@ function App() {
           afterFen,
           legalMoveCount,
         });
-      } else if (!nextGame.isGameOver()) {
-        requestMove(
-          afterFen,
-          opponentConfig.stockfishRating
-        );
-      
-        setPendingOpponentFen(null);
-        setPendingOpponentLegalMoves(0);
       }
     }
   
@@ -379,7 +491,6 @@ function App() {
 
   // Start a completely new game.
   function startNewGame() {
-    cancelMove();
     cancelOpponentAnalysis();
 
     gameIdRef.current += 1;
@@ -387,18 +498,24 @@ function App() {
     setPendingOpponentFen(null);
     setPendingOpponentLegalMoves(0);
 
+    setPendingOpponentSkill(null);
+
+    handledOpponentFenRef.current = null;
+
     setGame(new Chess());
     setPendingPromotion(null);
   }
 
   // Undo the most recent move. 
   function undoMove() {
-    cancelMove();
     cancelOpponentAnalysis();
 
     setPendingPromotion(null);
     setPendingOpponentFen(null);
     setPendingOpponentLegalMoves(0);
+    setPendingOpponentSkill(null);
+
+    handledOpponentFenRef.current = null;
 
     // If Stockfish has moved, undo Black's move first.
     const afterFirstUndo = undoLastMove(game);
@@ -450,7 +567,7 @@ function App() {
         <GamePanel
           status={getChessGameStatus(game)}
           moveHistory={getMoveHistory(game)}
-          engineStatus={engineStatus}
+          opponentStatus={opponentStatus}
           onUndo={undoMove}
           onNewGame={startNewGame}
           onFlipBoard={flipBoard}

@@ -9,6 +9,11 @@ import {
     OpponentAnalysisEngine,
     type OpponentCandidateAnalysisResult,
   } from "../engine/opponentAnalysis";
+
+  export type OpponentAnalysisResult = {
+    fen: string;
+    analysis: OpponentCandidateAnalysisResult;
+  };
   
   export function useOpponentAnalysis() {
     const engineRef =
@@ -20,7 +25,7 @@ import {
       result,
       setResult,
     ] =
-      useState<OpponentCandidateAnalysisResult | null>(
+      useState<OpponentAnalysisResult | null>(
         null
       );
   
@@ -36,6 +41,9 @@ import {
   
     const generationRef =
       useRef(0);
+
+    const activeFenRef =
+      useRef<string | null>(null);
   
     const createEngine =
       useCallback(() => {
@@ -60,10 +68,20 @@ import {
               return;
             }
   
-            setResult(
-              analysisResult
-            );
-  
+            const analyzedFen =
+              activeFenRef.current;
+
+            if (!analyzedFen) {
+              setIsAnalyzing(false);
+              return;
+            }
+
+            setResult({
+              fen: analyzedFen,
+              analysis: analysisResult,
+            });
+
+            activeFenRef.current = null;
             setIsAnalyzing(false);
           }
         );
@@ -81,6 +99,7 @@ import {
             error
           );
   
+          activeFenRef.current = null;
           setIsAnalyzing(false);
         });
   
@@ -118,6 +137,8 @@ import {
   
       return () => {
         ++generationRef.current;
+
+        activeFenRef.current = null;
   
         engineRef.current?.stop();
         engineRef.current = null;
@@ -140,14 +161,19 @@ import {
   
           setResult(null);
           setIsAnalyzing(true);
-  
+          activeFenRef.current = fen;
+
           const started =
-            engine.analyze(fen, candidateCount);
-  
+            engine.analyze(
+              fen,
+              candidateCount
+            );
+
           if (!started) {
+            activeFenRef.current = null;
             setIsAnalyzing(false);
           }
-  
+
           return started;
         },
         []
@@ -156,6 +182,8 @@ import {
     const cancel =
     useCallback(() => {
       ++generationRef.current;
+
+      activeFenRef.current = null;
 
       engineRef.current?.stop();
       engineRef.current = null;

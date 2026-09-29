@@ -11,6 +11,9 @@ import {
   import {
     chooseOpponentMove,
     getCandidateProbability,
+    getCentipawnLossSpread,
+    getCentipawnLossWeight,
+    getTargetCentipawnLoss,
     selectWeightedOpponentMove,
     weightOpponentCandidates,
   } from "./opponentMoveSelector";
@@ -84,109 +87,167 @@ describe(
         "blunder",
     ]);
     });
-    it("divides category weight across candidates in the same category", () => {
-    const weighted =
-        weightOpponentCandidates(
-        candidates,
-        1200
-        );
+    it("prefers higher CPL at lower skill", () => {
+      const lowSkillTarget =
+        getTargetCentipawnLoss(600);
     
-    const excellent =
-        weighted.filter(
-        (item) =>
-            item.quality ===
-            "excellent"
-        );
+      const highSkillTarget =
+        getTargetCentipawnLoss(2200);
     
-    expect(excellent).toHaveLength(2);
-    
-    expect(
-        excellent[0].weight
-    ).toBeCloseTo(
-        excellent[1].weight
-    );
+      expect(
+        lowSkillTarget
+      ).toBeGreaterThan(
+        highSkillTarget
+      );
     });
-    it("gives excellent moves more weight at higher skill", () => {
-    const low =
-        weightOpponentCandidates(
-        candidates,
-        600
-        );
+    it("moves the preferred CPL toward zero as skill increases", () => {
+      expect(
+        getTargetCentipawnLoss(400)
+      ).toBeCloseTo(100);
     
-    const high =
-        weightOpponentCandidates(
-        candidates,
-        2200
-        );
+      expect(
+        getTargetCentipawnLoss(2400)
+      ).toBeCloseTo(0);
     
-    const lowExcellent =
-        low
-        .filter(
-            (item) =>
-            item.quality ===
-            "excellent"
-        )
-        .reduce(
-            (sum, item) =>
-            sum + item.weight,
-            0
-        );
-    
-    const highExcellent =
-        high
-        .filter(
-            (item) =>
-            item.quality ===
-            "excellent"
-        )
-        .reduce(
-            (sum, item) =>
-            sum + item.weight,
-            0
-        );
-    
-    expect(
-        highExcellent
-    ).toBeGreaterThan(
-        lowExcellent
-    );
+      expect(
+        getTargetCentipawnLoss(1200)
+      ).toBeCloseTo(60);
     });
-    it("gives blunders less weight at higher skill", () => {
-    const low =
-        weightOpponentCandidates(
-        candidates,
-        600
+    it("uses a wider CPL spread at lower skill", () => {
+      const lowSkillSpread =
+        getCentipawnLossSpread(600);
+    
+      const highSkillSpread =
+        getCentipawnLossSpread(2200);
+    
+      expect(
+        lowSkillSpread
+      ).toBeGreaterThan(
+        highSkillSpread
+      );
+    });
+    it("clamps CPL curve settings outside the supported skill range", () => {
+      expect(
+        getTargetCentipawnLoss(100)
+      ).toBeCloseTo(
+        getTargetCentipawnLoss(400)
+      );
+    
+      expect(
+        getTargetCentipawnLoss(3000)
+      ).toBeCloseTo(
+        getTargetCentipawnLoss(2400)
+      );
+    
+      expect(
+        getCentipawnLossSpread(100)
+      ).toBeCloseTo(
+        getCentipawnLossSpread(400)
+      );
+    
+      expect(
+        getCentipawnLossSpread(3000)
+      ).toBeCloseTo(
+        getCentipawnLossSpread(2400)
+      );
+    });
+    it("gives more weight to CPL near the preferred loss", () => {
+      const targetSkill = 1200;
+    
+      const preferredLoss =
+        getTargetCentipawnLoss(
+          targetSkill
         );
     
-    const high =
-        weightOpponentCandidates(
-        candidates,
-        2200
+      const preferredWeight =
+        getCentipawnLossWeight(
+          preferredLoss,
+          targetSkill
         );
     
-    const lowBlunder =
-        low.find(
-        (item) =>
-            item.quality ===
-            "blunder"
+      const perfectWeight =
+        getCentipawnLossWeight(
+          0,
+          targetSkill
         );
     
-    const highBlunder =
-        high.find(
-        (item) =>
-            item.quality ===
-            "blunder"
+      const largeErrorWeight =
+        getCentipawnLossWeight(
+          180,
+          targetSkill
         );
     
-    expect(
-        highBlunder!.weight
-    ).toBeLessThan(
-        lowBlunder!.weight
-    );
+      expect(
+        preferredWeight
+      ).toBeGreaterThan(
+        perfectWeight
+      );
+    
+      expect(
+        preferredWeight
+      ).toBeGreaterThan(
+        largeErrorWeight
+      );
+    });
+    it("does not create a weight cliff at quality boundaries", () => {
+      const weightAt10 =
+        getCentipawnLossWeight(
+          10,
+          1200
+        );
+    
+      const weightAt11 =
+        getCentipawnLossWeight(
+          11,
+          1200
+        );
+    
+      expect(
+        Math.abs(
+          weightAt10 -
+          weightAt11
+        )
+      ).toBeLessThan(0.02);
     });
 
+    it("gives perfect moves more weight as skill increases", () => {
+      const lowSkillWeight =
+        getCentipawnLossWeight(
+          0,
+          600
+        );
     
+      const highSkillWeight =
+        getCentipawnLossWeight(
+          0,
+          2200
+        );
     
+      expect(
+        highSkillWeight
+      ).toBeGreaterThan(
+        lowSkillWeight
+      );
+    });
+    it("gives large errors less weight as skill increases", () => {
+      const lowSkillWeight =
+        getCentipawnLossWeight(
+          150,
+          600
+        );
+    
+      const highSkillWeight =
+        getCentipawnLossWeight(
+          150,
+          2200
+        );
+    
+      expect(
+        highSkillWeight
+      ).toBeLessThan(
+        lowSkillWeight
+      );
+    });
 }
 );
 

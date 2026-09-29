@@ -3,33 +3,110 @@ import type {
 } from "./opponentMove";
   
 import {
-classifyOpponentMove,
-getOpponentErrorProfile,
-type OpponentErrorProfile,
-type OpponentMoveQuality,
+  classifyOpponentMove,
+  MIN_OPPONENT_SKILL,
+  MAX_OPPONENT_SKILL,
+  type OpponentMoveQuality,
 } from "./opponentStrength";
 
 
-function getQualityWeight(
-quality: OpponentMoveQuality,
-profile: OpponentErrorProfile
+const LOW_SKILL_TARGET_CPL = 100;
+const HIGH_SKILL_TARGET_CPL = 0;
+
+const LOW_SKILL_CPL_SPREAD = 70;
+const HIGH_SKILL_CPL_SPREAD = 25;
+
+function clamp(
+  value: number,
+  min: number,
+  max: number
 ): number {
-switch (quality) {
-    case "excellent":
-    return profile.excellentWeight;
-
-    case "good":
-    return profile.goodWeight;
-
-    case "inaccuracy":
-    return profile.inaccuracyWeight;
-
-    case "mistake":
-    return profile.mistakeWeight;
-
-    case "blunder":
-    return profile.blunderWeight;
+  return Math.min(
+    max,
+    Math.max(min, value)
+  );
 }
+
+function lerp(
+  start: number,
+  end: number,
+  amount: number
+): number {
+  return (
+    start +
+    (end - start) * amount
+  );
+}
+
+function getSkillProgress(
+  targetSkill: number
+): number {
+  const clampedSkill = clamp(
+    targetSkill,
+    MIN_OPPONENT_SKILL,
+    MAX_OPPONENT_SKILL
+  );
+
+  return (
+    (clampedSkill -
+      MIN_OPPONENT_SKILL) /
+    (MAX_OPPONENT_SKILL -
+      MIN_OPPONENT_SKILL)
+  );
+}
+
+export function getTargetCentipawnLoss(
+  targetSkill: number
+): number {
+  return lerp(
+    LOW_SKILL_TARGET_CPL,
+    HIGH_SKILL_TARGET_CPL,
+    getSkillProgress(targetSkill)
+  );
+}
+
+export function getCentipawnLossSpread(
+  targetSkill: number
+): number {
+  return lerp(
+    LOW_SKILL_CPL_SPREAD,
+    HIGH_SKILL_CPL_SPREAD,
+    getSkillProgress(targetSkill)
+  );
+}
+
+export function getCentipawnLossWeight(
+  centipawnLoss: number,
+  targetSkill: number
+): number {
+  const loss = Math.max(
+    0,
+    centipawnLoss
+  );
+
+  const targetLoss =
+    getTargetCentipawnLoss(
+      targetSkill
+    );
+
+  const spread =
+    getCentipawnLossSpread(
+      targetSkill
+    );
+
+  const distance =
+    loss - targetLoss;
+
+  return Math.exp(
+    -(
+      distance * distance
+    ) /
+      (
+        2 *
+        spread *
+        spread
+      )
+  );
 }
 
 export type WeightedOpponentCandidate = {
@@ -39,61 +116,25 @@ weight: number;
 };
 
 export function weightOpponentCandidates(
-candidates: OpponentCandidate[],
-targetSkill: number
+  candidates: OpponentCandidate[],
+  targetSkill: number
 ): WeightedOpponentCandidate[] {
-if (candidates.length === 0) {
-    return [];
-}
+  return candidates.map(
+    (candidate) => ({
+      candidate,
 
-const profile =
-    getOpponentErrorProfile(
-    targetSkill
-    );
-
-const classified =
-    candidates.map((candidate) => ({
-    candidate,
-    quality:
+      quality:
         classifyOpponentMove(
-        candidate.centipawnLoss
+          candidate.centipawnLoss
         ),
-    }));
 
-const qualityCounts =
-    new Map<OpponentMoveQuality, number>();
-
-for (const item of classified) {
-    qualityCounts.set(
-    item.quality,
-    (
-        qualityCounts.get(
-        item.quality
-        ) ?? 0
-    ) + 1
-    );
-}
-
-return classified.map((item) => {
-    const categoryWeight =
-    getQualityWeight(
-        item.quality,
-        profile
-    );
-
-    const categoryCount =
-    qualityCounts.get(
-        item.quality
-    ) ?? 1;
-
-    return {
-    candidate: item.candidate,
-    quality: item.quality,
-    weight:
-        categoryWeight /
-        categoryCount,
-    };
-});
+      weight:
+        getCentipawnLossWeight(
+          candidate.centipawnLoss,
+          targetSkill
+        ),
+    })
+  );
 }
 
 export function selectWeightedOpponentMove(
