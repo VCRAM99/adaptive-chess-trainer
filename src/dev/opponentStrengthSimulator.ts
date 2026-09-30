@@ -13,12 +13,12 @@ import {
 import {
   chooseOpponentMoveByDesiredCpl,
   chooseOpponentMoveByContextualDesiredCpl,
+  chooseOpponentMoveByFormAdjustedDesiredCpl,
 } from "../lib/opponentMoveSelector";
 
 import type {
   OpponentPositionContext,
 } from "../lib/opponentPositionContext";
-
 
 export type StrengthSimulationSelector =
   | "current"
@@ -241,4 +241,81 @@ export function simulateSkillRange(
         context
       )
   );
+}
+
+export function simulateOpponentFormEffect(
+  candidates: OpponentCandidate[],
+  targetSkill: number,
+  context: OpponentPositionContext,
+  form: number,
+  iterations = 10_000
+) {
+  const effectiveSkill =
+  targetSkill;
+
+  const selectedCpls: number[] = [];
+
+  for (
+    let iteration = 0;
+    iteration < iterations;
+    iteration += 1
+  ) {
+    const candidate =
+    chooseOpponentMoveByFormAdjustedDesiredCpl(
+      candidates,
+      targetSkill,
+      context,
+      form,
+      Math.random(),
+      Math.random()
+    );
+
+    if (candidate === null) {
+      continue;
+    }
+
+    selectedCpls.push(
+      candidate.centipawnLoss
+    );
+  }
+
+  if (selectedCpls.length === 0) {
+    return {
+      targetSkill,
+      form,
+      effectiveSkill,
+      averageCpl: 0,
+      medianCpl: 0,
+    };
+  }
+
+  selectedCpls.sort(
+    (a, b) => a - b
+  );
+
+  const totalCpl =
+    selectedCpls.reduce(
+      (sum, cpl) => sum + cpl,
+      0
+    );
+
+  const median =
+    selectedCpls[
+      Math.floor(
+        selectedCpls.length / 2
+      )
+    ];
+
+  return {
+    targetSkill,
+    form,
+    effectiveSkill,
+
+    averageCpl:
+      totalCpl /
+      selectedCpls.length,
+
+    medianCpl:
+      median,
+  };
 }

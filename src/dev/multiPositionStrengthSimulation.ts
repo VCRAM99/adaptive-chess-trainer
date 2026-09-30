@@ -17,6 +17,10 @@ import {
 } from "./realPositionStrengthSimulation";
 
 
+import {
+  simulateOpponentFormEffect,
+} from "./opponentStrengthSimulator";
+
 type TestPosition = {
   name: string;
   fen: string;
@@ -63,6 +67,9 @@ export async function runMultiPositionStrengthSimulation() {
   const rows: PositionSimulationRow[] = [];
   const contextRows: PositionContextRow[] = [];
 
+  let openingCandidates:
+  ReturnType<typeof createOpponentCandidates> = [];
+
   const contextComparisonRows: {
     context: OpponentPositionContext;
     skill: number;
@@ -89,6 +96,7 @@ export async function runMultiPositionStrengthSimulation() {
 
       //temporary simulation of the opponent strength in multiple positions.  
       if (position.name === "Opening") {
+        openingCandidates = candidates;
         const contexts: OpponentPositionContext[] = [
           "forced",
           "limited",
@@ -320,6 +328,58 @@ export async function runMultiPositionStrengthSimulation() {
       };
     });
 
+    if (openingCandidates.length === 0) {
+      console.warn(
+        "Opening candidates were not available for form simulation."
+      );
+    } else {
+
+    const formValues = [
+      -50,
+      -30,
+      -15,
+      0,
+      15,
+      30,
+      50,
+    ];
+    
+    const formResults =
+      formValues.map((form) =>
+        simulateOpponentFormEffect(
+          openingCandidates,
+          1200,
+          "wide",
+          form
+        )
+      );
+    
+    console.log(
+      "Opponent form effect at target skill 1200:"
+    );
+    
+    console.table(
+      formResults.map(
+        (result) => ({
+          form:
+            result.form,
+    
+          effectiveSkill:
+            result.effectiveSkill,
+    
+          averageCpl:
+            Number(
+              result.averageCpl
+                .toFixed(1)
+            ),
+    
+          medianCpl:
+            result.medianCpl,
+        })
+      )
+    );
+
+    }
 
     //temporary logging of the cross-position strength summary.
   console.log(
