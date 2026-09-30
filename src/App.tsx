@@ -14,6 +14,8 @@ import { chooseAdaptiveOpponentMove, } from "./lib/opponentDecision";
 
 import type { TrainingMode } from "./lib/trainingDifficulty";
 import { createOpponentConfig } from "./lib/trainingDifficulty";
+import { updateOpponentForm, } from "./lib/opponentForm";
+
 
 import "./App.css";
 
@@ -28,10 +30,7 @@ type PendingPromotion = {
 function App() {
   const gameIdRef = useRef(0);
   const handledOpponentFenRef = useRef<string | null>(null);
-
-  //temporary logging of the time it takes to analyze the opponent and player moves.
-  const playerAnalysisStartedAtRef =
-  useRef<number | null>(null);
+  const opponentFormRef = useRef(0);
 
   const {
     isReady: analysisReady,
@@ -177,21 +176,12 @@ function App() {
         trainingMode
       );
 
-    //temporary logging of the time it takes to select the opponent move.
-    console.time(
-      "Opponent move selection"
-    );
-
     const decision =
-      chooseAdaptiveOpponentMove(
-        candidates,
-        responseConfig.targetRating
-      );
-
-    //temporary logging of the time it takes to select the opponent move.
-      console.timeEnd(
-        "Opponent move selection"
-      );
+    chooseAdaptiveOpponentMove(
+      candidates,
+      responseConfig.targetRating,
+      opponentFormRef.current
+    );
 
       console.log(
         "Adaptive opponent decision:",
@@ -201,6 +191,9 @@ function App() {
           trainingMode,
           targetSkill:
             responseConfig.targetRating,
+          
+          opponentForm:
+            opponentFormRef.current,
           candidateCount:
             candidates.length,
           selectedMove:
@@ -253,6 +246,11 @@ function App() {
       );
       return;
     }
+
+    opponentFormRef.current =
+  updateOpponentForm(
+    opponentFormRef.current
+  );
   
     handledOpponentFenRef.current =
       pendingOpponentFen;
@@ -277,24 +275,6 @@ function App() {
 
     if (!pendingOpponentFen) {
       return;
-    }
-
-    //temporary logging of the time it takes to analyze the player's move.
-    if (
-      playerAnalysisStartedAtRef.current !==
-      null
-    ) {
-      console.log(
-        "Player move analysis:",
-        Math.round(
-          performance.now() -
-            playerAnalysisStartedAtRef.current
-        ),
-        "ms"
-      );
-    
-      playerAnalysisStartedAtRef.current =
-        null;
     }
   
     const analysisId =
@@ -413,9 +393,6 @@ function App() {
       analysisReady &&
       !isAnalyzing
     ) {
-      //temporary logging of the time it takes to analyze the player's move.
-      playerAnalysisStartedAtRef.current =
-      performance.now();
 
       analyzePlayerMove({
         moveNumber: Math.ceil(
@@ -509,6 +486,7 @@ function App() {
     setPendingOpponentSkill(null);
 
     handledOpponentFenRef.current = null;
+    opponentFormRef.current = 0;
 
     setGame(new Chess());
     setPendingPromotion(null);

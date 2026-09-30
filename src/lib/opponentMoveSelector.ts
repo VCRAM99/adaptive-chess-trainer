@@ -14,6 +14,10 @@ import {
   type OpponentPositionContext,
 } from "./opponentPositionContext";
 
+import {
+  getOpponentFormCplAdjustment,
+} from "./opponentForm";
+
 
 const LOW_SKILL_TARGET_CPL = 100;
 const HIGH_SKILL_TARGET_CPL = 0;
@@ -426,5 +430,59 @@ export function selectWeightedOpponentMove(
     return selectCandidateNearestCpl(
       candidates,
       desiredCpl
+    );
+  }
+
+  export function sampleFormAdjustedDesiredCentipawnLoss(
+    targetSkill: number,
+    context: OpponentPositionContext,
+    form: number,
+    randomValue1 = Math.random(),
+    randomValue2 = Math.random()
+  ): number {
+    const baseDesiredLoss =
+      sampleContextualDesiredCentipawnLoss(
+        targetSkill,
+        context,
+        randomValue1,
+        randomValue2
+      );
+  
+    const formAdjustment =
+      getOpponentFormCplAdjustment(
+        form
+      );
+  
+    return Math.max(
+      0,
+      baseDesiredLoss +
+        formAdjustment
+    );
+  }
+
+  export function chooseOpponentMoveByFormAdjustedDesiredCpl(
+    candidates: OpponentCandidate[],
+    targetSkill: number,
+    context: OpponentPositionContext,
+    form: number,
+    randomValue1 = Math.random(),
+    randomValue2 = Math.random()
+  ): OpponentCandidate | null {
+    if (candidates.length === 0) {
+      return null;
+    }
+  
+    const desiredLoss =
+      sampleFormAdjustedDesiredCentipawnLoss(
+        targetSkill,
+        context,
+        form,
+        randomValue1,
+        randomValue2
+      );
+  
+    return selectCandidateNearestCpl(
+      candidates,
+      desiredLoss
     );
   }

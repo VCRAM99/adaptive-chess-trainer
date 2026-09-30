@@ -20,6 +20,8 @@ import {
     sampleDesiredCentipawnLoss,
     selectCandidateNearestCpl,
     sampleContextualDesiredCentipawnLoss,
+    sampleFormAdjustedDesiredCentipawnLoss,
+    chooseOpponentMoveByFormAdjustedDesiredCpl,
   } from "./opponentMoveSelector";
 
 
@@ -521,3 +523,153 @@ describe(
       });
     }
   );
+
+  describe("sampleFormAdjustedDesiredCentipawnLoss", () => {
+    it("leaves neutral form unchanged", () => {
+      const base =
+        sampleContextualDesiredCentipawnLoss(
+          1200,
+          "wide",
+          1,
+          0.25
+        );
+  
+      const adjusted =
+        sampleFormAdjustedDesiredCentipawnLoss(
+          1200,
+          "wide",
+          0,
+          1,
+          0.25
+        );
+  
+      expect(adjusted).toBe(base);
+    });
+  
+    it("increases desired loss during weak form", () => {
+      const neutral =
+        sampleFormAdjustedDesiredCentipawnLoss(
+          1200,
+          "wide",
+          0,
+          1,
+          0.25
+        );
+  
+      const weak =
+        sampleFormAdjustedDesiredCentipawnLoss(
+          1200,
+          "wide",
+          -50,
+          1,
+          0.25
+        );
+  
+      expect(weak).toBeGreaterThan(neutral);
+    });
+  
+    it("decreases desired loss during strong form", () => {
+      const neutral =
+        sampleFormAdjustedDesiredCentipawnLoss(
+          1200,
+          "wide",
+          0,
+          1,
+          0.25
+        );
+  
+      const strong =
+        sampleFormAdjustedDesiredCentipawnLoss(
+          1200,
+          "wide",
+          50,
+          1,
+          0.25
+        );
+  
+      expect(strong).toBeLessThan(neutral);
+    });
+  
+    it("never returns a negative desired loss", () => {
+      const result =
+        sampleFormAdjustedDesiredCentipawnLoss(
+          2400,
+          "forced",
+          50,
+          1,
+          0.25
+        );
+  
+      expect(result).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe("chooseOpponentMoveByFormAdjustedDesiredCpl", () => {
+    const candidates = [
+      {
+        rank: 1,
+        move: "move-a",
+        evaluation: 0,
+        centipawnLoss: 0,
+        mate: null,
+      },
+      {
+        rank: 2,
+        move: "move-b",
+        evaluation: 0,
+        centipawnLoss: 60,
+        mate: null,
+      },
+      {
+        rank: 3,
+        move: "move-c",
+        evaluation: 0,
+        centipawnLoss: 100,
+        mate: null,
+      },
+    ];
+  
+    it("returns null for an empty candidate list", () => {
+      expect(
+        chooseOpponentMoveByFormAdjustedDesiredCpl(
+          [],
+          1200,
+          "wide",
+          0,
+          1,
+          0.25
+        )
+      ).toBeNull();
+    });
+  
+    it("allows form to affect candidate selection", () => {
+      const weak =
+        chooseOpponentMoveByFormAdjustedDesiredCpl(
+          candidates,
+          1200,
+          "wide",
+          -50,
+          1,
+          0.25
+        );
+  
+      const strong =
+        chooseOpponentMoveByFormAdjustedDesiredCpl(
+          candidates,
+          1200,
+          "wide",
+          50,
+          1,
+          0.25
+        );
+  
+      expect(weak).not.toBeNull();
+      expect(strong).not.toBeNull();
+  
+      expect(
+        weak!.centipawnLoss
+      ).toBeGreaterThanOrEqual(
+        strong!.centipawnLoss
+      );
+    });
+  });

@@ -7,7 +7,7 @@ import type {
   } from "./opponentMoveSafeguards";
   
   import {
-    chooseOpponentMoveByContextualDesiredCpl,
+    chooseOpponentMoveByFormAdjustedDesiredCpl,
   } from "./opponentMoveSelector";
 
   import {
@@ -22,6 +22,7 @@ import type {
   export function chooseAdaptiveOpponentMove(
     candidates: OpponentCandidate[],
     targetSkill: number,
+    opponentForm = 0,
     randomValue1 = Math.random(),
     randomValue2 = Math.random(),
   ): OpponentDecision {
@@ -53,10 +54,11 @@ import type {
 
 return {
   candidate:
-    chooseOpponentMoveByContextualDesiredCpl(
+    chooseOpponentMoveByFormAdjustedDesiredCpl(
       safePool.candidates,
       targetSkill,
       positionContext.context,
+      opponentForm,
       randomValue1,
       randomValue2
     ),
