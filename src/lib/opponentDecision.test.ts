@@ -25,6 +25,20 @@ import {
       mate,
     };
   }
+
+  function tacticalCandidate(
+    rank: number,
+    centipawnLoss: number,
+    evaluation: number
+  ): OpponentCandidate {
+    return {
+      rank,
+      move: `move-${rank}`,
+      evaluation,
+      centipawnLoss,
+      mate: null,
+    };
+  }
   
   describe("chooseAdaptiveOpponentMove", () => {
     it("returns no move when no candidates exist", () => {
@@ -208,6 +222,157 @@ import {
   
       expect(
         result.bypassedSelection
+      ).toBe(true);
+    });
+  });
+
+  describe("tactical opponent decisions", () => {
+    const tacticalCandidates = [
+      tacticalCandidate(
+        1,
+        0,
+        250
+      ),
+      tacticalCandidate(
+        2,
+        180,
+        70
+      ),
+      tacticalCandidate(
+        3,
+        240,
+        10
+      ),
+    ];
+  
+  
+    it("restricts the candidate pool when the tactic is recognized", () => {
+      const decision =
+        chooseAdaptiveOpponentMove(
+          tacticalCandidates,
+          1200,
+          0,
+  
+          // Desired-CPL randomness.
+          1,
+          0.25,
+  
+          // Guaranteed tactical recognition.
+          0
+        );
+  
+      expect(
+        decision.candidate
+          ?.centipawnLoss
+      ).toBeLessThanOrEqual(40);
+    });
+  
+  
+    it("does not force tactical recognition when recognition fails", () => {
+      const decision =
+        chooseAdaptiveOpponentMove(
+          tacticalCandidates,
+          400,
+          0,
+  
+          // Desired CPL centered at
+          // the low-skill target.
+          1,
+          0.25,
+  
+          // Guaranteed recognition failure.
+          1
+        );
+  
+      expect(
+        decision.candidate
+      ).not.toBeNull();
+  
+      expect(
+        decision.bypassedSelection
+      ).toBe(false);
+    });
+  
+  
+    it("keeps normal positions on the ordinary selection path", () => {
+      const normalCandidates = [
+        tacticalCandidate(
+          1,
+          0,
+          50
+        ),
+        tacticalCandidate(
+          2,
+          40,
+          10
+        ),
+        tacticalCandidate(
+          3,
+          80,
+          -30
+        ),
+      ];
+  
+      const decision =
+        chooseAdaptiveOpponentMove(
+          normalCandidates,
+          1200,
+          0,
+          1,
+          0.25,
+          0
+        );
+  
+      expect(
+        decision.candidate
+      ).not.toBeNull();
+  
+      expect(
+        decision.bypassedSelection
+      ).toBe(false);
+    });
+
+    it("keeps winning mate bypass above tactical handling", () => {
+      const candidates: OpponentCandidate[] = [
+        {
+          rank: 1,
+          move: "mate-3",
+          evaluation: 100000,
+          centipawnLoss: 0,
+          mate: 3,
+        },
+        {
+          rank: 2,
+          move: "mate-5",
+          evaluation: 100000,
+          centipawnLoss: 0,
+          mate: 5,
+        },
+        {
+          rank: 3,
+          move: "other",
+          evaluation: 500,
+          centipawnLoss: 200,
+          mate: null,
+        },
+      ];
+    
+      const decision =
+        chooseAdaptiveOpponentMove(
+          candidates,
+          400,
+          0,
+          1,
+          0.25,
+          1
+        );
+    
+      expect(
+        decision.candidate?.move
+      ).toBe("mate-3");
+    
+      expect(
+        decision.bypassedSelection
       ).toBe(true);
     });
   });
