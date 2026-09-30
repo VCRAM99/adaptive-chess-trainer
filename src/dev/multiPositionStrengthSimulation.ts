@@ -21,6 +21,20 @@ import {
   simulateOpponentFormEffect,
 } from "./opponentStrengthSimulator";
 
+
+import {
+  getOpponentTacticalContext,
+} from "../lib/opponentTacticalContext";
+
+import {
+  getTacticalRecognitionProbability,
+} from "../lib/opponentTacticalSkill";
+
+import type {
+  OpponentCandidate,
+} from "../lib/opponentMove";
+
+
 type TestPosition = {
   name: string;
   fen: string;
@@ -414,4 +428,68 @@ export async function runMultiPositionStrengthSimulation() {
   );
 
   return rows;
+}
+
+export function logTacticalCandidateAnalysis(
+  label: string,
+  candidates: OpponentCandidate[]
+) {
+  const tacticalContext =
+    getOpponentTacticalContext(
+      candidates
+    );
+
+  console.log(
+    `\nTACTICAL ANALYSIS: ${label}`
+  );
+
+  console.table(
+    [...candidates]
+      .sort(
+        (a, b) =>
+          a.centipawnLoss -
+          b.centipawnLoss
+      )
+      .map((candidate) => ({
+        rank: candidate.rank,
+        move: candidate.move,
+        evaluation:
+          candidate.evaluation,
+        cpl:
+          candidate.centipawnLoss,
+        mate: candidate.mate,
+      }))
+  );
+
+  console.log({
+    context:
+      tacticalContext.context,
+
+    bestEvaluation:
+      tacticalContext.bestEvaluation,
+
+    bestAlternativeLoss:
+      tacticalContext.bestAlternativeLoss,
+
+    tacticalGap:
+      tacticalContext.tacticalGap,
+
+    recognitionAt400:
+      getTacticalRecognitionProbability(
+        400,
+        tacticalContext.context
+      ),
+
+    recognitionAt1200:
+      getTacticalRecognitionProbability(
+        1200,
+        tacticalContext.context
+      ),
+
+    recognitionAt2000:
+      getTacticalRecognitionProbability(
+        2000,
+        tacticalContext.context
+      ),
+  });
 }
