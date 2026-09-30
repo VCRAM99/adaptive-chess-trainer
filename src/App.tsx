@@ -180,7 +180,11 @@ function App() {
     chooseAdaptiveOpponentMove(
       candidates,
       responseConfig.targetRating,
-      opponentFormRef.current
+      opponentFormRef.current,
+      undefined,
+      undefined,
+      undefined,
+      pendingOpponentFen
     );
 
       console.log(

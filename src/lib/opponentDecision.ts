@@ -8,6 +8,7 @@ import {
 
 import {
   chooseOpponentMoveByFormAdjustedDesiredCpl,
+  sampleFormAdjustedDesiredCentipawnLoss,
 } from "./opponentMoveSelector";
 
 import {
@@ -26,6 +27,15 @@ import {
   getRecognizedTacticalCandidates,
 } from "./opponentTacticalSelection";
 
+import {
+  getFullMoveNumberFromFen,
+  isOpponentOpeningPhase,
+} from "./opponentOpening";
+
+import {
+  chooseOpeningAwareCandidate
+} from "./opponentOpeningSelection";
+
 
 export type OpponentDecision = {
   candidate: OpponentCandidate | null;
@@ -40,6 +50,7 @@ export function chooseAdaptiveOpponentMove(
   randomValue1 = Math.random(),
   randomValue2 = Math.random(),
   tacticalRandomValue = Math.random(),
+  fen: string | null = null,
 ): OpponentDecision {
   const safePool =
     createSafeOpponentCandidatePool(
@@ -143,6 +154,22 @@ export function chooseAdaptiveOpponentMove(
       ? "wide"
       : positionContext.context;
 
+      const fullMoveNumber =
+      fen
+        ? getFullMoveNumberFromFen(
+            fen
+          )
+        : null;
+    
+    const useOpeningBehavior =
+      fen !== null &&
+      fullMoveNumber !== null &&
+      isOpponentOpeningPhase(
+        fullMoveNumber
+      ) &&
+      tacticalContext.context ===
+        "normal";
+    
   /*
    * Final human-like move selection.
    *
@@ -152,7 +179,30 @@ export function chooseAdaptiveOpponentMove(
    * - temporary opponent form
    * - desired-CPL sampling
    */
-  const selectedCandidate =
+
+  let finalCandidate:
+  OpponentCandidate | null;
+
+
+if (useOpeningBehavior) {
+  const desiredCpl =
+    sampleFormAdjustedDesiredCentipawnLoss(
+      targetSkill,
+      selectionContext,
+      opponentForm,
+      randomValue1,
+      randomValue2
+    );
+
+  finalCandidate =
+    chooseOpeningAwareCandidate(
+      selectionCandidates,
+      desiredCpl,
+      fen,
+      targetSkill
+    );
+} else {
+  finalCandidate =
     chooseOpponentMoveByFormAdjustedDesiredCpl(
       selectionCandidates,
       targetSkill,
@@ -161,9 +211,11 @@ export function chooseAdaptiveOpponentMove(
       randomValue1,
       randomValue2
     );
+}
 
-  return {
-    candidate: selectedCandidate,
-    bypassedSelection: false,
-  };
+
+return {
+  candidate: finalCandidate,
+  bypassedSelection: false,
+};
 }
