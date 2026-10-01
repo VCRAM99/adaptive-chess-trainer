@@ -1,9 +1,9 @@
 export type TrainingMode = "easy" | "medium" | "hard";
 
 const TRAINING_OFFSETS: Record<TrainingMode, number> = {
-  easy: -75,
-  medium: 0,
-  hard: 75,
+  easy: -150,
+  medium: -50,
+  hard: 50,
 };
 
 export const MIN_STOCKFISH_ELO = 1320;

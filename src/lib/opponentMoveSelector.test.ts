@@ -22,6 +22,7 @@ import {
     sampleContextualDesiredCentipawnLoss,
     sampleFormAdjustedDesiredCentipawnLoss,
     chooseOpponentMoveByFormAdjustedDesiredCpl,
+    sampleScaledFormAdjustedDesiredCentipawnLoss,
   } from "./opponentMoveSelector";
 
 
@@ -673,3 +674,81 @@ describe(
       );
     });
   });
+
+  describe(
+    "sampleScaledFormAdjustedDesiredCentipawnLoss",
+    () => {
+      it(
+        "returns the normal desired CPL at scale 1",
+        () => {
+          const normal =
+            sampleFormAdjustedDesiredCentipawnLoss(
+              1200,
+              "wide",
+              0,
+              0.5,
+              0.5
+            );
+  
+          const scaled =
+            sampleScaledFormAdjustedDesiredCentipawnLoss(
+              1200,
+              "wide",
+              0,
+              1,
+              0.5,
+              0.5
+            );
+  
+          expect(scaled)
+            .toBeCloseTo(normal);
+        }
+      );
+  
+      it(
+        "scales desired CPL downward",
+        () => {
+          const normal =
+            sampleFormAdjustedDesiredCentipawnLoss(
+              1200,
+              "wide",
+              0,
+              0.5,
+              0.5
+            );
+  
+          const scaled =
+            sampleScaledFormAdjustedDesiredCentipawnLoss(
+              1200,
+              "wide",
+              0,
+              0.6,
+              0.5,
+              0.5
+            );
+  
+          expect(scaled)
+            .toBeCloseTo(
+              normal * 0.6
+            );
+        }
+      );
+  
+      it(
+        "does not allow a negative scale",
+        () => {
+          const scaled =
+            sampleScaledFormAdjustedDesiredCentipawnLoss(
+              1200,
+              "wide",
+              0,
+              -1,
+              0.5,
+              0.5
+            );
+  
+          expect(scaled).toBe(0);
+        }
+      );
+    }
+  );

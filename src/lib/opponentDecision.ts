@@ -9,6 +9,7 @@ import {
 import {
   chooseOpponentMoveByFormAdjustedDesiredCpl,
   sampleFormAdjustedDesiredCentipawnLoss,
+  //chooseOpponentMoveByScaledDesiredCpl,
 } from "./opponentMoveSelector";
 
 import {
@@ -36,6 +37,14 @@ import {
   chooseOpeningAwareCandidate
 } from "./opponentOpeningSelection";
 
+import {
+  isOpponentEndgame,
+} from "./opponentEndgame";
+
+// import {
+//   getOpponentEndgameType,
+// } from "./opponentEndgameType";
+
 
 export type OpponentDecision = {
   candidate: OpponentCandidate | null;
@@ -51,6 +60,8 @@ export function chooseAdaptiveOpponentMove(
   randomValue2 = Math.random(),
   tacticalRandomValue = Math.random(),
   fen: string | null = null,
+  //endgameRandomValue = Math.random(),
+
 ): OpponentDecision {
   const safePool =
     createSafeOpponentCandidatePool(
@@ -119,6 +130,22 @@ export function chooseAdaptiveOpponentMove(
         )
       : safePool.candidates;
 
+
+      const endgameActive =
+      fen !== null &&
+      isOpponentEndgame(fen) &&
+      tacticalContext.context === "normal";
+    
+    
+    // const endgameType =
+    //   endgameActive && fen
+    //     ? getOpponentEndgameType(fen)
+    //     : null;
+    
+    
+      const finalSelectionCandidates =
+      selectionCandidates;
+
   /*
    * Calculate ordinary position context from
    * the candidate pool that will actually be
@@ -126,7 +153,7 @@ export function chooseAdaptiveOpponentMove(
    */
   const positionContext =
     getOpponentPositionContext(
-      selectionCandidates
+      finalSelectionCandidates
     );
 
   /*
@@ -161,14 +188,15 @@ export function chooseAdaptiveOpponentMove(
           )
         : null;
     
-    const useOpeningBehavior =
-      fen !== null &&
-      fullMoveNumber !== null &&
-      isOpponentOpeningPhase(
-        fullMoveNumber
-      ) &&
-      tacticalContext.context ===
-        "normal";
+        const useOpeningBehavior =
+        fen !== null &&
+        fullMoveNumber !== null &&
+        !endgameActive &&
+        isOpponentOpeningPhase(
+          fullMoveNumber
+        ) &&
+        tacticalContext.context ===
+          "normal";
     
   /*
    * Final human-like move selection.
@@ -196,15 +224,15 @@ if (useOpeningBehavior) {
 
   finalCandidate =
     chooseOpeningAwareCandidate(
-      selectionCandidates,
+      finalSelectionCandidates,
       desiredCpl,
       fen,
       targetSkill
     );
-} else {
+}  else {
   finalCandidate =
     chooseOpponentMoveByFormAdjustedDesiredCpl(
-      selectionCandidates,
+      finalSelectionCandidates,
       targetSkill,
       selectionContext,
       opponentForm,
