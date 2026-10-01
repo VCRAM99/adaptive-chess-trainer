@@ -18,6 +18,7 @@ import { updateOpponentForm, } from "./lib/opponentForm";
 
 
 import "./App.css";
+import { devLog } from "./lib/devLogger";
 
 // Types for the promotion piece and pending promotion.
 type PromotionPiece = "q" | "r" | "b" | "n";
@@ -175,21 +176,15 @@ function App() {
         pendingOpponentSkill,
         trainingMode
       );
-
-    const decision =
-    chooseAdaptiveOpponentMove(
-      candidates,
-      responseConfig.targetRating,
-      opponentFormRef.current,
-      undefined,
-      undefined,
-      undefined,
-      pendingOpponentFen
-    );
-
-      console.log(
-        "Adaptive opponent decision:",
+      const decision = chooseAdaptiveOpponentMove(
+        candidates,
         {
+          targetSkill: responseConfig.targetRating,
+          opponentForm: opponentFormRef.current,
+          fen: pendingOpponentFen,
+        }
+      );
+      devLog("Adaptive opponent decision", {
           estimatedPlayerSkill:
             pendingOpponentSkill,
           trainingMode,

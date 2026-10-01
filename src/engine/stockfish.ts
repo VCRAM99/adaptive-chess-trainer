@@ -3,6 +3,10 @@ import {
   type CandidateMoveEvaluation,
 } from "./uciAnalysis";
 
+import {
+  devLog,
+} from "../lib/devLogger";
+
 export const OPPONENT_MULTIPV = 8;
 
 export type OpponentAnalysisResult = {
@@ -72,7 +76,7 @@ export class StockfishEngine {
     this.worker.onmessage = (event: MessageEvent) => {
       const message = String(event.data);
     
-      console.log("[Stockfish]", message);
+      devLog("[Stockfish]", message);
     
       if (message.trim() === "readyok") {
         this.ready = true;

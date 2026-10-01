@@ -106,8 +106,13 @@ import type {
       const decision =
         chooseAdaptiveOpponentMove(
           candidates,
-          targetSkill,
-          0
+          {
+            targetSkill,
+            opponentForm: 0,
+            randomValue1: Math.random(),
+            randomValue2: Math.random(),
+            tacticalRandomValue: Math.random(),
+          }
         );
   
       const selected =

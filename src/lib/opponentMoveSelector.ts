@@ -460,58 +460,6 @@ export function selectWeightedOpponentMove(
     );
   }
 
-  export function sampleScaledFormAdjustedDesiredCentipawnLoss(
-    targetSkill: number,
-    context: OpponentPositionContext,
-    opponentForm: number,
-    errorScale: number,
-    randomValue1 = Math.random(),
-    randomValue2 = Math.random()
-  ): number {
-    const desiredCpl =
-      sampleFormAdjustedDesiredCentipawnLoss(
-        targetSkill,
-        context,
-        opponentForm,
-        randomValue1,
-        randomValue2
-      );
-  
-    const normalizedScale =
-      Math.max(0, errorScale);
-  
-    return desiredCpl * normalizedScale;
-  }
-
-  export function chooseOpponentMoveByScaledDesiredCpl(
-    candidates: OpponentCandidate[],
-    targetSkill: number,
-    context: OpponentPositionContext,
-    opponentForm: number,
-    errorScale: number,
-    randomValue1 = Math.random(),
-    randomValue2 = Math.random()
-  ): OpponentCandidate | null {
-    if (candidates.length === 0) {
-      return null;
-    }
-  
-    const desiredCpl =
-      sampleScaledFormAdjustedDesiredCentipawnLoss(
-        targetSkill,
-        context,
-        opponentForm,
-        errorScale,
-        randomValue1,
-        randomValue2
-      );
-  
-    return selectCandidateNearestCpl(
-      candidates,
-      desiredCpl
-    );
-  }
-
   export function chooseOpponentMoveByFormAdjustedDesiredCpl(
     candidates: OpponentCandidate[],
     targetSkill: number,

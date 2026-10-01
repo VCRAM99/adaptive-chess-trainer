@@ -45,8 +45,11 @@ import {
       const result =
         chooseAdaptiveOpponentMove(
           [],
-          1200,
-          0.5
+          {
+            targetSkill: 1200,
+            opponentForm: 0,
+            randomValue1: 0.5,
+          }
         );
   
       expect(
@@ -68,8 +71,11 @@ import {
       const result =
         chooseAdaptiveOpponentMove(
           [onlyMove],
-          1200,
-          0.5
+          {
+            targetSkill: 1200,
+            opponentForm: 0,
+            randomValue1: 0.5,
+          }
         );
   
       expect(
@@ -101,8 +107,11 @@ import {
       const result =
         chooseAdaptiveOpponentMove(
           input,
-          600,
-          0.999
+          {
+            targetSkill: 600,
+            opponentForm: 0,
+            randomValue1: 0.999,
+          }
         );
   
       expect(
@@ -133,8 +142,11 @@ import {
       const result =
         chooseAdaptiveOpponentMove(
           input,
-          600,
-          0.999999
+          {
+            targetSkill: 600,
+            opponentForm: 0,
+            randomValue1: 0.999999,
+          }
         );
   
       expect(
@@ -171,8 +183,10 @@ import {
       const result =
         chooseAdaptiveOpponentMove(
           input,
-          1200,
-          0
+          {
+            targetSkill: 1200,
+            opponentForm: 0,
+          }
         );
   
       expect(
@@ -212,8 +226,11 @@ import {
       const result =
         chooseAdaptiveOpponentMove(
           input,
-          1200,
-          0.5
+          {
+            targetSkill: 1200,
+            opponentForm: 0,
+            randomValue1: 0.5,
+          }
         );
   
       expect(
@@ -250,15 +267,13 @@ import {
       const decision =
         chooseAdaptiveOpponentMove(
           tacticalCandidates,
-          1200,
-          0,
-  
-          // Desired-CPL randomness.
-          1,
-          0.25,
-  
-          // Guaranteed tactical recognition.
-          0
+          {
+            targetSkill: 1200,
+            opponentForm: 0,
+            randomValue1: 1,
+            randomValue2: 0.25,
+            tacticalRandomValue: 0,
+          }
         );
   
       expect(
@@ -272,16 +287,13 @@ import {
       const decision =
         chooseAdaptiveOpponentMove(
           tacticalCandidates,
-          400,
-          0,
-  
-          // Desired CPL centered at
-          // the low-skill target.
-          1,
-          0.25,
-  
-          // Guaranteed recognition failure.
-          1
+          {
+            targetSkill: 400,
+            opponentForm: 0,
+            randomValue1: 1,
+            randomValue2: 0.25,
+            tacticalRandomValue: 1,
+          }
         );
   
       expect(
@@ -316,11 +328,13 @@ import {
       const decision =
         chooseAdaptiveOpponentMove(
           normalCandidates,
-          1200,
-          0,
-          1,
-          0.25,
-          0
+          {
+            targetSkill: 1200,
+            opponentForm: 0,
+            randomValue1: 1,
+            randomValue2: 0.25,
+            tacticalRandomValue: 0,
+          }
         );
   
       expect(
@@ -360,11 +374,13 @@ import {
       const decision =
         chooseAdaptiveOpponentMove(
           candidates,
-          400,
-          0,
-          1,
-          0.25,
-          1
+          {
+            targetSkill: 400,
+            opponentForm: 0,
+            randomValue1: 1,
+            randomValue2: 0.25,
+            tacticalRandomValue: 1,
+          }
         );
     
       expect(

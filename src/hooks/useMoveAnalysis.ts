@@ -39,6 +39,10 @@ import type {
     MoveAnalysis,
 } from "../lib/moveAnalysis";
 
+import {
+    devLog,
+} from "../lib/devLogger";
+
 type AnalyzePlayerMoveInput = {
     moveNumber: number;
   
@@ -261,7 +265,7 @@ export function useMoveAnalysis() {
           
             setLatestAnalysis(analysis);
           
-            console.log(
+            devLog(
               "Player move analysis:",
               analysis
             );

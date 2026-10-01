@@ -93,9 +93,13 @@ export function simulateOpponentStrength(
       selectedCandidate =
         chooseAdaptiveOpponentMove(
           candidates,
-          targetSkill,
-          Math.random(),
-          Math.random()
+          {
+            targetSkill,
+            opponentForm: 0,
+            randomValue1: Math.random(),
+            randomValue2: Math.random(),
+            tacticalRandomValue: Math.random(),
+          }
         ).candidate;
     }
 
