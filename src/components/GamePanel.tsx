@@ -2,7 +2,10 @@
 type GamePanelProps = {
     status: string;
     moveHistory: string[];
-    engineStatus: "starting" | "ready" | "thinking" | "error";
+    opponentStatus:
+  | "starting"
+  | "ready"
+  | "thinking";
   
     onUndo: () => void;
     onNewGame: () => void;
@@ -12,7 +15,7 @@ type GamePanelProps = {
 function GamePanel({
     status,
     moveHistory,
-    engineStatus,
+    opponentStatus,
     onUndo,
     onNewGame,
     onFlipBoard,
@@ -23,21 +26,18 @@ function GamePanel({
         <div className="engine-status" role="status">
           <h3>Computer opponent</h3>
 
-          {engineStatus === "starting" && (
-            <p>Stockfish is starting...</p>
+          {opponentStatus === "starting" && (
+            <p>Opponent is starting...</p>
           )}
 
-          {engineStatus === "ready" && (
-            <p>Stockfish is ready.</p>
+          {opponentStatus === "ready" && (
+            <p>Opponent is ready.</p>
           )}
 
-          {engineStatus === "thinking" && (
-            <p>Stockfish is thinking...</p>
+          {opponentStatus === "thinking" && (
+            <p>Opponent is thinking...</p>
           )}
 
-          {engineStatus === "error" && (
-            <p>Stockfish encountered an error.</p>
-          )}
         </div>
   
         <div className="status-box">

@@ -6,7 +6,7 @@ import {
     useState,
   } from "react";
   
-  import { StockfishEngine } from "../engine/stockfish";
+  import { StockfishEngine, type OpponentAnalysisResult } from "../engine/stockfish";
   import { parseUciResponse } from "../engine/uciResponse";
   
   type EngineStatus =
@@ -23,6 +23,14 @@ import {
   
     const [bestMove, setBestMove] =
       useState<string | null>(null);
+
+    const [
+      opponentAnalysis,
+      setOpponentAnalysis,
+    ] =
+      useState<OpponentAnalysisResult | null>(
+        null
+    );
   
     const pendingRequestRef = useRef(false);
   
@@ -75,6 +83,19 @@ import {
         }
       });
 
+      engine.onOpponentAnalysis(
+        (result) => {
+          if (
+            generation !==
+            engineGenerationRef.current
+          ) {
+            return;
+          }
+      
+          setOpponentAnalysis(result);
+        }
+      );
+
       engine.onError((error) => {
         if (generation !== engineGenerationRef.current) {
           return;
@@ -115,6 +136,7 @@ import {
   
       pendingRequestRef.current = true;
       setBestMove(null);
+      setOpponentAnalysis(null);
       setStatus("thinking");
   
       const configured = engine.setStrength(elo);
@@ -143,6 +165,7 @@ import {
       engineRef.current = null;
   
       setBestMove(null);
+      setOpponentAnalysis(null);
   
       // A fresh worker cannot return an old game's move.
       createEngine();
@@ -155,6 +178,7 @@ import {
     return {
       status,
       bestMove,
+      opponentAnalysis,
       requestMove,
       cancelMove,
       clearBestMove,
