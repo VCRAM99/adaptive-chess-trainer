@@ -7,8 +7,8 @@ import {
 } from "./opponentMoveSafeguards";
 
 import {
-  chooseOpponentMoveByFormAdjustedDesiredCpl,
   sampleFormAdjustedDesiredCentipawnLoss,
+  selectCandidateNearestCpl,
 } from "./opponentMoveSelector";
 
 import {
@@ -39,6 +39,11 @@ import {
 import {
   isOpponentEndgame,
 } from "./opponentEndgame";
+
+import {
+  isOpponentMiddlegame,
+  adjustMiddlegameDesiredCpl,
+} from "./opponentMiddlegame";
 
 export type OpponentDecision = {
   candidate: OpponentCandidate | null;
@@ -168,17 +173,32 @@ export function chooseAdaptiveOpponentMove(
         fen,
         targetSkill
       );
-  } else {
-    finalCandidate =
-      chooseOpponentMoveByFormAdjustedDesiredCpl(
-        selectionCandidates,
-        targetSkill,
-        selectionContext,
-        opponentForm,
-        randomValue1,
-        randomValue2
-      );
-  }
+    } else {
+      const desiredCpl =
+        sampleFormAdjustedDesiredCentipawnLoss(
+          targetSkill,
+          selectionContext,
+          opponentForm,
+          randomValue1,
+          randomValue2
+        );
+    
+      const applyMiddlegameAdjustment =
+        fen !== null &&
+        isOpponentMiddlegame(fen) &&
+        tacticalContext.context === "normal";
+    
+      const adjustedDesiredCpl =
+        applyMiddlegameAdjustment
+          ? adjustMiddlegameDesiredCpl(desiredCpl)
+          : desiredCpl;
+    
+      finalCandidate =
+        selectCandidateNearestCpl(
+          selectionCandidates,
+          adjustedDesiredCpl
+        );
+    }
 
   return {
     candidate: finalCandidate,

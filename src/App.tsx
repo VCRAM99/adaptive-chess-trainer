@@ -15,6 +15,7 @@ import { chooseAdaptiveOpponentMove, } from "./lib/opponentDecision";
 import type { TrainingMode } from "./lib/trainingDifficulty";
 import { createOpponentConfig } from "./lib/trainingDifficulty";
 import { updateOpponentForm, } from "./lib/opponentForm";
+import { getDisplayedRating } from "./lib/displayRating";
 
 
 import "./App.css";
@@ -68,7 +69,7 @@ function App() {
   const [trainingMode, setTrainingMode] = useState<TrainingMode>("medium");
 
   // Store the estimated player rating.
-  const [estimatedPlayerRating, setEstimatedPlayerRating] = useState(1200);
+  const [estimatedPlayerRating, setEstimatedPlayerRating] = useState(700);
 
   const opponentConfig = createOpponentConfig(
     estimatedPlayerRating,
@@ -545,7 +546,7 @@ function App() {
 
           <div className="player-info">
             <span>White</span>
-            <span>Estimated Skill: {estimatedPlayerRating}</span>
+            <span>Estimated Skill: {getDisplayedRating(estimatedPlayerRating)}</span>
           </div>
         </section>
 
@@ -591,11 +592,11 @@ function App() {
           </div>
 
           <p>
-            Estimated skill: {estimatedPlayerRating}
+            Estimated skill: {getDisplayedRating(estimatedPlayerRating)}
           </p>
 
           <p>
-            Target opponent: {opponentConfig.targetRating}
+            Target opponent: {getDisplayedRating(opponentConfig.targetRating)}
           </p>
 
           {gameHasStarted && (
