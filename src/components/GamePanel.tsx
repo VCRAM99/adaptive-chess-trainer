@@ -10,6 +10,7 @@ type GamePanelProps = {
     onUndo: () => void;
     onNewGame: () => void;
     onFlipBoard: () => void;
+    undoDisabled?: boolean;
 };
   
 function GamePanel({
@@ -17,6 +18,7 @@ function GamePanel({
     moveHistory,
     opponentStatus,
     onUndo,
+    undoDisabled = false,
     onNewGame,
     onFlipBoard,
 }: GamePanelProps) {
@@ -67,7 +69,11 @@ function GamePanel({
         </div>
   
         <div className="game-controls">
-          <button onClick={onUndo}>
+          <button 
+          onClick={onUndo}
+          disabled={undoDisabled}
+          >
+            
             Undo move
           </button>
   
