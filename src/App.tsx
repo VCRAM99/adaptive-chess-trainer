@@ -17,6 +17,12 @@ import { getDisplayedRating } from "./lib/displayRating";
 import "./App.css";
 import { devLog } from "./lib/devLogger";
 import ColorSelectionDialog from "./components/ColorSelectionDialog";
+import ProfilePage from "./pages/ProfilePage";
+type AppPage = "game" | "profile";
+import { loadProfile, saveProfile, addStoredGame, resetProfile } from "./lib/profile/profileStorage";
+import { createStoredGame, getStoredGameResult, } from "./lib/profile/createStoredGame";
+import type { PlayerProfile } from "./lib/profile/types";
+import { getCheckmateWinner, } from "./lib/postGame/gameResult";
 
 //PostGame
 import { buildGameRecord } from "./lib/postGame/buildGameRecord";
@@ -28,7 +34,6 @@ import { createReviewArrows } from "./lib/postGame/reviewArrows";
 import { calculateMatchSummary } from "./lib/postGame/matchSummary";
 import { createEvaluationTimeline } from "./lib/postGame/evaluationTimeline";
 import EvaluationTimeline from "./components/EvaluationTimeline";
-
 
 // Types for the player color and player color choice.
 type PlayerColor = "white" | "black";
@@ -87,6 +92,11 @@ function App() {
 
   const [playerColor, setPlayerColor] =
   useState<PlayerColor>("white");
+
+  const [playerProfile, setPlayerProfile] =
+  useState<PlayerProfile>(() =>
+    loadProfile()
+  );
 
   const [
     isColorDialogOpen,
@@ -156,7 +166,9 @@ function App() {
   const [trainingMode, setTrainingMode] = useState<TrainingMode>("medium");
 
   // Store the estimated player rating.
-  const [estimatedPlayerRating, setEstimatedPlayerRating] = useState(700);
+  const [estimatedPlayerRating, setEstimatedPlayerRating] = useState(() => playerProfile.estimatedRating);
+  const gameStartRatingRef = useRef(estimatedPlayerRating);
+  const storedGameIdRef = useRef<string | null>(null);
 
   const opponentConfig = createOpponentConfig(
     estimatedPlayerRating,
@@ -195,6 +207,9 @@ function App() {
     : pendingOpponentFen
       ? "thinking"
       : "ready";
+
+  const [appPage, setAppPage] =
+      useState<AppPage>("game");
       
   // Analyze the opponent position with the
   // full-strength objective analysis engine.
@@ -413,6 +428,35 @@ function App() {
   ]);
 
   useEffect(() => {
+    setPlayerProfile((currentProfile) => {
+      if (
+        currentProfile.estimatedRating ===
+          estimatedPlayerRating &&
+        currentProfile.bestRating >=
+          estimatedPlayerRating
+      ) {
+        return currentProfile;
+      }
+  
+      const updatedProfile: PlayerProfile = {
+        ...currentProfile,
+  
+        estimatedRating:
+          estimatedPlayerRating,
+  
+        bestRating: Math.max(
+          currentProfile.bestRating,
+          estimatedPlayerRating
+        ),
+      };
+  
+      saveProfile(updatedProfile);
+  
+      return updatedProfile;
+    });
+  }, [estimatedPlayerRating]);
+
+  useEffect(() => {
     if (!game.isGameOver()) {
       return;
     }
@@ -430,9 +474,9 @@ function App() {
       result = "draw";
     } else if (game.isCheckmate()) {
       result =
-      game.turn() !== toChessColor(playerColor)
-          ? "black"
-          : "white";
+        getCheckmateWinner(
+          game.turn()
+        );
     } else {
       // Defensive fallback for an unexpected
       // terminal condition.
@@ -466,6 +510,22 @@ function App() {
     }
   }, [game]);
 
+  //Reset the player profile and the estimated player rating.
+  function handleResetProgress() {
+    const freshProfile =
+      resetProfile();
+  
+    setPlayerProfile(
+      freshProfile
+    );
+  
+    setEstimatedPlayerRating(
+      freshProfile.estimatedRating
+    );
+  
+    gameStartRatingRef.current =
+      freshProfile.estimatedRating;
+  }
 
   //checka if the move is legal and if it requires a promotion. and updates the game state.
   function makeMove(
@@ -708,6 +768,8 @@ function App() {
     handledOpponentFenRef.current = null;
     opponentFormRef.current = 0;
 
+    gameStartRatingRef.current = estimatedPlayerRating;
+    storedGameIdRef.current = null;
     const newGame = new Chess();
 
     setPlayerColor(color);
@@ -850,36 +912,156 @@ function App() {
       );
 
         
-const displayedBoardPosition =
-  isReviewMode && reviewPosition
-    ? reviewPosition
-    : game.fen();
+  const displayedBoardPosition =
+    isReviewMode && reviewPosition
+      ? reviewPosition
+      : game.fen();
 
 
-    function blockReviewMove() {
-      return false;
-    }
-    const topColor: PlayerColor =
-      boardOrientation === "white"
-        ? "black"
-        : "white";
-
-    const bottomColor: PlayerColor =
-      boardOrientation === "white"
-        ? "white"
-        : "black";
-
-    function getPlayerLabel(
-      color: PlayerColor
-    ): string {
-      if (color === playerColor) {
-        return `Estimated Skill: ${getDisplayedRating(
-          estimatedPlayerRating
-        )}`;
+      function blockReviewMove() {
+        return false;
       }
+      const topColor: PlayerColor =
+        boardOrientation === "white"
+          ? "black"
+          : "white";
 
-  return "ADAPTIVE OPPONENT";
-}
+      const bottomColor: PlayerColor =
+        boardOrientation === "white"
+          ? "white"
+          : "black";
+
+      function getPlayerLabel(
+        color: PlayerColor
+      ): string {
+        if (color === playerColor) {
+          return `Estimated Skill: ${getDisplayedRating(
+            estimatedPlayerRating
+          )}`;
+        }
+
+    return "ADAPTIVE OPPONENT";
+  }
+
+  useEffect(() => {
+    if (
+      !completedGame ||
+      !matchSummary 
+    ) {
+      return;
+    }
+  
+    if (
+      storedGameIdRef.current ===
+      completedGame.id
+    ) {
+      return;
+    }
+  
+    const storedGame = createStoredGame({
+      id: completedGame.id,
+  
+      playedAt:
+        completedGame.completedAt,
+  
+      playerColor,
+      trainingMode,
+  
+      result: getStoredGameResult(
+        completedGame.result,
+        playerColor
+      ),
+  
+      ratingBefore:
+        gameStartRatingRef.current,
+  
+      ratingAfter:
+        estimatedPlayerRating,
+  
+      // matchSummary.player already represents
+      // whichever side the human played.
+      accuracy:
+        matchSummary.player.accuracy,
+  
+      averageCentipawnLoss:
+        matchSummary.player
+          .averageCentipawnLoss,
+  
+      moveCount:
+          completedGame.moves.filter(
+            (move) =>
+              move.playedBy === playerColor
+          ).length,
+  
+      moveTiers: {
+        diamond:
+          matchSummary.player
+            .tierCounts.diamond,
+  
+        platinum:
+          matchSummary.player
+            .tierCounts.platinum,
+  
+        gold:
+          matchSummary.player
+            .tierCounts.gold,
+  
+        silver:
+          matchSummary.player
+            .tierCounts.silver,
+  
+        bronze:
+          matchSummary.player
+            .tierCounts.bronze,
+  
+        steel:
+          matchSummary.player
+            .tierCounts.steel,
+  
+        wood:
+          matchSummary.player
+            .tierCounts.wood,
+      },
+    });
+  
+    setPlayerProfile(
+      (currentProfile) => {
+        const updatedProfile =
+          addStoredGame(
+            currentProfile,
+            storedGame
+          );
+  
+        saveProfile(updatedProfile);
+  
+        return updatedProfile;
+      }
+    );
+  
+    storedGameIdRef.current =
+      completedGame.id;
+  }, [
+    completedGame,
+    matchSummary,
+    playerColor,
+    trainingMode,
+    estimatedPlayerRating,
+  ]);
+
+  //Display Profile Page FINAL BEFORE RETURN
+  if (appPage === "profile") {
+    return (
+      <ProfilePage
+        profile={playerProfile}
+        onBackToGame={() =>
+          setAppPage("game")
+        }
+        onResetProgress={
+          handleResetProgress
+        }
+      />
+    );
+  }
   // Display the application.
   return (
     <div className="app">
@@ -887,6 +1069,17 @@ const displayedBoardPosition =
         <h1>Adaptive Chess Trainer</h1>
         <p>Play. Analyze. Improve.</p>
       </header>
+      <button
+        type="button"
+        className="profile-nav-button"
+        onClick={() =>
+          setAppPage("profile")
+        }
+        aria-label="View player profile"
+        title="View player profile"
+      >
+        👤
+      </button>
 
       <main className="game-layout">
         <section className="board-section">
