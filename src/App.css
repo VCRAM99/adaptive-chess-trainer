@@ -679,6 +679,18 @@
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 32px;
+
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  background: var(--color-background);
+
+  border-bottom:
+    1px solid var(--color-border);
+
+  padding: 18px;
+
 }
 
 .profile-header h1 {
@@ -1364,6 +1376,86 @@
     
 }
 
+.appearance-label {
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-sm);
+
+  font-size: 0.9rem;
+  font-weight: 600;
+
+  color: var(--color-text-secondary);
+}
+
+.board-theme-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.board-theme-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+
+  padding: 0.65rem 0.85rem;
+
+  border:
+    1px solid
+    var(--color-border);
+
+  border-radius:
+    var(--radius-md);
+
+  background:
+    var(--color-surface-raised);
+
+  color:
+    var(--color-text);
+
+  cursor: pointer;
+
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.board-theme-option:hover {
+  background:
+    var(--color-surface-hover);
+}
+
+.board-theme-option--selected {
+  border-color:
+    var(--accent);
+
+  background:
+    var(--accent-surface);
+}
+
+.board-theme-option__swatch {
+  display: grid;
+  grid-template-columns: repeat(2, 9px);
+  grid-template-rows: repeat(2, 9px);
+
+  width: 18px;
+  height: 18px;
+
+  flex: 0 0 18px;
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    rgb(255 255 255 / 0.25);
+
+  border-radius: 3px;
+}
+
+.board-theme-option__swatch span {
+  width: 9px;
+  height: 9px;
+}
+
 /* M8.6 — Career Dashboard */
 
 .career-statistics {
@@ -2033,4 +2125,49 @@
   .accent-picker {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.piece-set-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.piece-set-option {
+  display: flex;
+  align-items: center;
+
+  padding: 0.65rem 0.85rem;
+
+  border:
+    1px solid
+    var(--color-border);
+
+  border-radius:
+    var(--radius-md);
+
+  background:
+    var(--color-surface-raised);
+
+  color:
+    var(--color-text);
+
+  cursor: pointer;
+
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.piece-set-option:hover {
+  background:
+    var(--color-surface-hover);
+}
+
+.piece-set-option--selected {
+  border-color:
+    var(--accent);
+
+  background:
+    var(--accent-surface);
 }

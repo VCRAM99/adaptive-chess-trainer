@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 
 import ChessBoard from "./ChessBoard";
 
+import type {
+  BoardTheme,
+  PieceSet,
+} from "../lib/preferences/types";
+
 import {
   compareReviewMove,
 } from "../lib/postGame/reviewMoveComparison";
@@ -26,6 +31,8 @@ type PostGameReviewProps = {
   game: CompletedGameRecord;
   analyzedMoves: AnalyzedMove[];
   orientation: "white" | "black";
+  boardTheme: BoardTheme;
+  pieceSet: PieceSet;
 };
 
 function formatTier(
@@ -45,6 +52,8 @@ function PostGameReview({
   game,
   analyzedMoves,
   orientation,
+  boardTheme, 
+  pieceSet,
 }: PostGameReviewProps) {
   const totalMoves = game.moves.length;
 
@@ -131,6 +140,8 @@ function PostGameReview({
         <ChessBoard
           position={position}
           orientation={orientation}
+          boardTheme={boardTheme}
+          pieceSet={pieceSet}
           onMove={blockReviewMove}
         />
       )}
