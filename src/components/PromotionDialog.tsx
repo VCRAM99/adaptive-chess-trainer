@@ -1,19 +1,38 @@
+import Dialog from "./ui/Dialog";
 
-type PromotionPiece = "q" | "r" | "b" | "n";
+type PromotionPiece =
+  | "q"
+  | "r"
+  | "b"
+  | "n";
 
 type PromotionDialogProps = {
   color: "w" | "b";
 
-  onSelect: (piece: PromotionPiece) => void;
+  onSelect: (
+    piece: PromotionPiece
+  ) => void;
 
   onCancel: () => void;
 };
 
 const promotionPieces = [
-  { type: "q", name: "Queen" },
-  { type: "r", name: "Rook" },
-  { type: "b", name: "Bishop" },
-  { type: "n", name: "Knight" },
+  {
+    type: "q",
+    name: "Queen",
+  },
+  {
+    type: "r",
+    name: "Rook",
+  },
+  {
+    type: "b",
+    name: "Bishop",
+  },
+  {
+    type: "n",
+    name: "Knight",
+  },
 ] as const;
 
 const whiteSymbols = {
@@ -36,43 +55,57 @@ function PromotionDialog({
   onCancel,
 }: PromotionDialogProps) {
   const symbols =
-    color === "w" ? whiteSymbols : blackSymbols;
+    color === "w"
+      ? whiteSymbols
+      : blackSymbols;
 
   return (
-    <div className="promotion-overlay">
-      <div
-        className="promotion-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Choose a promotion piece"
-      >
-        <h2>Choose your promotion</h2>
-
-        <p>Select the piece your pawn will become.</p>
-
-        <div className="promotion-options">
-          {promotionPieces.map((piece) => (
+    <Dialog
+      open={true}
+      title="CHOOSE PROMOTION"
+      description={
+        "Select the piece your Pawn will become"
+      }
+      onClose={onCancel}
+      dismissible={true}
+    >
+      <div className="promotion-options">
+        {promotionPieces.map(
+          (piece) => (
             <button
               key={piece.type}
-              onClick={() => onSelect(piece.type)}
+              type="button"
+              className="promotion-option"
+              onClick={() =>
+                onSelect(piece.type)
+              }
+              aria-label={
+                `Promote to ${piece.name}`
+              }
             >
-              <span className="promotion-symbol">
+              <span
+                className="promotion-symbol"
+                aria-hidden="true"
+              >
                 {symbols[piece.type]}
               </span>
 
-              <span>{piece.name}</span>
+              <span className="promotion-name">
+                {piece.name}
+              </span>
             </button>
-          ))}
-        </div>
-
-        <button
-          className="cancel-promotion"
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
+          )
+        )}
       </div>
-    </div>
+
+      <button
+        type="button"
+        className="promotion-cancel"
+        onClick={onCancel}
+      >
+        CANCEL
+      </button>
+    </Dialog>
   );
 }
 

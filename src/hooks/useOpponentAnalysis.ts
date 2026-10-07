@@ -38,6 +38,11 @@ import {
       isAnalyzing,
       setIsAnalyzing,
     ] = useState(false);
+
+    const [
+      error,
+      setError,
+    ] = useState<string | null>(null);
   
     const generationRef =
       useRef(0);
@@ -58,6 +63,7 @@ import {
         setIsReady(false);
         setIsAnalyzing(false);
         setResult(null);
+        setError(null);
   
         engine.onResult(
           (analysisResult) => {
@@ -93,13 +99,21 @@ import {
           ) {
             return;
           }
-  
+        
           console.error(
             "Opponent analysis error:",
             error
           );
-  
+        
+          const message =
+            error instanceof Error
+              ? error.message
+              : String(error);
+        
           activeFenRef.current = null;
+        
+          setError(message);
+          setIsReady(false);
           setIsAnalyzing(false);
         });
   
@@ -160,6 +174,7 @@ import {
           }
   
           setResult(null);
+          setError(null);
           setIsAnalyzing(true);
           activeFenRef.current = fen;
 
@@ -189,6 +204,7 @@ import {
       engineRef.current = null;
 
       setResult(null);
+      setError(null);
       setIsReady(false);
       setIsAnalyzing(false);
 
@@ -198,6 +214,7 @@ import {
     return {
       isReady,
       isAnalyzing,
+      error,
       result,
       analyze,
       cancel,

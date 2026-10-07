@@ -3,7 +3,7 @@ import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
 import PromotionDialog from "./components/PromotionDialog";
-import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus as getChessGameStatus, getMoveHistory } from "./lib/chessGame";
+import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus as getChessGameStatus } from "./lib/chessGame";
 import { parseUciMove } from "./engine/uci";
 import { useMoveAnalysis } from "./hooks/useMoveAnalysis";
 import { updateSkillFromAnalysis } from "./lib/skillEstimator";
@@ -16,13 +16,17 @@ import { updateOpponentForm, } from "./lib/opponentForm";
 import { getDisplayedRating } from "./lib/displayRating";
 import "./App.css";
 import { devLog } from "./lib/devLogger";
-import ColorSelectionDialog from "./components/ColorSelectionDialog";
+import NewGameDialog, { type NewGameSettings, } from "./components/NewGameDialog";
 import ProfilePage from "./pages/ProfilePage";
 type AppPage = "game" | "profile";
 import { loadProfile, saveProfile, addStoredGame, resetProfile } from "./lib/profile/profileStorage";
 import { createStoredGame, getStoredGameResult, } from "./lib/profile/createStoredGame";
 import type { PlayerProfile } from "./lib/profile/types";
 import { getCheckmateWinner, } from "./lib/postGame/gameResult";
+import { applyAccentTheme } from "./lib/preferences/applyAccentTheme";
+import { loadPreferences, savePreferences } from "./lib/preferences/preferencesStorage";
+import type { AccentTheme } from "./lib/preferences/types";
+import { UserRound, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ChevronDown, } from "lucide-react";
 
 //PostGame
 import { buildGameRecord } from "./lib/postGame/buildGameRecord";
@@ -58,6 +62,66 @@ const MOVE_TIERS = [
   "wood",
 ] as const;
 
+type BoardIdentityProps = {
+  type: "player" | "opponent";
+
+  playerRating: number;
+
+  engineStatus:
+    | "ready"
+    | "thinking"
+    | "error";
+};
+
+function BoardIdentity({
+  type,
+  playerRating,
+  engineStatus,
+}: BoardIdentityProps) {
+  if (type === "player") {
+    return (
+      <div
+        className="board-identity board-identity--player"
+        data-tooltip="PLAYER ELO"
+        aria-label={`Player Elo: ${playerRating}`}
+        tabIndex={0}
+      >
+        <p className="board-player-rating">
+          {playerRating}
+        </p>
+      </div>
+    );
+  }
+
+  const statusLabel =
+    engineStatus === "thinking"
+      ? "THINKING"
+      : engineStatus === "error"
+        ? "ENGINE ERROR"
+        : "READY";
+
+  return (
+    <div
+      className="board-identity board-identity--opponent"
+      data-tooltip={statusLabel}
+      aria-label={`Adaptive opponent: ${statusLabel}`}
+      tabIndex={0}
+    >
+      <span
+        className={
+          `engine-status-dot ` +
+          `engine-status-dot--${engineStatus}`
+        }
+        aria-hidden="true"
+      />
+
+      <p className="board-opponent-label">
+        Adaptive Opponent
+      </p>
+    </div>
+  );
+}
+
 function App() {
   const gameIdRef = useRef(0);
   const [completedGame, setCompletedGame] = useState<CompletedGameRecord | null>(null);
@@ -69,8 +133,6 @@ function App() {
   const opponentFormRef = useRef(0);
   const {
     isAnalyzing: isReviewAnalyzing,
-    completedMoves: reviewedMoveCount,
-    totalMoves: reviewTotalMoves,
     results: reviewResults,
     error: reviewError,
     isComplete: isReviewComplete,
@@ -99,9 +161,19 @@ function App() {
   );
 
   const [
-    isColorDialogOpen,
-    setIsColorDialogOpen,
+    userPreferences,
+    setUserPreferences,
+  ] = useState(() => loadPreferences());
+
+  const [
+    isNewGameDialogOpen,
+    setIsNewGameDialogOpen,
   ] = useState(true);
+
+  const [
+    hasStartedFirstGame,
+    setHasStartedFirstGame,
+  ] = useState(false);
 
   const opponentColor: PlayerColor =
   playerColor === "white"
@@ -170,11 +242,6 @@ function App() {
   const gameStartRatingRef = useRef(estimatedPlayerRating);
   const storedGameIdRef = useRef<string | null>(null);
 
-  const opponentConfig = createOpponentConfig(
-    estimatedPlayerRating,
-    trainingMode
-  );
-
   const [
     pendingOpponentSkill,
     setPendingOpponentSkill,
@@ -182,14 +249,13 @@ function App() {
     null
   );
 
-  // Store whether the game has started.
-  const gameHasStarted = game.history().length > 0;
-
   const {
     isReady:
       opponentAnalysisReady,
     isAnalyzing:
       opponentAnalysisRunning,
+    error:
+      opponentAnalysisError,
     result:
       opponentAnalysisResult,
     analyze:
@@ -210,6 +276,22 @@ function App() {
 
   const [appPage, setAppPage] =
       useState<AppPage>("game");
+
+    const currentGameStatus =
+    getChessGameStatus(game);
+  
+  const normalizedGameStatus =
+    currentGameStatus.toLowerCase();
+  
+  const gameStatusTone:
+    | "normal"
+    | "warning"
+    | "finished" =
+    game.isGameOver()
+      ? "finished"
+      : normalizedGameStatus.includes("check")
+        ? "warning"
+        : "normal";
       
   // Analyze the opponent position with the
   // full-strength objective analysis engine.
@@ -233,6 +315,16 @@ function App() {
     opponentAnalysisRunning,
     analyzeOpponentPosition,
   ]);
+
+  useEffect(() => {
+    applyAccentTheme(
+      userPreferences.accentTheme
+    );
+  
+    savePreferences(
+      userPreferences
+    );
+  }, [userPreferences]);
 
   useEffect(() => {
     if (
@@ -510,6 +602,17 @@ function App() {
     }
   }, [game]);
 
+  function handleAccentThemeChange(
+    accentTheme: AccentTheme
+  ) {
+    setUserPreferences(
+      (currentPreferences) => ({
+        ...currentPreferences,
+        accentTheme,
+      })
+    );
+  }
+
   //Reset the player profile and the estimated player rating.
   function handleResetProgress() {
     const freshProfile =
@@ -740,14 +843,81 @@ function App() {
     );
   }
 
+  useEffect(() => {
+    if (
+      !isReviewMode ||
+      !isReviewComplete ||
+      !completedGame
+    ) {
+      return;
+    }
+  
+    const totalMoves: number =
+      completedGame.moves.length;
+  
+    const handleReviewKeyDown = (
+      event: KeyboardEvent
+    ) => {
+      const target =
+        event.target as HTMLElement | null;
+  
+      if (
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT" ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+  
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+  
+        setSelectedReviewPly((current) =>
+          Math.max(1, current - 1)
+        );
+  
+        return;
+      }
+  
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+  
+        setSelectedReviewPly((current) =>
+          Math.min(
+            totalMoves,
+            current + 1
+          )
+        );
+      }
+    };
+  
+    window.addEventListener(
+      "keydown",
+      handleReviewKeyDown
+    );
+  
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        handleReviewKeyDown
+      );
+    };
+  }, [
+    isReviewMode,
+    isReviewComplete,
+    completedGame,
+  ]);
+
   function requestNewGame() {
-    setIsColorDialogOpen(true);
+    setIsNewGameDialogOpen(true);
   }
 
 
   // Reset the game to a new position.
   function resetGame(
-    color: PlayerColor
+    color: PlayerColor,
+    mode: TrainingMode
   ) {
     cancelOpponentAnalysis();
     cancelPostGameAnalysis();
@@ -773,6 +943,7 @@ function App() {
     const newGame = new Chess();
 
     setPlayerColor(color);
+    setTrainingMode(mode);
     setBoardOrientation(color);
     setGame(newGame);
     setPendingPromotion(null);
@@ -799,11 +970,16 @@ function App() {
   }
 
   // Choose the player color.
-  function choosePlayerColor(
-    color: PlayerColor
+  function handleStartNewGame(
+    settings: NewGameSettings
   ) {
-    setIsColorDialogOpen(false);
-    resetGame(color);
+    setIsNewGameDialogOpen(false);
+    setHasStartedFirstGame(true);
+  
+    resetGame(
+      settings.playerColor,
+      settings.trainingMode
+    );
   }
 
   // Undo the most recent move. 
@@ -921,27 +1097,47 @@ function App() {
       function blockReviewMove() {
         return false;
       }
-      const topColor: PlayerColor =
-        boardOrientation === "white"
-          ? "black"
-          : "white";
+    const topColor: PlayerColor =
+      boardOrientation === "white"
+        ? "black"
+        : "white";
 
-      const bottomColor: PlayerColor =
-        boardOrientation === "white"
-          ? "white"
-          : "black";
+    const bottomColor: PlayerColor =
+      boardOrientation === "white"
+        ? "white"
+        : "black";
 
-      function getPlayerLabel(
-        color: PlayerColor
-      ): string {
-        if (color === playerColor) {
-          return `Estimated Skill: ${getDisplayedRating(
-            estimatedPlayerRating
-          )}`;
-        }
+  const topIdentity: "player" | "opponent" =
+  topColor === playerColor
+    ? "player"
+    : "opponent";
+  
+  const bottomIdentity: "player" | "opponent" =
+    bottomColor === playerColor
+      ? "player"
+      : "opponent";
+  
+  const displayedPlayerRating =
+    getDisplayedRating(
+      estimatedPlayerRating
+    );
 
-    return "ADAPTIVE OPPONENT";
-  }
+    const engineStatus:
+    | "ready"
+    | "thinking"
+    | "error" =
+    opponentAnalysisError
+      ? "error"
+      : opponentStatus === "thinking" ||
+          opponentStatus === "starting"
+        ? "thinking"
+        : "ready";
+
+  const canUndoPlayerMove =
+    game.history().some(
+      (_, index) =>
+        getMoveColor(index) === playerColor
+    );
 
   useEffect(() => {
     if (
@@ -1048,11 +1244,61 @@ function App() {
     estimatedPlayerRating,
   ]);
 
+  const postGamePlayerResult:
+  | "victory"
+  | "defeat"
+  | "draw"
+  | null =
+  completedGame === null
+    ? null
+    : completedGame.result === "draw"
+      ? "draw"
+      : completedGame.result === playerColor
+        ? "victory"
+        : "defeat";
+
+  const postGameRatingChange =
+  completedGame
+    ? estimatedPlayerRating -
+      gameStartRatingRef.current
+    : 0;
+
+  const formattedRatingChange =
+  postGameRatingChange > 0
+    ? `+${postGameRatingChange}`
+    : postGameRatingChange < 0
+      ? `${postGameRatingChange}`
+      : "±0";
+
+  const postGameResultLabel =
+  postGamePlayerResult === "victory"
+    ? "VICTORY"
+    : postGamePlayerResult === "defeat"
+      ? "DEFEAT"
+      : postGamePlayerResult === "draw"
+        ? "DRAW"
+        : null;
+
+  const postGameChessResult =
+  completedGame?.result === "white"
+    ? "WHITE WINS"
+    : completedGame?.result === "black"
+      ? "BLACK WINS"
+      : completedGame?.result === "draw"
+        ? "DRAW"
+        : null;
+
   //Display Profile Page FINAL BEFORE RETURN
   if (appPage === "profile") {
     return (
       <ProfilePage
         profile={playerProfile}
+        accentTheme={
+          userPreferences.accentTheme
+        }
+        onAccentThemeChange={
+          handleAccentThemeChange
+        }
         onBackToGame={() =>
           setAppPage("game")
         }
@@ -1062,139 +1308,301 @@ function App() {
       />
     );
   }
+
   // Display the application.
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Adaptive Chess Trainer</h1>
-        <p>Play. Analyze. Improve.</p>
-      </header>
-      <button
-        type="button"
-        className="profile-nav-button"
-        onClick={() =>
-          setAppPage("profile")
-        }
-        aria-label="View player profile"
-        title="View player profile"
-      >
-        👤
-      </button>
+        <div className="app-header__brand">
+          <h1>ADAPTIVE CHESS TRAINER</h1>
 
-      <main className="game-layout">
-        <section className="board-section">
-        <div className="player-info">
-          <span>
-            {topColor === "white"
-              ? "White"
-              : "Black"}
-          </span>
-
-          <span>
-            {getPlayerLabel(topColor)}
-          </span>
+          {/* <p>Train Smarter - Play Stronger</p> */}
         </div>
 
-          <ChessBoard
-            position={displayedBoardPosition}
-            orientation={boardOrientation}
-            onMove={
-              isReviewMode
-                ? blockReviewMove
-                : makeMove
-            }
-            arrows={reviewArrows}
+        <button
+          type="button"
+          className="profile-nav-button"
+          onClick={() =>
+            setAppPage("profile")
+          }
+          aria-label="Player profile"
+          data-tooltip="PLAYER PROFILE"
+        >
+          <UserRound
+            size={21}
+            strokeWidth={1.8}
+            aria-hidden="true"
           />
+        </button>
+      </header>
 
-          <div className="player-info">
-            <span>
-              {bottomColor === "white"
-                ? "White"
-                : "Black"}
-            </span>
+      <main className="game-layout">
+        <div className="game-board-column">
+        <section className="board-section">
+          <div className="game-board-area">
+            <BoardIdentity
+              type={topIdentity}
+              playerRating={
+                displayedPlayerRating
+              }
+              engineStatus={
+                engineStatus
+              }
+            />
 
-            <span>
-              {getPlayerLabel(bottomColor)}
-            </span>
+            <ChessBoard
+              position={
+                displayedBoardPosition
+              }
+              orientation={
+                boardOrientation
+              }
+              onMove={
+                isReviewMode
+                  ? blockReviewMove
+                  : makeMove
+              }
+              arrows={
+                reviewArrows
+              }
+            />
+
+            <BoardIdentity
+              type={bottomIdentity}
+              playerRating={
+                displayedPlayerRating
+              }
+              engineStatus={
+                engineStatus
+              }
+            />
           </div>
         </section>
+        {completedGame &&
+          isReviewMode &&
+          isReviewComplete && (
+            <section className="board-evaluation">
 
+              <div className="analysis-section-heading">
+                <span>Evaluation</span>
+
+                <span>
+                  White + / Black −
+                </span>
+              </div>
+
+              <EvaluationTimeline
+                points={evaluationTimeline}
+                selectedPly={selectedReviewPly}
+                onSelectedPlyChange={
+                  setSelectedReviewPly
+                }
+              />
+
+              <div className="review-navigation">
+
+                <button
+                  type="button"
+                  className="review-navigation__button"
+                  onClick={reviewStart}
+                  disabled={selectedReviewPly <= 1}
+                  aria-label="First move"
+                  data-tooltip="FIRST MOVE"
+                >
+                  <ChevronsLeft
+                    size={19}
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  className="review-navigation__button"
+                  onClick={reviewPrevious}
+                  disabled={selectedReviewPly <= 1}
+                  aria-label="Previous move"
+                  data-tooltip="PREVIOUS MOVE"
+                >
+                  <ChevronLeft
+                    size={19}
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                <div className="review-navigation__position">
+                  <span aria-live="polite">
+                    MOVE {selectedReviewPly} /{" "}
+                    {completedGame.moves.length}
+                  </span>
+
+                  <small>
+                    ← / → TO NAVIGATE
+                  </small>
+                </div>
+
+                <button
+                  type="button"
+                  className="review-navigation__button"
+                  onClick={reviewNext}
+                  disabled={
+                    selectedReviewPly ===
+                    completedGame.moves.length
+                  }
+                  aria-label="Next move"
+                  data-tooltip="NEXT MOVE"
+                >
+                  <ChevronRight
+                    size={19}
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  className="review-navigation__button"
+                  onClick={reviewEnd}
+                  disabled={
+                    selectedReviewPly ===
+                    completedGame.moves.length
+                  }
+                  aria-label="Last move"
+                  data-tooltip="LAST MOVE"
+                >
+                  <ChevronsRight
+                    size={19}
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                </button>
+
+              </div>
+
+            </section>
+          )}
+        </div>
+        <div className="game-sidebar">
         <GamePanel
-          status={getChessGameStatus(game)}
-          moveHistory={getMoveHistory(game)}
-          opponentStatus={opponentStatus}
+          status={currentGameStatus}
+          statusTone={gameStatusTone}
+          trainingMode={trainingMode}
+
           onUndo={undoMove}
-          undoDisabled={isReviewMode}
+          undoDisabled={
+            isReviewMode ||
+            !canUndoPlayerMove
+          }
+
           onNewGame={requestNewGame}
           onFlipBoard={flipBoard}
-        />
-        {completedGame && (
-          <section className="post-game-review">
-            <h3>
-              {isReviewMode
-                ? "Game Analysis"
-                : "Game Over"}
-            </h3>
 
-            <p>
-              Result: {completedGame.result}
-            </p>
+          onAnalyze={handleAnalyzeGame}
+
+          showAnalyze={
+            completedGame !== null &&
+            (
+              !isReviewMode ||
+              isReviewAnalyzing ||
+              reviewError !== null
+            )
+          }
+
+          postGameResult={
+            postGameResultLabel &&
+            postGameChessResult
+              ? {
+                  label: postGameResultLabel,
+                  ratingChange:
+                    formattedRatingChange,
+                  chessResult:
+                    postGameChessResult,
+                }
+              : null
+          }
+
+          isAnalysisLoading={
+            isReviewMode &&
+            isReviewAnalyzing
+          }
+
+          isAnalysisMode={
+            isReviewMode &&
+            isReviewComplete
+          }
+
+          analysisError={
+            reviewError !== null
+          }
+        />
+        {completedGame && isReviewMode &&(
+          <section className="post-game-review">
+            <div className="analysis-header">
+              <span className="analysis-eyebrow">
+                POST-GAME REVIEW
+              </span>
+
+              <h2>Game Analysis</h2>
+
+              <span className="analysis-perspective">
+                Evaluation · White Perspective
+              </span>
+            </div>
             {matchSummary && (
               <div className="game-summary">
-                <h3>Game Summary</h3>
-
                 <div className="game-summary-main">
-                  <div>
-                    <span>Your Accuracy</span>
+              
+                  <div className="analysis-stat">
+                    <span>Accuracy</span>
+              
                     <strong>
                       {matchSummary.player.accuracy !== null
                         ? `${matchSummary.player.accuracy.toFixed(1)}%`
                         : "N/A"}
                     </strong>
                   </div>
-
-                  <div>
-                    <span>Opponent Accuracy</span>
-                    <strong>
-                      {matchSummary.opponent.accuracy !== null
-                        ? `${matchSummary.opponent.accuracy.toFixed(1)}%`
-                        : "N/A"}
-                    </strong>
-                  </div>
-
-                  <div>
-                    <span>AVG-CPL</span>
+              
+                  <div className="analysis-stat">
+                    <span>Avg CPL</span>
+              
                     <strong>
                       {matchSummary.player.averageCentipawnLoss !== null
                         ? matchSummary.player.averageCentipawnLoss.toFixed(1)
                         : "N/A"}
                     </strong>
                   </div>
-
-                  <div>
-                    <span>Gradable Moves</span>
-                    <strong>
-                      {matchSummary.player.gradableMoves}
-                    </strong>
-                  </div>
-                  <div>
-                    <span>Forced Moves</span>
-                    <strong>
-                      {matchSummary.player.forcedMoves}
-                    </strong>
-                  </div>
                 </div>
 
-                <div className="tier-summary">
-                  <h4>Move Quality</h4>
+                <details className="tier-summary">
+                  <summary className="tier-summary__toggle">
 
-                  <div className="tier-summary-grid">
+                    <span>Move Quality</span>
+
+                    <span className="tier-summary__toggle-right">
+                      {matchSummary.player.gradableMoves} graded
+
+                      <ChevronDown
+                        className="tier-summary__chevron"
+                        size={17}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    </span>
+
+                  </summary>
+
+                  <div className="tier-summary-list">
+
                     {MOVE_TIERS.map((tier) => (
                       <div
-                        className={`tier-summary-item tier-summary-${tier}`}
+                        className={
+                          `tier-summary-row ` +
+                          `tier-summary-${tier}`
+                        }
                         key={tier}
                       >
-                        <span>
+                        <span className="tier-summary-row__name">
                           {formatTierName(tier)}
                         </span>
 
@@ -1206,107 +1614,26 @@ function App() {
                         </strong>
                       </div>
                     ))}
+
                   </div>
-                </div>
-              </div>
-            )}
-            {!isReviewMode && (
-              <button
-                type="button"
-                onClick={handleAnalyzeGame}
-              >
-                Analyze Game
-              </button>
-            )}
-
-            {isReviewMode && isReviewAnalyzing && (
-              <div>
-                <p>
-                  Analyzing moves:{" "}
-                  {reviewedMoveCount} /{" "}
-                  {reviewTotalMoves}
-                </p>
-
-                <progress
-                  value={reviewedMoveCount}
-                  max={Math.max(
-                    reviewTotalMoves,
-                    1
-                  )}
-                />
+                </details>
               </div>
             )}
 
-            {isReviewMode && reviewError && (
-              <p role="alert">
-                Analysis error: {reviewError}
-              </p>
-            )}
 
-            {isReviewMode && isReviewComplete && (
-              <div className = "completed-review">
-                <EvaluationTimeline
-                  points={evaluationTimeline}
-                  selectedPly={selectedReviewPly}
-                  onSelectedPlyChange={
-                    setSelectedReviewPly
-                  }
-                />
-              <div className="review-navigation">
-                <button
-                  type="button"
-                  onClick={reviewStart}
-                  disabled={selectedReviewPly <= 1}
-                >
-                  Start
-                </button>
-
-                <button
-                  type="button"
-                  onClick={reviewPrevious}
-                  disabled={selectedReviewPly <= 1}
-                >
-                  Previous
-                </button>
-
-                <span aria-live="polite">
-                  Move {selectedReviewPly} / {completedGame.moves.length}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={reviewNext}
-                  disabled={
-                    selectedReviewPly ===
-                    completedGame.moves.length
-                  }
-                >
-                  Next
-                </button>
-
-                <button
-                  type="button"
-                  onClick={reviewEnd}
-                  disabled={
-                    selectedReviewPly ===
-                    completedGame.moves.length
-                  }
-                >
-                  End
-                </button>
-              </div>
-            </div>
-            )}
             {selectedAnalyzedMove && (
               <div className="review-move-details">
                 <div className="review-move-header">
-                  <div>
-                    <span className="review-move-label">
-                      Move {selectedAnalyzedMove.ply}
-                    </span>
-              
-                    <h4>{selectedAnalyzedMove.san}</h4>
-                  </div>
+                <div>
+                  <span className="review-move-label">
+                    MOVE {selectedAnalyzedMove.ply} ·{" "}
+                    {selectedAnalyzedMove.playedBy === "white"
+                      ? "WHITE"
+                      : "BLACK"}
+                  </span>
+
+                  <h4>{selectedAnalyzedMove.san}</h4>
+                </div>
               
                   {selectedAnalyzedMove.tier && (
                     <span
@@ -1320,42 +1647,34 @@ function App() {
                 </div>
               
                 <div className="review-move-stats">
-                  <div>
-                    <span>Played by</span>
+                  <span
+                    className="review-move-value review-move-value--played"
+                    data-tooltip="PLAYED MOVE"
+                    tabIndex={0}
+                  >
+                    {selectedAnalyzedMove.uci}
+                  </span>
+
+                  <span
+                    className="review-move-value review-move-value--best"
+                    data-tooltip="BEST MOVE"
+                    tabIndex={0}
+                  >
+                    {selectedAnalyzedMove.bestMoveUci ?? "Unavailable"}
+                  </span>
+
+                  <div className="review-eval-stat">
+                    <span>
+                      {selectedAnalyzedMove.qualitySource === "mate"
+                        ? "EVAL"
+                        : "CPL"}
+                    </span>
+
                     <strong>
-                      {selectedAnalyzedMove.playedBy === "white"
-                        ? "White"
-                        : "Black"}
-                    </strong>
-                  </div>
-              
-                  <div>
-                    <span>Played move</span>
-                    <strong>
-                      {selectedAnalyzedMove.uci}
-                    </strong>
-                  </div>
-              
-                  <div>
-                    <span>Best move</span>
-                    <strong>
-                      {selectedAnalyzedMove.bestMoveUci ??
-                        "Unavailable"}
-                    </strong>
-                  </div>
-              
-                  <div>
-                    <span>Centipawn loss</span>
-              
-                    <strong>
-                      {selectedAnalyzedMove.qualitySource ===
-                        "centipawn" &&
+                      {selectedAnalyzedMove.qualitySource === "centipawn" &&
                       selectedAnalyzedMove.centipawnLoss !== null
-                        ? selectedAnalyzedMove.centipawnLoss.toFixed(
-                            1
-                          )
-                        : selectedAnalyzedMove.qualitySource ===
-                            "mate"
+                        ? selectedAnalyzedMove.centipawnLoss.toFixed(1)
+                        : selectedAnalyzedMove.qualitySource === "mate"
                           ? "Mate"
                           : "N/A"}
                     </strong>
@@ -1371,66 +1690,18 @@ function App() {
             )}   
           </section>
         )}
-     
-        <div className="training-settings">
-          <h3>Training difficulty</h3>
-
-          <div className="training-options">
-            <button
-              type="button"
-              onClick={() => setTrainingMode("easy")}
-              disabled={gameHasStarted}
-              aria-pressed={trainingMode === "easy"}
-            >
-              Easy
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTrainingMode("medium")}
-              disabled={gameHasStarted}
-              aria-pressed={trainingMode === "medium"}
-            >
-              Medium
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTrainingMode("hard")}
-              disabled={gameHasStarted}
-              aria-pressed={trainingMode === "hard"}
-            >
-              Hard  
-            </button>
-          </div>
-
-          <p>
-            Estimated skill: {getDisplayedRating(estimatedPlayerRating)}
-          </p>
-
-          <p>
-            Target opponent: {getDisplayedRating(opponentConfig.targetRating)}
-          </p>
-
-          {gameHasStarted && (
-            <p>
-              Training difficulty is locked for this game.
-            </p>
-          )}
         </div>
       </main>
-      {isColorDialogOpen && (
-        <ColorSelectionDialog
-          onSelect={choosePlayerColor}
-          onCancel={
-            gameHasStarted ||
-            completedGame
-              ? () =>
-                  setIsColorDialogOpen(false)
-              : undefined
-          }
-        />
-      )}
+      <NewGameDialog
+        open={isNewGameDialogOpen}
+        initialPlayerColor={playerColor}
+        initialTrainingMode={trainingMode}
+        dismissible={hasStartedFirstGame}
+        onClose={() =>
+          setIsNewGameDialogOpen(false)
+        }
+        onStartGame={handleStartNewGame}
+      />
       {pendingPromotion && (
         <PromotionDialog
           color={game.turn()}
