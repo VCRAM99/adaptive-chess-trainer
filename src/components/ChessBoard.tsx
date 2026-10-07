@@ -1,12 +1,26 @@
 import { Chessboard } from "react-chessboard";
 import type { Square } from "chess.js";
 import type { ReviewArrow } from "../lib/postGame/reviewArrows";
+import {
+  BOARD_THEMES,
+} from "../lib/preferences/boardThemes";
+
+import type {
+  BoardTheme,
+  PieceSet,
+} from "../lib/preferences/types";
+import {
+  getCustomPieces,
+} from "../lib/preferences/pieceSets";
+
+
 
 // Define the information this component receives.
 type ChessBoardProps = {
   position: string;
   orientation: "white" | "black";
-
+  boardTheme: BoardTheme;
+  pieceSet: PieceSet;
   onMove: (
     source: Square,
     target: Square
@@ -20,6 +34,8 @@ type ChessBoardProps = {
 function ChessBoard({
   position,
   orientation,
+  boardTheme,
+  pieceSet,
   onMove,
   arrows = [],
 }: ChessBoardProps) {
@@ -31,11 +47,16 @@ function ChessBoard({
   }));
 
 
+  const boardColors = BOARD_THEMES[boardTheme];
+  const customPieces =
+  getCustomPieces(pieceSet);
   const chessboardOptions = {
     position: position,
 
     boardOrientation: orientation,
     arrows: boardArrows,
+
+    pieces: customPieces,
 
     onPieceDrop: ({
       sourceSquare,
@@ -55,11 +76,11 @@ function ChessBoard({
     },
 
     lightSquareStyle: {
-      backgroundColor: "#eeeed2",
+      backgroundColor: boardColors.light,
     },
-
+    
     darkSquareStyle: {
-      backgroundColor: "#769656",
+      backgroundColor: boardColors.dark,
     },
 
     boardStyle: {

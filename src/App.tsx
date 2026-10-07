@@ -1296,9 +1296,26 @@ function App() {
         accentTheme={
           userPreferences.accentTheme
         }
+        boardTheme={userPreferences.boardTheme}
+        pieceSet={
+          userPreferences.pieceSet
+        }
         onAccentThemeChange={
           handleAccentThemeChange
         }
+
+        onPieceSetChange={(pieceSet) => {
+          setUserPreferences((current) => ({
+            ...current,
+            pieceSet,
+          }));
+        }}
+        onBoardThemeChange={(boardTheme) => {
+          setUserPreferences((current) => ({
+            ...current,
+            boardTheme,
+          }));
+        }}
         onBackToGame={() =>
           setAppPage("game")
         }
@@ -1357,6 +1374,8 @@ function App() {
               orientation={
                 boardOrientation
               }
+              boardTheme={userPreferences.boardTheme}
+              pieceSet={userPreferences.pieceSet}
               onMove={
                 isReviewMode
                   ? blockReviewMove

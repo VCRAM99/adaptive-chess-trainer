@@ -18,7 +18,13 @@ import { ArrowLeft, UserRound } from "lucide-react";
 
 import type {
   AccentTheme,
+  BoardTheme,
+  PieceSet,
 } from "../lib/preferences/types";
+
+import {
+  BOARD_THEMES,
+} from "../lib/preferences/boardThemes";
 
 import {
   calculateCareerStatistics,
@@ -41,9 +47,19 @@ type ProfilePageProps = {
   profile: PlayerProfile;
 
   accentTheme: AccentTheme;
+  boardTheme: BoardTheme;
+  pieceSet: PieceSet;
 
   onAccentThemeChange: (
     theme: AccentTheme
+  ) => void;
+
+  onBoardThemeChange: (
+    theme: BoardTheme
+  ) => void;
+
+  onPieceSetChange: (
+    pieceSet: PieceSet
   ) => void;
 
   onBackToGame: () => void;
@@ -53,6 +69,10 @@ type ProfilePageProps = {
 function ProfilePage({
   profile,
   accentTheme,
+  boardTheme,
+  pieceSet,
+  onBoardThemeChange,
+  onPieceSetChange,
   onAccentThemeChange,
   onBackToGame,
   onResetProgress,
@@ -151,10 +171,14 @@ function ProfilePage({
           <div>
             <h2>Appearance</h2>
             <p>
-              Personalize your trainer's accent color.
+              Personalize your trainer's accent color and board theme.
             </p>
           </div>
         </div>
+
+        <h3 className="appearance-label">
+          Accent Color
+        </h3>
 
         <div className="accent-picker">
           {Object.values(
@@ -188,6 +212,116 @@ function ProfilePage({
                 <span>
                   {theme.label}
                 </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <h3 className="appearance-label">
+          Board Theme
+        </h3>
+
+        <div className="board-theme-picker">
+          {Object.entries(BOARD_THEMES).map(
+            ([id, colors]) => {
+              const themeId = id as BoardTheme;
+              const isSelected =
+                boardTheme === themeId;
+
+              const label =
+                themeId.charAt(0).toUpperCase() +
+                themeId.slice(1);
+
+              return (
+                <button
+                  key={themeId}
+                  type="button"
+                  className={
+                    isSelected
+                      ? "board-theme-option board-theme-option--selected"
+                      : "board-theme-option"
+                  }
+                  onClick={() =>
+                    onBoardThemeChange(themeId)
+                  }
+                  aria-pressed={isSelected}
+                >
+                  <span
+                    className="board-theme-option__swatch"
+                    aria-hidden="true"
+                  >
+                    <span
+                      style={{
+                        backgroundColor:
+                          colors.light,
+                      }}
+                    />
+                    <span
+                      style={{
+                        backgroundColor:
+                          colors.dark,
+                      }}
+                    />
+                    <span
+                      style={{
+                        backgroundColor:
+                          colors.dark,
+                      }}
+                    />
+                    <span
+                      style={{
+                        backgroundColor:
+                          colors.light,
+                      }}
+                    />
+                  </span>
+
+                  <span>{label}</span>
+                </button>
+              );
+            }
+          )}
+        </div>
+
+        <h3 className="appearance-label">
+          Piece Set
+        </h3>
+
+        <div className="piece-set-picker">
+          {(
+            [
+              {
+                id: "classic",
+                label: "Classic",
+              },
+              {
+                id: "modern",
+                label: "Modern",
+              },
+              {
+                id: "minimal",
+                label: "Minimal",
+              },
+            ] as const
+          ).map((option) => {
+            const isSelected =
+              pieceSet === option.id;
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                className={
+                  isSelected
+                    ? "piece-set-option piece-set-option--selected"
+                    : "piece-set-option"
+                }
+                onClick={() =>
+                  onPieceSetChange(option.id)
+                }
+                aria-pressed={isSelected}
+              >
+                <span>{option.label}</span>
               </button>
             );
           })}

@@ -1,5 +1,7 @@
 import type {
     AccentTheme,
+    BoardTheme,
+    PieceSet,
     UserPreferences,
   } from "./types";
   
@@ -7,9 +9,28 @@ import type {
     "adaptive-chess-trainer-preferences";
   
   const PREFERENCES_VERSION = 1;
+
+  export const DEFAULT_PIECE_SET: PieceSet =
+  "classic";
+
+const VALID_PIECE_SETS: PieceSet[] = [
+  "classic",
+  "modern",
+  "minimal",
+];
   
   export const DEFAULT_ACCENT_THEME: AccentTheme =
     "purple";
+
+    export const DEFAULT_BOARD_THEME: BoardTheme =
+    "purple";
+  
+  const VALID_BOARD_THEMES: BoardTheme[] = [
+    "grey",
+    "bamboo",
+    "green",
+    "purple",
+  ];
   
   const VALID_ACCENT_THEMES: AccentTheme[] = [
     "pink",
@@ -23,7 +44,20 @@ import type {
     return {
       version: PREFERENCES_VERSION,
       accentTheme: DEFAULT_ACCENT_THEME,
+      boardTheme: DEFAULT_BOARD_THEME,
+      pieceSet: DEFAULT_PIECE_SET,
     };
+  }
+
+  function isPieceSet(
+    value: unknown
+  ): value is PieceSet {
+    return (
+      typeof value === "string" &&
+      VALID_PIECE_SETS.includes(
+        value as PieceSet
+      )
+    );
   }
   
   function isAccentTheme(
@@ -33,6 +67,17 @@ import type {
       typeof value === "string" &&
       VALID_ACCENT_THEMES.includes(
         value as AccentTheme
+      )
+    );
+  }
+
+  function isBoardTheme(
+    value: unknown
+  ): value is BoardTheme {
+    return (
+      typeof value === "string" &&
+      VALID_BOARD_THEMES.includes(
+        value as BoardTheme
       )
     );
   }
@@ -53,7 +98,9 @@ import type {
     return (
       preferences.version ===
         PREFERENCES_VERSION &&
-      isAccentTheme(preferences.accentTheme)
+      isAccentTheme(preferences.accentTheme) &&
+      isBoardTheme(preferences.boardTheme) &&
+      isPieceSet(preferences.pieceSet)
     );
   }
   
@@ -69,6 +116,45 @@ import type {
     try {
       const parsed: unknown =
         JSON.parse(storedValue);
+  
+      if (
+        typeof parsed !== "object" ||
+        parsed === null
+      ) {
+        return createDefaultPreferences();
+      }
+  
+      const stored =
+        parsed as Partial<UserPreferences>;
+  
+      // Migrate preferences saved before board
+      // themes were introduced.
+      if (
+        stored.version ===
+          PREFERENCES_VERSION &&
+        isAccentTheme(stored.accentTheme)
+      ) {
+        const migrated: UserPreferences = {
+          version: PREFERENCES_VERSION,
+      
+          accentTheme:
+            stored.accentTheme,
+      
+          boardTheme:
+            isBoardTheme(stored.boardTheme)
+              ? stored.boardTheme
+              : DEFAULT_BOARD_THEME,
+      
+          pieceSet:
+            isPieceSet(stored.pieceSet)
+              ? stored.pieceSet
+              : DEFAULT_PIECE_SET,
+        };
+      
+        savePreferences(migrated);
+      
+        return migrated;
+      }
   
       if (!isValidPreferences(parsed)) {
         return createDefaultPreferences();
