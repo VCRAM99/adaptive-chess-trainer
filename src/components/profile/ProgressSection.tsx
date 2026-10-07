@@ -35,7 +35,7 @@ import {
   }[] = [
     {
       id: "rating",
-      label: "Estimated Skill",
+      label: "Rating",
     },
     {
       id: "accuracy",
@@ -123,7 +123,7 @@ import {
       <section className="profile-progress">
         <div className="profile-section-heading">
           <div>
-            <h2>Progress</h2>
+            <h2>Performance Trends</h2>
   
             <p>
               Track how your play changes
@@ -240,22 +240,24 @@ import {
           )}
         </div>
   
-        <TrendChart
-          points={selectedPoints}
-          valueSuffix={
-            selectedMetric ===
-            "accuracy"
-              ? "%"
-              : ""
-          }
-          lowerIsBetter={
-            selectedMetric === "cpl"
-          }
-        />
+        <div className="progress-chart-container">
+          <TrendChart
+            points={selectedPoints}
+            valueSuffix={
+              selectedMetric ===
+              "accuracy"
+                ? "%"
+                : ""
+            }
+            lowerIsBetter={
+              selectedMetric === "cpl"
+            }
+          />
+        </div>
   
         <p className="progress-filter-note">
           {selectedMetric === "rating"
-            ? "Estimated Skill shows your full career history."
+            ? "Rating progression includes all completed games."
             : "This graph uses the difficulties selected in Games Included."}
         </p>
       </section>

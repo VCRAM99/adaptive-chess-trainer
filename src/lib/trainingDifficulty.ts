@@ -16,6 +16,21 @@ export function getTargetOpponentRating(
   return playerRating + TRAINING_OFFSETS[mode];
 }
 
+export const TRAINING_MODE_LABELS: Record<
+  TrainingMode,
+  string
+> = {
+  easy: "Casual",
+  medium: "Echo",
+  hard: "Train",
+};
+
+export function getTrainingModeLabel(
+  mode: TrainingMode
+): string {
+  return TRAINING_MODE_LABELS[mode];
+}
+
 export function getStockfishRating(
   targetRating: number
 ) {

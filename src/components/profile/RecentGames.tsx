@@ -68,6 +68,21 @@ import {
       }
     ).format(new Date(playedAt));
   }
+
+  function formatTrainingMode(
+    mode: StoredGame["trainingMode"]
+  ): string {
+    switch (mode) {
+      case "easy":
+        return "Casual";
+  
+      case "medium":
+        return "Echo";
+  
+      case "hard":
+        return "Train";
+    }
+  }
   
   function RecentGames({
     games,
@@ -157,75 +172,62 @@ import {
   
         <div className="recent-games-list">
           {visibleGames.map((game) => {
-            const before =
-              getDisplayedRating(
-                game.ratingBefore
-              );
-  
-            const after =
-              getDisplayedRating(
-                game.ratingAfter
-              );
   
             return (
               <article
-                key={game.id}
-                className={
-                  `recent-game-card ` +
-                  `recent-game-${game.result}`
-                }
-              >
-                <div className="recent-game-result">
-                  <strong>
-                    {game.result.toUpperCase()}
-                  </strong>
-  
-                  <span>
-                    {formatRatingChange(
-                      game.ratingBefore,
-                      game.ratingAfter
-                    )}
-                  </span>
-                </div>
-  
-                <div className="recent-game-details">
-                  <strong>
-                    {capitalize(
-                      game.playerColor
-                    )}
-                    {" • "}
-                    {capitalize(
-                      game.trainingMode
-                    )}
-                  </strong>
-  
-                  <span>
-                    Accuracy{" "}
-                    {game.accuracy !== null
-                      ? `${game.accuracy.toFixed(
-                          1
-                        )}%`
-                      : "N/A"}
-                    {" • "}
-                    {game.moveCount}{" "}
-                    {game.moveCount === 1
-                      ? "move"
-                      : "moves"}
-                  </span>
-  
-                  <span>
-                    Skill {before} → {after}
-                  </span>
-                </div>
-  
-                <time
-                  dateTime={game.playedAt}
+                  key={game.id}
+                  className={`recent-game-card recent-game-${game.result}`}
                 >
-                  {formatDate(
-                    game.playedAt
-                  )}
-                </time>
-              </article>
+                  <div className="recent-game-result">
+                    <strong>
+                      {game.result === "win"
+                        ? "VICTORY"
+                        : game.result === "loss"
+                          ? "DEFEAT"
+                          : "DRAW"}
+                    </strong>
+
+                    <span
+                      className={`recent-game-rating-change ${
+                        game.ratingAfter > game.ratingBefore
+                          ? "recent-game-rating-positive"
+                          : game.ratingAfter < game.ratingBefore
+                            ? "recent-game-rating-negative"
+                            : ""
+                      }`}
+                    >
+                      {formatRatingChange(
+                        game.ratingBefore,
+                        game.ratingAfter
+                      )}{" "}
+                      Elo
+                    </span>
+                  </div>
+
+                  <div className="recent-game-details">
+                    <strong>
+                      {capitalize(game.playerColor)}
+                      {" · "}
+                      {formatTrainingMode(game.trainingMode)}
+                    </strong>
+
+                    <span>
+                      Accuracy{" "}
+                      {game.accuracy !== null
+                        ? `${game.accuracy.toFixed(1)}%`
+                        : "N/A"}
+                      {" · "}
+                      {game.moveCount}{" "}
+                      {game.moveCount === 1
+                        ? "move"
+                        : "moves"}
+                    </span>
+                  </div>
+
+                  <time dateTime={game.playedAt}>
+                    {formatDate(game.playedAt)}
+                  </time>
+                </article>
             );
           })}
         </div>

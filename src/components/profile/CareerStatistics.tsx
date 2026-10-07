@@ -26,93 +26,100 @@ import type {
   }: CareerStatisticsProps) {
     return (
       <section className="career-statistics">
-        <h2>Career Statistics</h2>
-  
-        <div className="career-stat-grid">
+        <div className="profile-section-heading">
           <div>
-            <span>Current Skill</span>
-            <strong>{currentRating}</strong>
+            <h2>Career Overview</h2>
+            <p>Your progress and performance over time.</p>
           </div>
-  
-          <div>
-            <span>Best Skill</span>
+        </div>
+    
+        <div className="career-overview-grid">
+          <div className="career-stat-card">
+            <span>Current Rating</span>
+            <strong className="career-rating-current">
+              {currentRating}
+            </strong>
+          </div>
+    
+          <div className="career-stat-card">
+            <span>Peak Rating</span>
             <strong>{bestRating}</strong>
           </div>
-  
-          <div>
+    
+          <div className="career-stat-card">
             <span>Games Played</span>
-            <strong>
-              {statistics.gamesPlayed}
-            </strong>
+            <strong>{statistics.gamesPlayed}</strong>
           </div>
-  
-          <div>
+    
+          <div className="career-stat-card">
             <span>Win Rate</span>
             <strong>
-              {formatNumber(
-                statistics.winRate,
-                "%"
-              )}
+              {formatNumber(statistics.winRate, "%")}
             </strong>
           </div>
-  
-          <div>
-            <span>Wins</span>
-            <strong>
-              {statistics.wins}
-            </strong>
+        </div>
+    
+        <div className="career-record-section">
+          <h3>Career Record</h3>
+    
+          <div className="career-record-grid">
+            <div className="career-record-win">
+              <strong>{statistics.wins}</strong>
+              <span>Wins</span>
+            </div>
+    
+            <div className="career-record-draw">
+              <strong>{statistics.draws}</strong>
+              <span>Draws</span>
+            </div>
+    
+            <div className="career-record-loss">
+              <strong>{statistics.losses}</strong>
+              <span>Losses</span>
+            </div>
           </div>
-  
-          <div>
-            <span>Draws</span>
-            <strong>
-              {statistics.draws}
-            </strong>
-          </div>
-  
-          <div>
-            <span>Losses</span>
-            <strong>
-              {statistics.losses}
-            </strong>
-          </div>
-  
-          <div>
-            <span>Average Accuracy</span>
-            <strong>
-              {formatNumber(
-                statistics.averageAccuracy,
-                "%"
-              )}
-            </strong>
-          </div>
-  
-          <div>
-            <span>Average CPL</span>
-            <strong>
-              {formatNumber(
-                statistics
-                  .averageCentipawnLoss
-              )}
-            </strong>
-          </div>
-  
-          <div>
-            <span>White Record</span>
-            <strong>
-              {statistics.whiteWins}-
-              {statistics.whiteDraws}-
-              {statistics.whiteLosses}
-            </strong>
-          </div>
-  
-          <div>
-            <span>Black Record</span>
-            <strong>
-              {statistics.blackWins}-
-              {statistics.blackDraws}-
-              {statistics.blackLosses}
-            </strong>
+        </div>
+    
+        <div className="career-performance-section">
+          <h3>Performance Statistics</h3>
+    
+          <div className="career-performance-grid">
+            <div className="career-stat-card">
+              <span>Average Accuracy</span>
+              <strong>
+                {formatNumber(
+                  statistics.averageAccuracy,
+                  "%"
+                )}
+              </strong>
+            </div>
+    
+            <div className="career-stat-card">
+              <span>Average CPL</span>
+              <strong>
+                {formatNumber(
+                  statistics.averageCentipawnLoss
+                )}
+              </strong>
+            </div>
+    
+            <div className="career-stat-card">
+              <span>White Record</span>
+              <strong>
+                {statistics.whiteWins}-
+                {statistics.whiteDraws}-
+                {statistics.whiteLosses}
+              </strong>
+            </div>
+    
+            <div className="career-stat-card">
+              <span>Black Record</span>
+              <strong>
+                {statistics.blackWins}-
+                {statistics.blackDraws}-
+                {statistics.blackLosses}
+              </strong>
+            </div>
           </div>
         </div>
       </section>

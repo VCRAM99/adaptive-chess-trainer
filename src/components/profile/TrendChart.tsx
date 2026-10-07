@@ -144,13 +144,9 @@ import type {
       <div className="trend-chart-wrapper">
         <svg
           className="trend-chart"
-          viewBox={
-            `0 0 ` +
-            `${CHART_WIDTH} ` +
-            `${CHART_HEIGHT}`
-          }
+          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
           role="img"
-          aria-label="Player progress trend"
+          aria-label={`Player progress trend across ${points.length} games`}
         >
           {yTicks.map(
             (tick, index) => (

@@ -11,9 +11,9 @@ import type {
   };
   
   const DIFFICULTIES = [
-    "easy",
-    "medium",
-    "hard",
+    { id: "easy", label: "Casual" },
+    { id: "medium", label: "Echo" },
+    { id: "hard", label: "Train" },
   ] as const;
   
   function DifficultyFilter({
@@ -21,67 +21,63 @@ import type {
     onChange,
   }: DifficultyFilterProps) {
     function toggleDifficulty(
-      difficulty:
-        (typeof DIFFICULTIES)[number]
+      difficulty: (typeof DIFFICULTIES)[number]["id"]
     ) {
       const selectedCount =
-        Object.values(value).filter(
-          Boolean
-        ).length;
+        Object.values(value).filter(Boolean).length;
   
-      // Always keep at least one
-      // difficulty selected.
-      if (
-        value[difficulty] &&
-        selectedCount === 1
-      ) {
+      if (value[difficulty] && selectedCount === 1) {
         return;
       }
   
       onChange({
         ...value,
-        [difficulty]:
-          !value[difficulty],
+        [difficulty]: !value[difficulty],
       });
     }
   
     return (
       <div className="difficulty-filter">
-        <span className="difficulty-filter-label">
-          Games Included
-        </span>
+        <div className="difficulty-filter-heading">
+          <span className="difficulty-filter-label">
+            Games Included
+          </span>
   
-        <div className="difficulty-filter-options">
-          {DIFFICULTIES.map(
-            (difficulty) => (
-              <label
-                key={difficulty}
-                className="difficulty-filter-option"
+          <span className="difficulty-filter-description">
+            Select which modes count toward your statistics
+          </span>
+        </div>
+  
+        <div
+          className="difficulty-filter-options"
+          role="group"
+          aria-label="Games included in statistics"
+        >
+          {DIFFICULTIES.map((difficulty) => {
+            const isSelected = value[difficulty.id];
+  
+            return (
+              <button
+                key={difficulty.id}
+                type="button"
+                className={
+                  isSelected
+                    ? "difficulty-filter-option difficulty-filter-option--selected"
+                    : "difficulty-filter-option"
+                }
+                aria-pressed={isSelected}
+                onClick={() =>
+                  toggleDifficulty(difficulty.id)
+                }
               >
-                <input
-                  type="checkbox"
-                  checked={
-                    value[difficulty]
-                  }
-                  onChange={() =>
-                    toggleDifficulty(
-                      difficulty
-                    )
-                  }
-                />
-  
-                <span>
-                  {difficulty
-                    .charAt(0)
-                    .toUpperCase() +
-                    difficulty.slice(1)}
-                </span>
-              </label>
-            )
-          )}
+                {difficulty.label}
+              </button>
+            );
+          })}
         </div>
       </div>
     );
   }
   
   export default DifficultyFilter;
+  
