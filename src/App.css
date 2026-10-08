@@ -6,13 +6,42 @@
 }
 
 .app-header {
-  text-align: center;
-  margin-bottom: 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 600px) minmax(0, 320px);
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto 40px;
+  text-align: left;
+}
+
+.app-header__brand {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-width: 0;
+  gap: 0.65rem;
+}
+
+.app-header__logo {
+  display: block;
+  flex: 0 0 auto;
+  height: clamp(2rem, 3.2vw, 2.6rem);
+  width: auto;
+  object-fit: contain;
 }
 
 .app-header h1 {
-  font-size: 32px;
-  margin-bottom: 8px;
+  margin: 0;
+  min-width: 0;
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  line-height: 1.1;
+}
+
+.app-header__actions {
+  justify-self: end;
 }
 
 .app-header p {
@@ -92,7 +121,7 @@
 .chessboard-container {
   width: 100%;
   max-width: 600px;
-  margin: 12px 0;
+  margin: 0;
 }
 
 .player-info {
@@ -182,6 +211,12 @@
   background-color: #608d50;
 }
 
+@media (max-width: 900px) {
+  .app-header {
+    max-width: 720px;
+  }
+}
+
 @media (max-width: 800px) {
   .game-layout {
     grid-template-columns: minmax(0, 600px);
@@ -191,8 +226,21 @@
     padding: 20px 12px;
   }
 
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 600px;
+  }
+
   .app-header h1 {
-    font-size: 26px;
+    font-size: clamp(1rem, 4.2vw, 1.35rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header__logo {
+    height: 1.85rem;
   }
 }
 
