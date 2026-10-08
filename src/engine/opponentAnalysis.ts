@@ -15,14 +15,20 @@ import {
   export type OpponentCandidateAnalysisResult = {
     bestMove: string;
     candidates: CandidateMoveEvaluation[];
+    searchToken: number;
   };
   
   export type OpponentCandidateAnalysisHandler = (
     result: OpponentCandidateAnalysisResult
   ) => void;
+
+  export type OpponentTerminalHandler = (
+    searchToken: number
+  ) => void;
   
   export type OpponentCandidateAnalysisErrorHandler = (
-    error: Error
+    error: Error,
+    searchToken?: number
   ) => void;
   
   export class OpponentAnalysisEngine {
@@ -31,6 +37,10 @@ import {
     private ready = false;
   
     private analyzing = false;
+
+    private searchToken = 0;
+
+    private legalMoveCount = DEFAULT_OPPONENT_MULTIPV;
   
     private candidates =
       new Map<number, CandidateMoveEvaluation>();
@@ -41,6 +51,10 @@ import {
   
     private errorHandler:
       | OpponentCandidateAnalysisErrorHandler
+      | null = null;
+
+    private terminalHandler:
+      | OpponentTerminalHandler
       | null = null;
   
     start() {
@@ -95,9 +109,22 @@ import {
         ) {
           this.analyzing = false;
   
+          const token = this.searchToken;
+
           if (
             response.move === "(none)"
           ) {
+            if (this.legalMoveCount <= 0) {
+              this.terminalHandler?.(token);
+              return;
+            }
+
+            this.errorHandler?.(
+              new Error(
+                "Stockfish returned no legal move."
+              ),
+              token
+            );
             return;
           }
   
@@ -112,6 +139,7 @@ import {
           this.resultHandler?.({
             bestMove: response.move,
             candidates,
+            searchToken: token,
           });
         }
       };
@@ -126,7 +154,8 @@ import {
           new Error(
             event.message ||
               "Opponent analysis engine failed."
-          )
+          ),
+          this.searchToken
         );
       };
   
@@ -145,6 +174,10 @@ import {
     ) {
       this.errorHandler = handler;
     }
+
+    onTerminal(handler: OpponentTerminalHandler) {
+      this.terminalHandler = handler;
+    }
   
     isReady() {
       return this.ready;
@@ -154,13 +187,16 @@ import {
       return this.analyzing;
     }
   
-    analyze(fen: string, candidateCount = DEFAULT_OPPONENT_MULTIPV, analysisTimeMs = OPPONENT_ANALYSIS_TIME_MS) {
+    analyze(fen: string, candidateCount = DEFAULT_OPPONENT_MULTIPV, analysisTimeMs = OPPONENT_ANALYSIS_TIME_MS): number | false {
       if (
         !this.ready ||
         this.analyzing
       ) {
         return false;
       }
+
+      const token = ++this.searchToken;
+      this.legalMoveCount = Math.floor(candidateCount);
 
       const multiPv =
       getOpponentMultiPv(
@@ -189,7 +225,7 @@ import {
         `go movetime ${analysisTimeMs}`
       );
   
-      return true;
+      return token;
     }
   
     stop() {
@@ -202,6 +238,7 @@ import {
       this.worker = null;
       this.ready = false;
       this.analyzing = false;
+      this.searchToken = 0;
       this.candidates.clear();
     }
   

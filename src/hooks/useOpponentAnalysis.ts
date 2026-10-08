@@ -47,13 +47,23 @@ import {
     const generationRef =
       useRef(0);
 
+    const searchTokenRef =
+      useRef(0);
+
     const activeFenRef =
       useRef<string | null>(null);
+
+    const [
+      terminalFen,
+      setTerminalFen,
+    ] = useState<string | null>(null);
   
     const createEngine =
       useCallback(() => {
         const generation =
           ++generationRef.current;
+
+        searchTokenRef.current = 0;
   
         const engine =
           new OpponentAnalysisEngine();
@@ -69,7 +79,9 @@ import {
           (analysisResult) => {
             if (
               generation !==
-              generationRef.current
+                generationRef.current ||
+              analysisResult.searchToken !==
+                searchTokenRef.current
             ) {
               return;
             }
@@ -92,10 +104,31 @@ import {
           }
         );
   
-        engine.onError((error) => {
+        engine.onTerminal((token) => {
           if (
             generation !==
-            generationRef.current
+              generationRef.current ||
+            token !== searchTokenRef.current
+          ) {
+            return;
+          }
+
+          const analyzedFen =
+            activeFenRef.current;
+
+          activeFenRef.current = null;
+          setIsAnalyzing(false);
+          setTerminalFen(analyzedFen);
+        });
+
+        engine.onError((error, token) => {
+          if (
+            generation !==
+              generationRef.current ||
+            (
+              token !== undefined &&
+              token !== searchTokenRef.current
+            )
           ) {
             return;
           }
@@ -175,21 +208,24 @@ import {
   
           setResult(null);
           setError(null);
+          setTerminalFen(null);
           setIsAnalyzing(true);
           activeFenRef.current = fen;
 
-          const started =
+          const searchToken =
             engine.analyze(
               fen,
               candidateCount
             );
 
-          if (!started) {
+          if (searchToken === false) {
             activeFenRef.current = null;
             setIsAnalyzing(false);
+            return false;
           }
 
-          return started;
+          searchTokenRef.current = searchToken;
+          return true;
         },
         []
       );
@@ -205,6 +241,7 @@ import {
 
       setResult(null);
       setError(null);
+      setTerminalFen(null);
       setIsReady(false);
       setIsAnalyzing(false);
 
@@ -216,6 +253,7 @@ import {
       isAnalyzing,
       error,
       result,
+      terminalFen,
       analyze,
       cancel,
     };

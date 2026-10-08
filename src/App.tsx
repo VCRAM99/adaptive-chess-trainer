@@ -6,7 +6,11 @@ import PromotionDialog from "./components/PromotionDialog";
 import { applyMove, isLegalMove, requiresPromotion, undoLastMove, isUndoAllowed, getGameStatus as getChessGameStatus } from "./lib/chessGame";
 import { parseUciMove } from "./engine/uci";
 import { useMoveAnalysis } from "./hooks/useMoveAnalysis";
-import { updateSkillFromAnalysis } from "./lib/skillEstimator";
+import {
+  createMoveAnalysisRequestId,
+  resolveMoveAnalysisUpdate,
+  type ExpectedMoveAnalysis,
+} from "./lib/moveAnalysisRequest";
 import { useOpponentAnalysis,} from "./hooks/useOpponentAnalysis";
 import { createOpponentCandidates, } from "./lib/opponentCandidateAnalysis";
 import { chooseAdaptiveOpponentMove, } from "./lib/opponentDecision";
@@ -240,9 +244,9 @@ const [guestImportError, setGuestImportError] =
 
   const {
     isReady: analysisReady,
-    isAnalyzing,
     latestAnalysis,
     analyzePlayerMove,
+    cancelAnalysis: cancelMoveAnalysis,
   } = useMoveAnalysis();
 
   const [
@@ -256,6 +260,9 @@ const [guestImportError, setGuestImportError] =
   ] = useState(0);
 
   const lastRatedMoveRef = useRef<string | null>(null);
+  const analysisSequenceRef = useRef(0);
+  const expectedMoveAnalysisRef =
+    useRef<ExpectedMoveAnalysis | null>(null);
 
 
   // Store the current chess game in React state.
@@ -296,6 +303,8 @@ const [guestImportError, setGuestImportError] =
       opponentAnalysisError,
     result:
       opponentAnalysisResult,
+    terminalFen:
+      opponentTerminalFen,
     analyze:
       analyzeOpponentPosition,
     cancel:
@@ -308,7 +317,8 @@ const [guestImportError, setGuestImportError] =
   | "thinking" =
   !opponentAnalysisReady
     ? "starting"
-    : pendingOpponentFen
+    : pendingOpponentFen &&
+      opponentTerminalFen !== pendingOpponentFen
       ? "thinking"
       : "ready";
 
@@ -348,7 +358,8 @@ const [guestImportError, setGuestImportError] =
     if (
       !pendingOpponentFen ||
       !opponentAnalysisReady ||
-      opponentAnalysisRunning
+      opponentAnalysisRunning ||
+      opponentTerminalFen === pendingOpponentFen
     ) {
       return;
     }
@@ -362,6 +373,7 @@ const [guestImportError, setGuestImportError] =
     pendingOpponentLegalMoves,
     opponentAnalysisReady,
     opponentAnalysisRunning,
+    opponentTerminalFen,
     analyzeOpponentPosition,
   ]);
 
@@ -680,58 +692,36 @@ const [guestImportError, setGuestImportError] =
   }, [currentUserId, isAuthLoading]);
 
   useEffect(() => {
-    if (!latestAnalysis) {
+    const update = resolveMoveAnalysisUpdate({
+      delivered: latestAnalysis,
+      expected: expectedMoveAnalysisRef.current,
+      pendingOpponentFen,
+      estimatedRating: estimatedPlayerRating,
+      lastRatedRequestId: lastRatedMoveRef.current,
+      opponentTargetSkill: pendingOpponentSkill,
+    });
+
+    if (!update.accepted) {
       return;
     }
 
-    if (
-      latestAnalysis.playerColor !== playerColor
-    ) {
-      return;
+    lastRatedMoveRef.current = update.lastRatedRequestId;
+
+    if (update.estimatedRating !== estimatedPlayerRating) {
+      setEstimatedPlayerRating(update.estimatedRating);
     }
 
-    if (!pendingOpponentFen) {
-      return;
-    }
-  
-    const analysisId =
-    `${gameIdRef.current}-` +
-    `${latestAnalysis.moveNumber}-` +
-    `${latestAnalysis.playerColor}-` +
-    `${latestAnalysis.playerMove}`;
-  
-    let nextSkill =
-      estimatedPlayerRating;
-  
-    // Only apply the skill evidence once.
     if (
-      lastRatedMoveRef.current !==
-      analysisId
+      update.opponentTargetSkill !==
+      pendingOpponentSkill
     ) {
-      nextSkill =
-        updateSkillFromAnalysis(
-          estimatedPlayerRating,
-          latestAnalysis
-        );
-  
-      lastRatedMoveRef.current =
-        analysisId;
-  
-      setEstimatedPlayerRating(
-        nextSkill
-      );
+      setPendingOpponentSkill(update.opponentTargetSkill);
     }
-  
-    // The opponent's response is separate from whether
-    // this analysis changed/updated the rating.
-    setPendingOpponentSkill(
-      nextSkill
-    );
   }, [
     latestAnalysis,
     pendingOpponentFen,
     estimatedPlayerRating,
-    playerColor,
+    pendingOpponentSkill,
   ]);
 
   useEffect(() => {
@@ -1075,6 +1065,40 @@ async function handleImportGuestProgress(): Promise<boolean> {
       freshProfile.estimatedRating;
   }
 
+  function startPlayerMoveAnalysis(input: {
+    moveNumber: number;
+    playerMove: string;
+    beforeFen: string;
+    afterFen: string;
+    legalMoveCount: number;
+  }) {
+    const requestId = createMoveAnalysisRequestId(
+      gameIdRef.current,
+      ++analysisSequenceRef.current
+    );
+
+    const expected: ExpectedMoveAnalysis = {
+      requestId,
+      gameGeneration: gameIdRef.current,
+      beforeFen: input.beforeFen,
+      afterFen: input.afterFen,
+      playerColor,
+    };
+
+    expectedMoveAnalysisRef.current = expected;
+
+    const started = analyzePlayerMove({
+      ...input,
+      requestId,
+      gameGeneration: gameIdRef.current,
+      playerColor,
+    });
+
+    if (!started) {
+      expectedMoveAnalysisRef.current = null;
+    }
+  }
+
   //checka if the move is legal and if it requires a promotion. and updates the game state.
   function makeMove(
     source: Square,
@@ -1147,17 +1171,11 @@ async function handleImportGuestProgress(): Promise<boolean> {
       setPendingOpponentSkill(null);
     }
   
-    // Analyze the player's move.
-    if (
-      analysisReady &&
-      !isAnalyzing
-    ) {
-
-      analyzePlayerMove({
+    if (analysisReady) {
+      startPlayerMoveAnalysis({
         moveNumber: Math.ceil(
           nextGame.history().length / 2
         ),
-        playerColor,
         playerMove,
         beforeFen,
         afterFen,
@@ -1212,16 +1230,11 @@ async function handleImportGuestProgress(): Promise<boolean> {
         setPendingOpponentSkill(null);
       }
   
-      // Send the move to our analysis engine.
-      if (
-        analysisReady &&
-        !isAnalyzing
-      ) {
-        analyzePlayerMove({
+      if (analysisReady) {
+        startPlayerMoveAnalysis({
           moveNumber: Math.ceil(
             nextGame.history().length / 2
           ),
-          playerColor,
           playerMove,
           beforeFen,
           afterFen,
@@ -1368,6 +1381,8 @@ async function handleImportGuestProgress(): Promise<boolean> {
   ) {
     cancelOpponentAnalysis();
     cancelPostGameAnalysis();
+    cancelMoveAnalysis();
+    expectedMoveAnalysisRef.current = null;
     activeReviewGameIdRef.current = null;
     setIsReviewMode(false);
     setSelectedReviewPly(0);
@@ -1437,6 +1452,9 @@ async function handleImportGuestProgress(): Promise<boolean> {
     if (!isUndoAllowed(game, playerColor, isReviewMode)) {
       return;
     }
+
+    cancelMoveAnalysis();
+    expectedMoveAnalysisRef.current = null;
   
     const history = game.history();
   
