@@ -41,6 +41,7 @@ import { getGuestImportEligibility } from "./lib/profile/guestMigration";
 
 //PostGame
 import { buildGameRecord } from "./lib/postGame/buildGameRecord";
+import { createPersistentGameId } from "./lib/persistentGameId";
 import type { CompletedGameRecord, GameResult } from "./lib/postGame/types";
 import { usePostGameAnalysis } from "./hooks/usePostGameAnalysis";
 import { getReviewFen } from "./lib/postGame/reviewNavigation";
@@ -89,6 +90,7 @@ const MOVE_TIERS = [
 
 function App() {
   const gameIdRef = useRef(0);
+  const persistentGameIdRef = useRef(createPersistentGameId());
   const [completedGame, setCompletedGame] = useState<CompletedGameRecord | null>(null);
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [selectedReviewPly, setSelectedReviewPly] = useState(0);
@@ -891,7 +893,7 @@ const [guestImportError, setGuestImportError] =
     try {
       const record = buildGameRecord(
         game.pgn(),
-        `game-${gameIdRef.current}`,
+        persistentGameIdRef.current,
         gameStartedAtRef.current,
         new Date().toISOString(),
         result
@@ -1331,6 +1333,7 @@ async function handleImportGuestProgress(): Promise<boolean> {
     setSelectedReviewPly(0);
 
     gameIdRef.current += 1;
+    persistentGameIdRef.current = createPersistentGameId();
     gameOwnerRef.current = undefined;
 
     completedGameIdRef.current = null;
