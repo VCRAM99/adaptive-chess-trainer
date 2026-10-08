@@ -8,22 +8,15 @@ type GameAnalysisPanelProps = {
   selectedMove: AnalyzedMove | null;
 };
 
-export default function GameAnalysisPanel({
-  summary,
-  selectedMove,
-}: GameAnalysisPanelProps) {
+export default function GameAnalysisPanel({ summary, selectedMove }: GameAnalysisPanelProps) {
   return (
     <section className="post-game-review">
       <div className="analysis-header">
-        <span className="analysis-eyebrow">
-          POST-GAME REVIEW
-        </span>
+        <span className="analysis-eyebrow">POST-GAME REVIEW</span>
 
         <h2>Game Analysis</h2>
 
-        <span className="analysis-perspective">
-          Evaluation · White Perspective
-        </span>
+        <span className="analysis-perspective">Evaluation · White Perspective</span>
       </div>
       {summary && (
         <div className="game-summary">
@@ -32,9 +25,7 @@ export default function GameAnalysisPanel({
               <span>Accuracy</span>
 
               <strong>
-                {summary.accuracy !== null
-                  ? `${summary.accuracy.toFixed(1)}%`
-                  : "N/A"}
+                {summary.accuracy !== null ? `${summary.accuracy.toFixed(1)}%` : "N/A"}
               </strong>
             </div>
 
@@ -55,7 +46,6 @@ export default function GameAnalysisPanel({
 
               <span className="tier-summary__toggle-right">
                 {summary.gradableMoves} graded
-
                 <ChevronDown
                   className="tier-summary__chevron"
                   size={17}
@@ -67,20 +57,10 @@ export default function GameAnalysisPanel({
 
             <div className="tier-summary-list">
               {MOVE_TIERS.map((tier) => (
-                <div
-                  className={
-                    `tier-summary-row ` +
-                    `tier-summary-${tier}`
-                  }
-                  key={tier}
-                >
-                  <span className="tier-summary-row__name">
-                    {formatTierName(tier)}
-                  </span>
+                <div className={`tier-summary-row ` + `tier-summary-${tier}`} key={tier}>
+                  <span className="tier-summary-row__name">{formatTierName(tier)}</span>
 
-                  <strong>
-                    {summary.tierCounts[tier]}
-                  </strong>
+                  <strong>{summary.tierCounts[tier]}</strong>
                 </div>
               ))}
             </div>
@@ -93,19 +73,14 @@ export default function GameAnalysisPanel({
           <div className="review-move-header">
             <div>
               <span className="review-move-label">
-                MOVE {selectedMove.ply} ·{" "}
-                {selectedMove.playedBy === "white"
-                  ? "WHITE"
-                  : "BLACK"}
+                MOVE {selectedMove.ply} · {selectedMove.playedBy === "white" ? "WHITE" : "BLACK"}
               </span>
 
               <h4>{selectedMove.san}</h4>
             </div>
 
             {selectedMove.tier && (
-              <span
-                className={`move-tier move-tier-${selectedMove.tier}`}
-              >
+              <span className={`move-tier move-tier-${selectedMove.tier}`}>
                 {formatTierName(selectedMove.tier)}
               </span>
             )}
@@ -129,15 +104,10 @@ export default function GameAnalysisPanel({
             </span>
 
             <div className="review-eval-stat">
-              <span>
-                {selectedMove.qualitySource === "mate"
-                  ? "EVAL"
-                  : "CPL"}
-              </span>
+              <span>{selectedMove.qualitySource === "mate" ? "EVAL" : "CPL"}</span>
 
               <strong>
-                {selectedMove.qualitySource === "centipawn" &&
-                selectedMove.centipawnLoss !== null
+                {selectedMove.qualitySource === "centipawn" && selectedMove.centipawnLoss !== null
                   ? selectedMove.centipawnLoss.toFixed(1)
                   : selectedMove.qualitySource === "mate"
                     ? "Mate"
@@ -147,9 +117,7 @@ export default function GameAnalysisPanel({
           </div>
 
           {selectedMove.isForcedMove && (
-            <p className="review-move-note">
-              Forced move — excluded from accuracy.
-            </p>
+            <p className="review-move-note">Forced move — excluded from accuracy.</p>
           )}
         </div>
       )}

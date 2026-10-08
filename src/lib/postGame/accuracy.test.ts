@@ -1,17 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type {
-  AnalyzedMove,
-  MoveTier,
-} from "./types";
-import {
-  calculatePlayerAccuracy,
-  getMoveAccuracy,
-} from "./accuracy";
+import type { AnalyzedMove, MoveTier } from "./types";
+import { calculatePlayerAccuracy, getMoveAccuracy } from "./accuracy";
 
 function createMove(
   tier: MoveTier | null,
   playedBy: "white" | "black" = "white",
-  isForcedMove = false
+  isForcedMove = false,
 ): AnalyzedMove {
   return {
     ply: 1,
@@ -49,74 +43,30 @@ describe("calculatePlayerAccuracy", () => {
       createMove("wood"),
     ];
 
-    expect(
-      calculatePlayerAccuracy(
-        moves,
-        "white"
-      )
-    ).toBeCloseTo(63.75);
+    expect(calculatePlayerAccuracy(moves, "white")).toBeCloseTo(63.75);
   });
 
   it("only includes the requested player color", () => {
-    const moves = [
-      createMove("diamond", "white"),
-      createMove("wood", "black"),
-    ];
+    const moves = [createMove("diamond", "white"), createMove("wood", "black")];
 
-    expect(
-      calculatePlayerAccuracy(
-        moves,
-        "white"
-      )
-    ).toBe(100);
+    expect(calculatePlayerAccuracy(moves, "white")).toBe(100);
   });
 
   it("excludes forced moves", () => {
-    const moves = [
-      createMove("wood", "white"),
-      createMove(
-        "diamond",
-        "white",
-        true
-      ),
-    ];
+    const moves = [createMove("wood", "white"), createMove("diamond", "white", true)];
 
-    expect(
-      calculatePlayerAccuracy(
-        moves,
-        "white"
-      )
-    ).toBe(10);
+    expect(calculatePlayerAccuracy(moves, "white")).toBe(10);
   });
 
   it("excludes moves without a tier", () => {
-    const moves = [
-      createMove("gold"),
-      createMove(null),
-    ];
+    const moves = [createMove("gold"), createMove(null)];
 
-    expect(
-      calculatePlayerAccuracy(
-        moves,
-        "white"
-      )
-    ).toBe(80);
+    expect(calculatePlayerAccuracy(moves, "white")).toBe(80);
   });
 
   it("returns null when there are no gradable moves", () => {
-    const moves = [
-      createMove(
-        "diamond",
-        "white",
-        true
-      ),
-    ];
+    const moves = [createMove("diamond", "white", true)];
 
-    expect(
-      calculatePlayerAccuracy(
-        moves,
-        "white"
-      )
-    ).toBeNull();
+    expect(calculatePlayerAccuracy(moves, "white")).toBeNull();
   });
 });

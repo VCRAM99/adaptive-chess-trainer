@@ -15,7 +15,7 @@ export class InvalidCloudDataError extends Error {
     super(
       area === "profile"
         ? "Saved cloud progress could not be read, so it was left unchanged."
-        : "Saved cloud preferences could not be read, so they were left unchanged."
+        : "Saved cloud preferences could not be read, so they were left unchanged.",
     );
     this.name = "InvalidCloudDataError";
     this.area = area;
@@ -31,27 +31,19 @@ type ErrorRecord = {
 };
 
 function asRecord(error: unknown): ErrorRecord | null {
-  if (!error || typeof error !== "object") {
-    return null;
-  }
+  if (!error || typeof error !== "object") return null;
 
   return error as ErrorRecord;
 }
 
 function errorText(error: unknown): string {
-  if (typeof error === "string") {
-    return error;
-  }
+  if (typeof error === "string") return error;
 
-  if (error instanceof Error) {
-    return error.message;
-  }
+  if (error instanceof Error) return error.message;
 
   const record = asRecord(error);
 
-  if (!record) {
-    return "";
-  }
+  if (!record) return "";
 
   return [record.message, record.details, record.hint]
     .filter((part): part is string => typeof part === "string")
@@ -82,21 +74,13 @@ export function isAccountSessionError(error: unknown): boolean {
 export function isStaleRevisionError(error: unknown): boolean {
   const text = errorText(error);
   const mentionsRevision = /revision/i.test(text);
-  const mentionsConflict =
-    /(stale|conflict|mismatch|expected|outdated|does not match)/i.test(
-      text
-    );
+  const mentionsConflict = /(stale|conflict|mismatch|expected|outdated|does not match)/i.test(text);
 
-  if (mentionsRevision && mentionsConflict) {
-    return true;
-  }
+  if (mentionsRevision && mentionsConflict) return true;
 
   const status = errorStatus(error);
 
-  return (
-    (status === 409 || errorCode(error) === "409") &&
-    /revision|conflict/i.test(text)
-  );
+  return (status === 409 || errorCode(error) === "409") && /revision|conflict/i.test(text);
 }
 
 const TRANSIENT_CODES = new Set([
@@ -119,29 +103,17 @@ const TRANSIENT_CODES = new Set([
 const TRANSIENT_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
 export function isTransientCloudError(error: unknown): boolean {
-  if (isStaleRevisionError(error) || isAccountSessionError(error)) {
-    return false;
-  }
+  if (isStaleRevisionError(error) || isAccountSessionError(error)) return false;
 
-  if (error instanceof InvalidCloudDataError) {
-    return false;
-  }
+  if (error instanceof InvalidCloudDataError) return false;
 
-  if (error instanceof TypeError) {
-    return true;
-  }
+  if (error instanceof TypeError) return true;
 
   const status = errorStatus(error);
 
-  if (status !== null && TRANSIENT_STATUSES.has(status)) {
-    return true;
-  }
+  if (status !== null && TRANSIENT_STATUSES.has(status)) return true;
 
-  if (TRANSIENT_CODES.has(errorCode(error))) {
-    return true;
-  }
+  if (TRANSIENT_CODES.has(errorCode(error))) return true;
 
-  return /failed to fetch|network|timeout|temporar|econnreset|unavailable/i.test(
-    errorText(error)
-  );
+  return /failed to fetch|network|timeout|temporar|econnreset|unavailable/i.test(errorText(error));
 }

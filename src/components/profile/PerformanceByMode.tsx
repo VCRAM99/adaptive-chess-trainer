@@ -1,16 +1,8 @@
 import { useMemo } from "react";
 
-import type {
-  StoredGame,
-} from "../../lib/profile/types";
+import type { StoredGame } from "../../lib/profile/types";
 
-import {
-  calculateCareerStatistics,
-} from "../../lib/profile/statistics";
-
-import type {
-  DifficultyFilter,
-} from "../../lib/profile/statistics";
+import { calculateCareerStatistics, type DifficultyFilter } from "../../lib/profile/statistics";
 
 type PerformanceByModeProps = {
   games: StoredGame[];
@@ -31,9 +23,7 @@ const MODES = [
   },
 ] as const;
 
-function PerformanceByMode({
-  games,
-}: PerformanceByModeProps) {
+function PerformanceByMode({ games }: PerformanceByModeProps) {
   const modeStatistics = useMemo(
     () =>
       MODES.map((mode) => {
@@ -45,14 +35,10 @@ function PerformanceByMode({
 
         return {
           ...mode,
-          statistics:
-            calculateCareerStatistics(
-              games,
-              filter
-            ),
+          statistics: calculateCareerStatistics(games, filter),
         };
       }),
-    [games]
+    [games],
   );
 
   return (
@@ -60,10 +46,7 @@ function PerformanceByMode({
       <div className="profile-section-heading">
         <div>
           <h2>Performance by Mode</h2>
-          <p>
-            Compare your results across
-            training difficulties.
-          </p>
+          <p>Compare your results across training difficulties.</p>
         </div>
       </div>
 
@@ -71,10 +54,7 @@ function PerformanceByMode({
         {modeStatistics.map((mode) => (
           <article
             key={mode.id}
-            className={
-              `performance-mode-card ` +
-              `performance-mode-${mode.id}`
-            }
+            className={`performance-mode-card ` + `performance-mode-${mode.id}`}
           >
             <div className="performance-mode-heading">
               <span className="performance-mode-dot" />
@@ -82,31 +62,19 @@ function PerformanceByMode({
             </div>
 
             <strong className="performance-mode-rate">
-              {mode.statistics.winRate !== null
-                ? `${mode.statistics.winRate.toFixed(1)}%`
-                : "N/A"}
+              {mode.statistics.winRate !== null ? `${mode.statistics.winRate.toFixed(1)}%` : "N/A"}
             </strong>
 
-            <span className="performance-mode-rate-label">
-              Win Rate
-            </span>
+            <span className="performance-mode-rate-label">Win Rate</span>
 
             <div className="performance-mode-record">
-              <span>
-                {mode.statistics.gamesPlayed} Games
-              </span>
+              <span>{mode.statistics.gamesPlayed} Games</span>
 
-              <span>
-                {mode.statistics.wins} Wins
-              </span>
+              <span>{mode.statistics.wins} Wins</span>
 
-              <span>
-                {mode.statistics.draws} Draws
-              </span>
+              <span>{mode.statistics.draws} Draws</span>
 
-              <span>
-                {mode.statistics.losses} Losses
-              </span>
+              <span>{mode.statistics.losses} Losses</span>
             </div>
           </article>
         ))}

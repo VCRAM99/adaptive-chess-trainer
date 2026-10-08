@@ -1,13 +1,6 @@
 // @vitest-environment jsdom
 
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { act, cleanup, renderHook } from "@testing-library/react";
 
@@ -15,9 +8,7 @@ import type { OpponentCandidateAnalysisResult } from "../engine/opponentAnalysis
 import { useOpponentAnalysis } from "./useOpponentAnalysis";
 
 const { mockEngines, MockOpponentEngine } = vi.hoisted(() => {
-  type ResultHandler = (
-    result: OpponentCandidateAnalysisResult
-  ) => void;
+  type ResultHandler = (result: OpponentCandidateAnalysisResult) => void;
   type ErrorHandler = (error: Error, token?: number) => void;
   type TerminalHandler = (token: number) => void;
 
@@ -47,9 +38,7 @@ const { mockEngines, MockOpponentEngine } = vi.hoisted(() => {
     }
 
     analyze() {
-      if (!this.ready || this.analyzing) {
-        return false as const;
-      }
+      if (!this.ready || this.analyzing) return false as const;
 
       this.analyzing = true;
       this.token += 1;
@@ -75,10 +64,7 @@ const { mockEngines, MockOpponentEngine } = vi.hoisted(() => {
 
     emitNoneFailure(token = this.token) {
       this.analyzing = false;
-      this.errorHandler?.(
-        new Error("Stockfish returned no legal move."),
-        token
-      );
+      this.errorHandler?.(new Error("Stockfish returned no legal move."), token);
     }
 
     emitResult(bestMove: string, token = this.token) {
@@ -104,9 +90,9 @@ const { mockEngines, MockOpponentEngine } = vi.hoisted(() => {
 });
 
 vi.mock("../engine/opponentAnalysis", async () => {
-  const actual = await vi.importActual<
-    typeof import("../engine/opponentAnalysis")
-  >("../engine/opponentAnalysis");
+  const actual = await vi.importActual<typeof import("../engine/opponentAnalysis")>(
+    "../engine/opponentAnalysis",
+  );
 
   return {
     ...actual,
@@ -165,9 +151,7 @@ describe("useOpponentAnalysis", () => {
     });
 
     expect(result.current.isAnalyzing).toBe(false);
-    expect(result.current.error).toBe(
-      "Stockfish returned no legal move."
-    );
+    expect(result.current.error).toBe("Stockfish returned no legal move.");
     expect(result.current.terminalFen).toBeNull();
   });
 
@@ -219,14 +203,12 @@ describe("useOpponentAnalysis", () => {
       result.current.analyze("playable-fen", 4);
       mockEngines[0].errorHandler?.(
         new Error("Opponent analysis engine failed."),
-        mockEngines[0].token
+        mockEngines[0].token,
       );
     });
 
     expect(result.current.isAnalyzing).toBe(false);
     expect(result.current.isReady).toBe(false);
-    expect(result.current.error).toBe(
-      "Opponent analysis engine failed."
-    );
+    expect(result.current.error).toBe("Opponent analysis engine failed.");
   });
 });

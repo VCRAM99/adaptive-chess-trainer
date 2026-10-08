@@ -1,29 +1,16 @@
-export type ReviewMoveComparison =
-  | "best"
-  | "different"
-  | "unavailable";
+export type ReviewMoveComparison = "best" | "different" | "unavailable";
 
 export function compareReviewMove(
   playedMoveUci: string,
-  bestMoveUci: string | null
+  bestMoveUci: string | null,
 ): ReviewMoveComparison {
-  if (!bestMoveUci) {
-    return "unavailable";
-  }
+  if (!bestMoveUci) return "unavailable";
 
-  const played = playedMoveUci
-    .trim()
-    .toLowerCase();
+  const played = playedMoveUci.trim().toLowerCase();
 
-  const best = bestMoveUci
-    .trim()
-    .toLowerCase();
+  const best = bestMoveUci.trim().toLowerCase();
 
-  if (!played || !best) {
-    return "unavailable";
-  }
+  if (!played || !best) return "unavailable";
 
-  return played === best
-    ? "best"
-    : "different";
+  return played === best ? "best" : "different";
 }

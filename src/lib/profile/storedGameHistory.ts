@@ -58,23 +58,14 @@ export function isHistoryStorageReady(input: {
   loadedStorageUserId: string | null | undefined;
   currentUserId: string | null;
 }): boolean {
-  if (input.isAuthLoading) {
-    return false;
-  }
+  if (input.isAuthLoading) return false;
 
-  if (
-    input.storageStatus !== "guest" &&
-    input.storageStatus !== "account"
-  ) {
-    return false;
-  }
+  if (input.storageStatus !== "guest" && input.storageStatus !== "account") return false;
 
   return input.loadedStorageUserId === input.currentUserId;
 }
 
-function ownsThisHistory(
-  context: HistoryWriteContext
-): boolean {
+function ownsThisHistory(context: HistoryWriteContext): boolean {
   return context.gameOwnerId === context.currentOwnerId;
 }
 
@@ -87,23 +78,16 @@ function ownsThisHistory(
 export function insertCompletedGame(
   profile: PlayerProfile,
   game: StoredGame,
-  context: HistoryWriteContext
+  context: HistoryWriteContext,
 ): PlayerProfile {
-  if (!ownsThisHistory(context)) {
-    return profile;
-  }
+  if (!ownsThisHistory(context)) return profile;
 
-  if (context.discardedIds.has(game.id)) {
-    return profile;
-  }
+  if (context.discardedIds.has(game.id)) return profile;
 
   return addStoredGame(profile, game);
 }
 
-function sameTiers(
-  left: StoredMoveTiers,
-  right: StoredMoveTiers
-): boolean {
+function sameTiers(left: StoredMoveTiers, right: StoredMoveTiers): boolean {
   return (
     left.diamond === right.diamond &&
     left.platinum === right.platinum &&
@@ -125,34 +109,23 @@ export function enrichStoredGame(
   profile: PlayerProfile,
   gameId: string,
   analysis: StoredGameAnalysis,
-  context: HistoryWriteContext
+  context: HistoryWriteContext,
 ): PlayerProfile {
-  if (!ownsThisHistory(context)) {
-    return profile;
-  }
+  if (!ownsThisHistory(context)) return profile;
 
-  if (context.activeReviewGameId !== gameId) {
-    return profile;
-  }
+  if (context.activeReviewGameId !== gameId) return profile;
 
-  if (context.discardedIds.has(gameId)) {
-    return profile;
-  }
+  if (context.discardedIds.has(gameId)) return profile;
 
-  const index = profile.games.findIndex(
-    (game) => game.id === gameId
-  );
+  const index = profile.games.findIndex((game) => game.id === gameId);
 
-  if (index === -1) {
-    return profile;
-  }
+  if (index === -1) return profile;
 
   const current = profile.games[index];
 
   if (
     current.accuracy === analysis.accuracy &&
-    current.averageCentipawnLoss ===
-      analysis.averageCentipawnLoss &&
+    current.averageCentipawnLoss === analysis.averageCentipawnLoss &&
     sameTiers(current.moveTiers, analysis.moveTiers)
   ) {
     return profile;

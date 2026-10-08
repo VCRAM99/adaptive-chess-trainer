@@ -1,49 +1,27 @@
-import type {
-  OpponentCandidate,
-} from "./opponentMove";
+import type { OpponentCandidate } from "./opponentMove";
 
-import {
-  createSafeOpponentCandidatePool,
-} from "./opponentMoveSafeguards";
+import { createSafeOpponentCandidatePool } from "./opponentMoveSafeguards";
 
 import {
   sampleFormAdjustedDesiredCentipawnLoss,
   selectCandidateNearestCpl,
 } from "./opponentMoveSelector";
 
-import {
-  getOpponentPositionContext,
-} from "./opponentPositionContext";
+import { getOpponentPositionContext } from "./opponentPositionContext";
 
-import {
-  getOpponentTacticalContext,
-} from "./opponentTacticalContext";
+import { getOpponentTacticalContext } from "./opponentTacticalContext";
 
-import {
-  recognizesTacticalSituation,
-} from "./opponentTacticalSkill";
+import { recognizesTacticalSituation } from "./opponentTacticalSkill";
 
-import {
-  getRecognizedTacticalCandidates,
-} from "./opponentTacticalSelection";
+import { getRecognizedTacticalCandidates } from "./opponentTacticalSelection";
 
-import {
-  getFullMoveNumberFromFen,
-  isOpponentOpeningPhase,
-} from "./opponentOpening";
+import { getFullMoveNumberFromFen, isOpponentOpeningPhase } from "./opponentOpening";
 
-import {
-  chooseOpeningAwareCandidate,
-} from "./opponentOpeningSelection";
+import { chooseOpeningAwareCandidate } from "./opponentOpeningSelection";
 
-import {
-  isOpponentEndgame,
-} from "./opponentEndgame";
+import { isOpponentEndgame } from "./opponentEndgame";
 
-import {
-  isOpponentMiddlegame,
-  adjustMiddlegameDesiredCpl,
-} from "./opponentMiddlegame";
+import { isOpponentMiddlegame, adjustMiddlegameDesiredCpl } from "./opponentMiddlegame";
 
 export type OpponentDecision = {
   candidate: OpponentCandidate | null;
@@ -68,13 +46,10 @@ export function chooseAdaptiveOpponentMove(
     randomValue2 = Math.random(),
     tacticalRandomValue = Math.random(),
     fen = null,
-  }: OpponentDecisionOptions
+  }: OpponentDecisionOptions,
 ): OpponentDecision {
   // 1. Apply candidate safeguards.
-  const safePool =
-    createSafeOpponentCandidatePool(
-      candidates
-    );
+  const safePool = createSafeOpponentCandidatePool(candidates);
 
   if (safePool.candidates.length === 0) {
     return {
@@ -93,112 +68,76 @@ export function chooseAdaptiveOpponentMove(
   }
 
   // 3. Classify tactical opportunities.
-  const tacticalContext =
-    getOpponentTacticalContext(
-      safePool.candidates
-    );
+  const tacticalContext = getOpponentTacticalContext(safePool.candidates);
 
   // 4. Determine whether the bot recognizes
   // the tactical situation.
-  const recognizedTactic =
-    recognizesTacticalSituation(
-      targetSkill,
-      tacticalContext.context,
-      tacticalRandomValue
-    );
+  const recognizedTactic = recognizesTacticalSituation(
+    targetSkill,
+    tacticalContext.context,
+    tacticalRandomValue,
+  );
 
   // 5. Apply tactical filtering only when
   // the tactical situation was recognized.
-  const selectionCandidates =
-    recognizedTactic
-      ? getRecognizedTacticalCandidates(
-          safePool.candidates
-        )
-      : safePool.candidates;
+  const selectionCandidates = recognizedTactic
+    ? getRecognizedTacticalCandidates(safePool.candidates)
+    : safePool.candidates;
 
   // 6. Determine position context using
   // the actual selection candidate pool.
-  const positionContext =
-    getOpponentPositionContext(
-      selectionCandidates
-    );
+  const positionContext = getOpponentPositionContext(selectionCandidates);
 
   // 7. Prevent missed tactics from receiving
   // forced-position accuracy assistance.
   const selectionContext =
-    !recognizedTactic &&
-    tacticalContext.context !== "normal"
-      ? "wide"
-      : positionContext.context;
+    !recognizedTactic && tacticalContext.context !== "normal" ? "wide" : positionContext.context;
 
   // 8. Detect endgame positions.
   const endgameActive =
-    fen !== null &&
-    isOpponentEndgame(fen) &&
-    tacticalContext.context === "normal";
+    fen !== null && isOpponentEndgame(fen) && tacticalContext.context === "normal";
 
   // 9. Determine opening eligibility.
-  const fullMoveNumber =
-    fen !== null
-      ? getFullMoveNumberFromFen(fen)
-      : null;
+  const fullMoveNumber = fen !== null ? getFullMoveNumberFromFen(fen) : null;
 
   const useOpeningBehavior =
     fen !== null &&
     fullMoveNumber !== null &&
     !endgameActive &&
-    isOpponentOpeningPhase(
-      fullMoveNumber
-    ) &&
+    isOpponentOpeningPhase(fullMoveNumber) &&
     tacticalContext.context === "normal";
 
   // 10. Select the final move.
-  let finalCandidate:
-    OpponentCandidate | null;
+  let finalCandidate: OpponentCandidate | null;
 
   if (useOpeningBehavior) {
-    const desiredCpl =
-      sampleFormAdjustedDesiredCentipawnLoss(
-        targetSkill,
-        selectionContext,
-        opponentForm,
-        randomValue1,
-        randomValue2
-      );
+    const desiredCpl = sampleFormAdjustedDesiredCentipawnLoss(
+      targetSkill,
+      selectionContext,
+      opponentForm,
+      randomValue1,
+      randomValue2,
+    );
 
-    finalCandidate =
-      chooseOpeningAwareCandidate(
-        selectionCandidates,
-        desiredCpl,
-        fen,
-        targetSkill
-      );
-    } else {
-      const desiredCpl =
-        sampleFormAdjustedDesiredCentipawnLoss(
-          targetSkill,
-          selectionContext,
-          opponentForm,
-          randomValue1,
-          randomValue2
-        );
-    
-      const applyMiddlegameAdjustment =
-        fen !== null &&
-        isOpponentMiddlegame(fen) &&
-        tacticalContext.context === "normal";
-    
-      const adjustedDesiredCpl =
-        applyMiddlegameAdjustment
-          ? adjustMiddlegameDesiredCpl(desiredCpl)
-          : desiredCpl;
-    
-      finalCandidate =
-        selectCandidateNearestCpl(
-          selectionCandidates,
-          adjustedDesiredCpl
-        );
-    }
+    finalCandidate = chooseOpeningAwareCandidate(selectionCandidates, desiredCpl, fen, targetSkill);
+  } else {
+    const desiredCpl = sampleFormAdjustedDesiredCentipawnLoss(
+      targetSkill,
+      selectionContext,
+      opponentForm,
+      randomValue1,
+      randomValue2,
+    );
+
+    const applyMiddlegameAdjustment =
+      fen !== null && isOpponentMiddlegame(fen) && tacticalContext.context === "normal";
+
+    const adjustedDesiredCpl = applyMiddlegameAdjustment
+      ? adjustMiddlegameDesiredCpl(desiredCpl)
+      : desiredCpl;
+
+    finalCandidate = selectCandidateNearestCpl(selectionCandidates, adjustedDesiredCpl);
+  }
 
   return {
     candidate: finalCandidate,

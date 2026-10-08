@@ -3,11 +3,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createPersistentGameId } from "../persistentGameId";
-import {
-  createDefaultProfile,
-  loadProfile,
-  saveProfile,
-} from "./profileStorage";
+import { createDefaultProfile, loadProfile, saveProfile } from "./profileStorage";
 import type { PlayerProfile, StoredMoveTiers } from "./types";
 import {
   createEmptyMoveTiers,
@@ -41,9 +37,7 @@ function finishedGame(id = createPersistentGameId()) {
   });
 }
 
-function context(
-  overrides: Partial<HistoryWriteContext> = {}
-): HistoryWriteContext {
+function context(overrides: Partial<HistoryWriteContext> = {}): HistoryWriteContext {
   return {
     discardedIds: new Set(),
     gameOwnerId: "player-a",
@@ -53,10 +47,7 @@ function context(
   };
 }
 
-function saveFinishedGame(
-  profile: PlayerProfile = createDefaultProfile(),
-  game = finishedGame()
-) {
+function saveFinishedGame(profile: PlayerProfile = createDefaultProfile(), game = finishedGame()) {
   return {
     game,
     profile: insertCompletedGame(profile, game, context()),
@@ -90,7 +81,7 @@ describe("completed game history", () => {
         averageCentipawnLoss: 20,
         moveTiers: analyzedTiers,
       },
-      context({ activeReviewGameId: null })
+      context({ activeReviewGameId: null }),
     );
 
     expect(afterFailedReview).toBe(profile);
@@ -108,12 +99,10 @@ describe("completed game history", () => {
         averageCentipawnLoss: 20,
         moveTiers: analyzedTiers,
       },
-      context({ activeReviewGameId: null })
+      context({ activeReviewGameId: null }),
     );
 
-    expect(afterNewGame.games.map((stored) => stored.id)).toEqual([
-      game.id,
-    ]);
+    expect(afterNewGame.games.map((stored) => stored.id)).toEqual([game.id]);
   });
 
   it("enriches the same game instead of adding a row", () => {
@@ -127,7 +116,7 @@ describe("completed game history", () => {
         averageCentipawnLoss: 31,
         moveTiers: analyzedTiers,
       },
-      context({ activeReviewGameId: game.id })
+      context({ activeReviewGameId: game.id }),
     );
 
     expect(enriched.games).toHaveLength(1);
@@ -158,7 +147,7 @@ describe("completed game history", () => {
         averageCentipawnLoss: 40,
         moveTiers: analyzedTiers,
       },
-      context({ activeReviewGameId: game.id })
+      context({ activeReviewGameId: game.id }),
     );
 
     expect(enriched.estimatedRating).toBe(saved.estimatedRating);
@@ -168,11 +157,7 @@ describe("completed game history", () => {
 
   it("does not duplicate history when completion is recorded twice", () => {
     const game = finishedGame();
-    const once = insertCompletedGame(
-      createDefaultProfile(),
-      game,
-      context()
-    );
+    const once = insertCompletedGame(createDefaultProfile(), game, context());
     const twice = insertCompletedGame(once, game, context());
 
     expect(twice).toBe(once);
@@ -185,11 +170,7 @@ describe("completed game history", () => {
     const resetProfile = createDefaultProfile();
     const discardedIds = new Set([game.id]);
 
-    const lateInsert = insertCompletedGame(
-      resetProfile,
-      game,
-      context({ discardedIds })
-    );
+    const lateInsert = insertCompletedGame(resetProfile, game, context({ discardedIds }));
     const lateReview = enrichStoredGame(
       resetProfile,
       game.id,
@@ -201,7 +182,7 @@ describe("completed game history", () => {
       context({
         discardedIds,
         activeReviewGameId: game.id,
-      })
+      }),
     );
 
     expect(lateInsert).toBe(resetProfile);
@@ -221,7 +202,7 @@ describe("completed game history", () => {
       profile,
       game.id,
       analysis,
-      context({ activeReviewGameId: createPersistentGameId() })
+      context({ activeReviewGameId: createPersistentGameId() }),
     );
     const otherAccount = enrichStoredGame(
       profile,
@@ -231,7 +212,7 @@ describe("completed game history", () => {
         activeReviewGameId: game.id,
         gameOwnerId: "player-a",
         currentOwnerId: "player-b",
-      })
+      }),
     );
     const otherAccountInsert = insertCompletedGame(
       profile,
@@ -239,7 +220,7 @@ describe("completed game history", () => {
       context({
         gameOwnerId: "player-a",
         currentOwnerId: "player-b",
-      })
+      }),
     );
 
     expect(otherGame).toBe(profile);
@@ -254,7 +235,7 @@ describe("completed game history", () => {
     const saved = insertCompletedGame(
       createDefaultProfile(),
       legacy,
-      context({ gameOwnerId: null, currentOwnerId: null })
+      context({ gameOwnerId: null, currentOwnerId: null }),
     );
 
     saveProfile(saved);
@@ -275,7 +256,7 @@ describe("completed game history", () => {
         gameOwnerId: null,
         currentOwnerId: null,
         activeReviewGameId: "game-1",
-      })
+      }),
     );
 
     expect(enriched.games[0].id).toBe("game-1");
@@ -292,7 +273,7 @@ describe("completed game history", () => {
     const saved = insertCompletedGame(
       insertCompletedGame(createDefaultProfile(), first, context()),
       second,
-      context()
+      context(),
     );
 
     const enriched = enrichStoredGame(
@@ -303,13 +284,10 @@ describe("completed game history", () => {
         averageCentipawnLoss: 18,
         moveTiers: analyzedTiers,
       },
-      context({ activeReviewGameId: first.id })
+      context({ activeReviewGameId: first.id }),
     );
 
-    expect(enriched.games.map((game) => game.id)).toEqual([
-      first.id,
-      second.id,
-    ]);
+    expect(enriched.games.map((game) => game.id)).toEqual([first.id, second.id]);
     expect(enriched.games[1]).toBe(saved.games[1]);
   });
 
@@ -320,7 +298,7 @@ describe("completed game history", () => {
         storageStatus: "guest",
         loadedStorageUserId: null,
         currentUserId: null,
-      })
+      }),
     ).toBe(true);
 
     expect(
@@ -329,7 +307,7 @@ describe("completed game history", () => {
         storageStatus: "account",
         loadedStorageUserId: "player-a",
         currentUserId: "player-b",
-      })
+      }),
     ).toBe(false);
 
     expect(
@@ -338,7 +316,7 @@ describe("completed game history", () => {
         storageStatus: "loading",
         loadedStorageUserId: null,
         currentUserId: null,
-      })
+      }),
     ).toBe(false);
   });
 });

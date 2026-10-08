@@ -1,17 +1,13 @@
 import { Chess } from "chess.js";
 
-import type {
-  CompletedGameRecord,
-  GameResult,
-  GameMoveRecord,
-} from "./types";
+import type { CompletedGameRecord, GameResult, GameMoveRecord } from "./types";
 
 export function buildGameRecord(
   pgn: string,
   id: string,
   startedAt: string,
   completedAt: string,
-  result: GameResult
+  result: GameResult,
 ): CompletedGameRecord {
   const game = new Chess();
 
@@ -21,39 +17,26 @@ export function buildGameRecord(
     verbose: true,
   });
 
-  const replay = new Chess(
-    history[0]?.before ?? game.fen()
-  );
+  const replay = new Chess(history[0]?.before ?? game.fen());
 
-  const moves: GameMoveRecord[] =
-    history.map((move, index) => {
-      const fenBefore = replay.fen();
+  const moves: GameMoveRecord[] = history.map((move, index) => {
+    const fenBefore = replay.fen();
 
-      const playedMove = replay.move(
-        move.san
-      );
+    const playedMove = replay.move(move.san);
 
-      if (!playedMove) {
-        throw new Error(
-          `Failed to replay move ${index + 1}`
-        );
-      }
+    if (!playedMove) {
+      throw new Error(`Failed to replay move ${index + 1}`);
+    }
 
-      return {
-        ply: index + 1,
-        san: move.san,
-        uci:
-          move.from +
-          move.to +
-          (move.promotion ?? ""),
-        fenBefore,
-        fenAfter: replay.fen(),
-        playedBy:
-          move.color === "w"
-            ? "white"
-            : "black",
-      };
-    });
+    return {
+      ply: index + 1,
+      san: move.san,
+      uci: move.from + move.to + (move.promotion ?? ""),
+      fenBefore,
+      fenAfter: replay.fen(),
+      playedBy: move.color === "w" ? "white" : "black",
+    };
+  });
 
   return {
     id,

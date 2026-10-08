@@ -1,4 +1,3 @@
-
 import type { PlayerProfile } from "./types";
 import { createDefaultProfile } from "./profileStorage";
 
@@ -14,17 +13,13 @@ export type GuestImportEligibility =
  * recorded games or its rating differs from
  * the default starting rating.
  */
-export function hasMeaningfulProgress(
-  profile: PlayerProfile
-): boolean {
+export function hasMeaningfulProgress(profile: PlayerProfile): boolean {
   const defaultProfile = createDefaultProfile();
 
   return (
     profile.games.length > 0 ||
-    profile.estimatedRating !==
-      defaultProfile.estimatedRating ||
-    profile.bestRating !==
-      defaultProfile.bestRating
+    profile.estimatedRating !== defaultProfile.estimatedRating ||
+    profile.bestRating !== defaultProfile.bestRating
   );
 }
 
@@ -34,7 +29,7 @@ export function hasMeaningfulProgress(
  */
 export function getGuestImportEligibility(
   guestProfile: PlayerProfile,
-  accountProfile: PlayerProfile
+  accountProfile: PlayerProfile,
 ): GuestImportEligibility {
   if (!hasMeaningfulProgress(guestProfile)) {
     return {

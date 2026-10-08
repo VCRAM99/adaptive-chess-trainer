@@ -1,13 +1,6 @@
 // @vitest-environment jsdom
 
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { act, cleanup, renderHook } from "@testing-library/react";
 
@@ -46,9 +39,7 @@ const { mockEngines, MockStockfishEngine } = vi.hoisted(() => {
     }
 
     analyze(fen: string) {
-      if (this.stopped || !this.ready || this.analyzing) {
-        return false;
-      }
+      if (this.stopped || !this.ready || this.analyzing) return false;
 
       this.analyzing = true;
       this.analyzedFens.push(fen);
@@ -132,10 +123,7 @@ describe("useMoveAnalysis", () => {
     return hook;
   }
 
-  function finishCurrentSearch(
-    engine: (typeof mockEngines)[number],
-    bestMove: string
-  ) {
+  function finishCurrentSearch(engine: (typeof mockEngines)[number], bestMove: string) {
     act(() => {
       engine.emitResult(scoredResult(bestMove));
       engine.emitResult(scoredResult(bestMove));

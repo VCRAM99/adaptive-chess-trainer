@@ -20,11 +20,7 @@ export default function PersistenceNotice({
       {(notice.primaryLabel || notice.secondaryLabel) && (
         <div className="persistence-notice__actions">
           {notice.primaryLabel && (
-            <button
-              type="button"
-              className="persistence-notice__button"
-              onClick={onPrimary}
-            >
+            <button type="button" className="persistence-notice__button" onClick={onPrimary}>
               {notice.primaryLabel}
             </button>
           )}

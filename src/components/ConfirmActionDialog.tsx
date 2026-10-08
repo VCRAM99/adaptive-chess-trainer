@@ -18,27 +18,14 @@ export default function ConfirmActionDialog({
   onConfirm,
 }: ConfirmActionDialogProps) {
   return (
-    <Dialog
-      open={true}
-      title={title}
-      description={description}
-      onClose={onCancel}
-    >
+    <Dialog open={true} title={title} description={description} onClose={onCancel}>
       <div className="reset-dialog-content">
         <p className="reset-dialog-warning">{warning}</p>
         <div className="reset-dialog-actions">
-          <button
-            type="button"
-            className="reset-cancel-button"
-            onClick={onCancel}
-          >
+          <button type="button" className="reset-cancel-button" onClick={onCancel}>
             Cancel
           </button>
-          <button
-            type="button"
-            className="reset-confirm-button"
-            onClick={onConfirm}
-          >
+          <button type="button" className="reset-confirm-button" onClick={onConfirm}>
             {confirmLabel}
           </button>
         </div>

@@ -1,21 +1,11 @@
-
 import type { PlayerProfile } from "../profile/types";
 import type { UserPreferences } from "../preferences/types";
 
-import {
-  createDefaultProfile,
-  loadProfile,
-} from "../profile/profileStorage";
+import { createDefaultProfile, loadProfile } from "../profile/profileStorage";
 
-import {
-  createDefaultPreferences,
-  loadPreferences,
-} from "../preferences/preferencesStorage";
+import { createDefaultPreferences, loadPreferences } from "../preferences/preferencesStorage";
 
-import {
-  loadCloudProfile,
-  loadCloudPreferences,
-} from "./storage";
+import { loadCloudProfile, loadCloudPreferences } from "./storage";
 
 export type PlayerStorageData = {
   profile: PlayerProfile;
@@ -29,9 +19,7 @@ export type PlayerStorageData = {
  * A missing row starts at revision 0. Invalid cloud JSON
  * throws, so it is not replaced with an empty default.
  */
-export async function loadPlayerStorage(
-  userId: string | null
-): Promise<PlayerStorageData> {
+export async function loadPlayerStorage(userId: string | null): Promise<PlayerStorageData> {
   if (!userId) {
     return {
       profile: loadProfile(),
@@ -40,22 +28,16 @@ export async function loadPlayerStorage(
     };
   }
 
-  const [cloudProfile, cloudPreferences] =
-    await Promise.all([
-      loadCloudProfile(userId),
-      loadCloudPreferences(userId),
-    ]);
+  const [cloudProfile, cloudPreferences] = await Promise.all([
+    loadCloudProfile(userId),
+    loadCloudPreferences(userId),
+  ]);
 
   return {
-    profile:
-      cloudProfile?.profile ??
-      createDefaultProfile(),
+    profile: cloudProfile?.profile ?? createDefaultProfile(),
 
-    preferences:
-      cloudPreferences ??
-      createDefaultPreferences(),
+    preferences: cloudPreferences ?? createDefaultPreferences(),
 
-    profileRevision:
-      cloudProfile?.revision ?? 0,
+    profileRevision: cloudProfile?.revision ?? 0,
   };
 }

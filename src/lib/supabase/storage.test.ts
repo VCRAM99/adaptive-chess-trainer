@@ -2,11 +2,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDefaultPreferences } from "../preferences/preferencesStorage";
-import {
-  createDefaultProfile,
-  loadProfile,
-  saveProfile,
-} from "../profile/profileStorage";
+import { createDefaultProfile, loadProfile, saveProfile } from "../profile/profileStorage";
 import type { PlayerProfile } from "../profile/types";
 import type { UserPreferences } from "../preferences/types";
 import { InvalidCloudDataError } from "./cloudErrors";
@@ -43,14 +39,11 @@ function signedInAs(userId: string | null) {
 }
 
 function mockTables(results: Record<string, { data: unknown; error: unknown }>) {
-    from.mockImplementation(((table: string) => {
+  from.mockImplementation(((table: string) => {
     const builder = {
       select: () => builder,
       eq: () => builder,
-      maybeSingle: () =>
-        Promise.resolve(
-          results[table] ?? { data: null, error: null }
-        ),
+      maybeSingle: () => Promise.resolve(results[table] ?? { data: null, error: null }),
       upsert: vi.fn(async () => ({ error: null })),
     };
 
@@ -82,9 +75,9 @@ describe("cloud storage validation", () => {
   it("refuses a profile write when the session belongs to someone else", async () => {
     signedInAs("user-2");
 
-    await expect(
-      saveCloudProfile("user-1", createDefaultProfile(), 1)
-    ).rejects.toThrow(/account session changed/);
+    await expect(saveCloudProfile("user-1", createDefaultProfile(), 1)).rejects.toThrow(
+      /account session changed/,
+    );
 
     expect(rpc).not.toHaveBeenCalled();
   });
@@ -92,9 +85,9 @@ describe("cloud storage validation", () => {
   it("refuses a preference write when the session belongs to someone else", async () => {
     signedInAs("user-2");
 
-    await expect(
-      saveCloudPreferences("user-1", createDefaultPreferences())
-    ).rejects.toThrow(/account session changed/);
+    await expect(saveCloudPreferences("user-1", createDefaultPreferences())).rejects.toThrow(
+      /account session changed/,
+    );
 
     expect(from).not.toHaveBeenCalled();
   });
@@ -119,7 +112,7 @@ describe("cloud storage validation", () => {
         user_id: "user-1",
         preferences_data: preferences,
       },
-      { onConflict: "user_id" }
+      { onConflict: "user_id" },
     );
   });
 
@@ -137,12 +130,8 @@ describe("cloud storage validation", () => {
       user_preferences: { data: null, error: null },
     });
 
-    await expect(loadCloudProfile("user-1")).rejects.toBeInstanceOf(
-      InvalidCloudDataError
-    );
-    await expect(loadPlayerStorage("user-1")).rejects.toThrow(
-      /left unchanged/
-    );
+    await expect(loadCloudProfile("user-1")).rejects.toBeInstanceOf(InvalidCloudDataError);
+    await expect(loadPlayerStorage("user-1")).rejects.toThrow(/left unchanged/);
     expect(rpc).not.toHaveBeenCalled();
   });
 
@@ -162,16 +151,10 @@ describe("cloud storage validation", () => {
       },
     });
 
-    await expect(loadCloudPreferences("user-1")).rejects.toBeInstanceOf(
-      InvalidCloudDataError
-    );
-    await expect(loadPlayerStorage("user-1")).rejects.toThrow(
-      /left unchanged/
-    );
+    await expect(loadCloudPreferences("user-1")).rejects.toBeInstanceOf(InvalidCloudDataError);
+    await expect(loadPlayerStorage("user-1")).rejects.toThrow(/left unchanged/);
     expect(rpc).not.toHaveBeenCalled();
-    expect(from.mock.calls.some((call) => call[0] === "user_preferences")).toBe(
-      true
-    );
+    expect(from.mock.calls.some((call) => call[0] === "user_preferences")).toBe(true);
   });
 
   it("keeps guest progress separate from an account profile", async () => {

@@ -1,6 +1,4 @@
-import {
-  createOpponentCandidates,
-} from "../lib/opponentCandidateAnalysis";
+import { createOpponentCandidates } from "../lib/opponentCandidateAnalysis";
 
 import {
   getOpponentPositionContext,
@@ -8,38 +6,20 @@ import {
   type OpponentPositionContext,
 } from "../lib/opponentPositionContext";
 
-import {
-  simulateSkillRange,
-} from "./opponentStrengthSimulator";
+import { simulateOpponentFormEffect, simulateSkillRange } from "./opponentStrengthSimulator";
 
-import {
-  analyzePosition,
-} from "./realPositionStrengthSimulation";
+import { analyzePosition } from "./realPositionStrengthSimulation";
 
+import { getOpponentTacticalContext } from "../lib/opponentTacticalContext";
 
-import {
-  simulateOpponentFormEffect,
-} from "./opponentStrengthSimulator";
+import { getTacticalRecognitionProbability } from "../lib/opponentTacticalSkill";
 
-
-import {
-  getOpponentTacticalContext,
-} from "../lib/opponentTacticalContext";
-
-import {
-  getTacticalRecognitionProbability,
-} from "../lib/opponentTacticalSkill";
-
-import type {
-  OpponentCandidate,
-} from "../lib/opponentMove";
-
+import type { OpponentCandidate } from "../lib/opponentMove";
 
 type TestPosition = {
   name: string;
   fen: string;
 };
-
 
 const TEST_POSITIONS: TestPosition[] = [
   {
@@ -56,7 +36,6 @@ const TEST_POSITIONS: TestPosition[] = [
   },
 ];
 
-
 type PositionSimulationRow = {
   position: string;
   context: OpponentPositionContext;
@@ -70,19 +49,16 @@ type PositionSimulationRow = {
   blunderPercent: number;
 };
 
-
 type PositionContextRow = {
   position: string;
   positionContext: OpponentPositionContextResult;
 };
 
-
 export async function runMultiPositionStrengthSimulation() {
   const rows: PositionSimulationRow[] = [];
   const contextRows: PositionContextRow[] = [];
 
-  let openingCandidates:
-  ReturnType<typeof createOpponentCandidates> = [];
+  let openingCandidates: ReturnType<typeof createOpponentCandidates> = [];
 
   const contextComparisonRows: {
     context: OpponentPositionContext;
@@ -92,404 +68,223 @@ export async function runMultiPositionStrengthSimulation() {
   }[] = [];
 
   for (const position of TEST_POSITIONS) {
-    console.log(
-      `Analyzing ${position.name}...`
-    );
+    console.log(`Analyzing ${position.name}...`);
 
-    const analysis =
-      await analyzePosition(
-        position.fen
-      );
+    const analysis = await analyzePosition(position.fen);
 
-    const candidates =
-      createOpponentCandidates(
-        analysis.candidates,
-        "black",
-        "black"
-      );
+    const candidates = createOpponentCandidates(analysis.candidates, "black", "black");
 
-      //temporary simulation of the opponent strength in multiple positions.  
-      if (position.name === "Opening") {
-        openingCandidates = candidates;
-        const contexts: OpponentPositionContext[] = [
-          "forced",
-          "limited",
-          "flexible",
-          "wide",
-        ];
-      
-        for (const context of contexts) {
-          const contextResults =
-            simulateSkillRange(
-              candidates,
-              10_000,
-              "contextual-desired-cpl",
-              context
-            );
-      
-          for (const result of contextResults) {
-            contextComparisonRows.push({
-              context,
-              skill: result.targetSkill,
-              averageCpl:
-                result.averageCpl,
-              medianCpl:
-                result.medianCpl,
-            });
-          }
+    //temporary simulation of the opponent strength in multiple positions.
+    if (position.name === "Opening") {
+      openingCandidates = candidates;
+      const contexts: OpponentPositionContext[] = ["forced", "limited", "flexible", "wide"];
+
+      for (const context of contexts) {
+        const contextResults = simulateSkillRange(
+          candidates,
+          10_000,
+          "contextual-desired-cpl",
+          context,
+        );
+
+        for (const result of contextResults) {
+          contextComparisonRows.push({
+            context,
+            skill: result.targetSkill,
+            averageCpl: result.averageCpl,
+            medianCpl: result.medianCpl,
+          });
         }
       }
+    }
 
     // 5.12C:
     // Measure the decision context of this
     // real position without changing gameplay.
-    const positionContext =
-      getOpponentPositionContext(
-        candidates
-      );
+    const positionContext = getOpponentPositionContext(candidates);
 
     contextRows.push({
       position: position.name,
       positionContext,
     });
 
-    const results =
-    simulateSkillRange(
+    const results = simulateSkillRange(
       candidates,
       10_000,
       "contextual-desired-cpl",
-      positionContext.context
+      positionContext.context,
     );
 
     for (const result of results) {
       rows.push({
-        position:
-          position.name,
+        position: position.name,
 
-        context:
-          positionContext.context,  
+        context: positionContext.context,
 
-        skill:
-          result.targetSkill,
+        skill: result.targetSkill,
 
-        averageCpl:
-          result.averageCpl,
+        averageCpl: result.averageCpl,
 
-        medianCpl:
-          result.medianCpl,
+        medianCpl: result.medianCpl,
 
-        excellentPercent:
-          result.excellentPercent,
+        excellentPercent: result.excellentPercent,
 
-        goodPercent:
-          result.goodPercent,
+        goodPercent: result.goodPercent,
 
-        inaccuracyPercent:
-          result.inaccuracyPercent,
+        inaccuracyPercent: result.inaccuracyPercent,
 
-        mistakePercent:
-          result.mistakePercent,
+        mistakePercent: result.mistakePercent,
 
-        blunderPercent:
-          result.blunderPercent,
+        blunderPercent: result.blunderPercent,
       });
     }
   }
 
-
-  console.log(
-    "Position context summary:"
-  );
+  console.log("Position context summary:");
 
   console.table(
     contextRows.map((row) => ({
-      position:
-        row.position,
+      position: row.position,
 
-      context:
-        row.positionContext.context,
+      context: row.positionContext.context,
 
-      candidates:
-        row.positionContext
-          .candidateCount,
+      candidates: row.positionContext.candidateCount,
 
-      plausible:
-        row.positionContext
-          .plausibleCandidateCount,
+      plausible: row.positionContext.plausibleCandidateCount,
 
-      bestAlternativeCpl:
-        row.positionContext
-          .bestAlternativeLoss,
-    }))
+      bestAlternativeCpl: row.positionContext.bestAlternativeLoss,
+    })),
   );
 
-
-  console.log(
-    "Per-position strength simulation:"
-  );
+  console.log("Per-position strength simulation:");
 
   console.table(
     rows.map((row) => ({
-      position:
-        row.position,
+      position: row.position,
 
-      context:
-        row.context,
+      context: row.context,
 
-      skill:
-        row.skill,
+      skill: row.skill,
 
-      avgCpl:
-        Number(
-          row.averageCpl.toFixed(1)
-        ),
+      avgCpl: Number(row.averageCpl.toFixed(1)),
 
-      medianCpl:
-        row.medianCpl,
+      medianCpl: row.medianCpl,
 
-      excellent:
-        Number(
-          row.excellentPercent.toFixed(1)
-        ),
+      excellent: Number(row.excellentPercent.toFixed(1)),
 
-      good:
-        Number(
-          row.goodPercent.toFixed(1)
-        ),
+      good: Number(row.goodPercent.toFixed(1)),
 
-      inaccuracy:
-        Number(
-          row.inaccuracyPercent.toFixed(1)
-        ),
+      inaccuracy: Number(row.inaccuracyPercent.toFixed(1)),
 
-      mistake:
-        Number(
-          row.mistakePercent.toFixed(1)
-        ),
+      mistake: Number(row.mistakePercent.toFixed(1)),
 
-      blunder:
-        Number(
-          row.blunderPercent.toFixed(1)
-        ),
-    }))
+      blunder: Number(row.blunderPercent.toFixed(1)),
+    })),
   );
 
+  const skills = Array.from(new Set(rows.map((row) => row.skill))).sort((a, b) => a - b);
 
-  const skills =
-    Array.from(
-      new Set(
-        rows.map(
-          (row) => row.skill
-        )
-      )
-    ).sort(
-      (a, b) => a - b
+  const summary = skills.map((skill) => {
+    const skillRows = rows.filter((row) => row.skill === skill);
+
+    const values = skillRows.map((row) => row.averageCpl);
+
+    const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+
+    const minimum = Math.min(...values);
+
+    const maximum = Math.max(...values);
+
+    return {
+      skill,
+
+      avgAcrossPositions: Number(average.toFixed(1)),
+
+      lowestPositionAvg: Number(minimum.toFixed(1)),
+
+      highestPositionAvg: Number(maximum.toFixed(1)),
+
+      range: Number((maximum - minimum).toFixed(1)),
+    };
+  });
+
+  if (openingCandidates.length === 0) {
+    console.warn("Opening candidates were not available for form simulation.");
+  } else {
+    const formValues = [-50, -30, -15, 0, 15, 30, 50];
+
+    const formResults = formValues.map((form) =>
+      simulateOpponentFormEffect(openingCandidates, 1200, "wide", form),
     );
 
+    console.log("Opponent form effect at target skill 1200:");
 
-  const summary =
-    skills.map((skill) => {
-      const skillRows =
-        rows.filter(
-          (row) =>
-            row.skill === skill
-        );
-
-      const values =
-        skillRows.map(
-          (row) =>
-            row.averageCpl
-        );
-
-      const average =
-        values.reduce(
-          (sum, value) =>
-            sum + value,
-          0
-        ) / values.length;
-
-      const minimum =
-        Math.min(...values);
-
-      const maximum =
-        Math.max(...values);
-
-      return {
-        skill,
-
-        avgAcrossPositions:
-          Number(
-            average.toFixed(1)
-          ),
-
-        lowestPositionAvg:
-          Number(
-            minimum.toFixed(1)
-          ),
-
-        highestPositionAvg:
-          Number(
-            maximum.toFixed(1)
-          ),
-
-        range:
-          Number(
-            (
-              maximum -
-              minimum
-            ).toFixed(1)
-          ),
-      };
-    });
-
-    if (openingCandidates.length === 0) {
-      console.warn(
-        "Opening candidates were not available for form simulation."
-      );
-    } else {
-
-    const formValues = [
-      -50,
-      -30,
-      -15,
-      0,
-      15,
-      30,
-      50,
-    ];
-    
-    const formResults =
-      formValues.map((form) =>
-        simulateOpponentFormEffect(
-          openingCandidates,
-          1200,
-          "wide",
-          form
-        )
-      );
-    
-    console.log(
-      "Opponent form effect at target skill 1200:"
-    );
-    
     console.table(
-      formResults.map(
-        (result) => ({
-          form:
-            result.form,
-    
-          effectiveSkill:
-            result.effectiveSkill,
-    
-          averageCpl:
-            Number(
-              result.averageCpl
-                .toFixed(1)
-            ),
-    
-          medianCpl:
-            result.medianCpl,
-        })
-      )
+      formResults.map((result) => ({
+        form: result.form,
+
+        effectiveSkill: result.effectiveSkill,
+
+        averageCpl: Number(result.averageCpl.toFixed(1)),
+
+        medianCpl: result.medianCpl,
+      })),
     );
+  }
 
-    }
-
-    //temporary logging of the cross-position strength summary.
-  console.log(
-    "Cross-position strength summary:"
-  );
+  //temporary logging of the cross-position strength summary.
+  console.log("Cross-position strength summary:");
 
   console.table(summary);
 
   //temporary logging of the same-position context comparison.
-  console.log(
-    "Same-position context comparison:"
-  );
-  
+  console.log("Same-position context comparison:");
+
   console.table(
-    contextComparisonRows.map(
-      (row) => ({
-        context:
-          row.context,
-  
-        skill:
-          row.skill,
-  
-        avgCpl:
-          Number(
-            row.averageCpl.toFixed(1)
-          ),
-  
-        medianCpl:
-          row.medianCpl,
-      })
-    )
+    contextComparisonRows.map((row) => ({
+      context: row.context,
+
+      skill: row.skill,
+
+      avgCpl: Number(row.averageCpl.toFixed(1)),
+
+      medianCpl: row.medianCpl,
+    })),
   );
 
   return rows;
 }
 
-export function logTacticalCandidateAnalysis(
-  label: string,
-  candidates: OpponentCandidate[]
-) {
-  const tacticalContext =
-    getOpponentTacticalContext(
-      candidates
-    );
+export function logTacticalCandidateAnalysis(label: string, candidates: OpponentCandidate[]) {
+  const tacticalContext = getOpponentTacticalContext(candidates);
 
-  console.log(
-    `\nTACTICAL ANALYSIS: ${label}`
-  );
+  console.log(`\nTACTICAL ANALYSIS: ${label}`);
 
   console.table(
     [...candidates]
-      .sort(
-        (a, b) =>
-          a.centipawnLoss -
-          b.centipawnLoss
-      )
+      .sort((a, b) => a.centipawnLoss - b.centipawnLoss)
       .map((candidate) => ({
         rank: candidate.rank,
         move: candidate.move,
-        evaluation:
-          candidate.evaluation,
-        cpl:
-          candidate.centipawnLoss,
+        evaluation: candidate.evaluation,
+        cpl: candidate.centipawnLoss,
         mate: candidate.mate,
-      }))
+      })),
   );
 
   console.log({
-    context:
-      tacticalContext.context,
+    context: tacticalContext.context,
 
-    bestEvaluation:
-      tacticalContext.bestEvaluation,
+    bestEvaluation: tacticalContext.bestEvaluation,
 
-    bestAlternativeLoss:
-      tacticalContext.bestAlternativeLoss,
+    bestAlternativeLoss: tacticalContext.bestAlternativeLoss,
 
-    tacticalGap:
-      tacticalContext.tacticalGap,
+    tacticalGap: tacticalContext.tacticalGap,
 
-    recognitionAt400:
-      getTacticalRecognitionProbability(
-        400,
-        tacticalContext.context
-      ),
+    recognitionAt400: getTacticalRecognitionProbability(400, tacticalContext.context),
 
-    recognitionAt1200:
-      getTacticalRecognitionProbability(
-        1200,
-        tacticalContext.context
-      ),
+    recognitionAt1200: getTacticalRecognitionProbability(1200, tacticalContext.context),
 
-    recognitionAt2000:
-      getTacticalRecognitionProbability(
-        2000,
-        tacticalContext.context
-      ),
+    recognitionAt2000: getTacticalRecognitionProbability(2000, tacticalContext.context),
   });
 }

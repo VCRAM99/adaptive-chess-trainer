@@ -17,27 +17,19 @@ export type BoardParticipants = {
  */
 export function getBoardParticipants(
   playerColor: BoardColor,
-  orientation: BoardColor
+  orientation: BoardColor,
 ): BoardParticipants {
-  const topColor: BoardColor =
-    orientation === "white" ? "black" : "white";
-  const bottomColor: BoardColor =
-    orientation === "white" ? "white" : "black";
+  const topColor: BoardColor = orientation === "white" ? "black" : "white";
+  const bottomColor: BoardColor = orientation === "white" ? "white" : "black";
 
   return {
     top: {
       color: topColor,
-      role:
-        topColor === playerColor
-          ? "player"
-          : "opponent",
+      role: topColor === playerColor ? "player" : "opponent",
     },
     bottom: {
       color: bottomColor,
-      role:
-        bottomColor === playerColor
-          ? "player"
-          : "opponent",
+      role: bottomColor === playerColor ? "player" : "opponent",
     },
   };
 }

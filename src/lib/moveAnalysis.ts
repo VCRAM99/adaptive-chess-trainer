@@ -1,93 +1,65 @@
-import type {PlayerColor, } from "./moveQuality";
-import {calculateCentipawnLoss,} from "./moveQuality";
+import { calculateCentipawnLoss, type PlayerColor } from "./moveQuality";
 import type { DecisionImportance } from "./decisionDifficulty";
-  
-export type MoveQuality =
-| "excellent"
-| "good"
-| "inaccuracy"
-| "mistake"
-| "blunder";
+
+export type MoveQuality = "excellent" | "good" | "inaccuracy" | "mistake" | "blunder";
 
 export type MoveAnalysis = {
-    moveNumber: number;
+  moveNumber: number;
 
-    playerColor: PlayerColor;
+  playerColor: PlayerColor;
 
-    playerMove: string;
-    bestMove: string;
+  playerMove: string;
+  bestMove: string;
 
-    beforeEvaluation: number;
-    afterEvaluation: number;
+  beforeEvaluation: number;
+  afterEvaluation: number;
 
-    legalMoveCount: number;
+  legalMoveCount: number;
 
-    decisionImportance: DecisionImportance;
+  decisionImportance: DecisionImportance;
 
-    centipawnLoss: number;
+  centipawnLoss: number;
 
-    quality: MoveQuality;
+  quality: MoveQuality;
 };
 
-export function classifyMoveQuality(
-    centipawnLoss: number
-  ): MoveQuality {
-    const loss = Math.max(
-      0,
-      centipawnLoss
-    );
-  
-    if (loss <= 10) {
-      return "excellent";
-    }
-  
-    if (loss <= 30) {
-      return "good";
-    }
-  
-    if (loss <= 70) {
-      return "inaccuracy";
-    }
-  
-    if (loss <= 150) {
-      return "mistake";
-    }
-  
-    return "blunder";
+export function classifyMoveQuality(centipawnLoss: number): MoveQuality {
+  const loss = Math.max(0, centipawnLoss);
+
+  if (loss <= 10) return "excellent";
+
+  if (loss <= 30) return "good";
+
+  if (loss <= 70) return "inaccuracy";
+
+  if (loss <= 150) return "mistake";
+
+  return "blunder";
 }
 
 type CreateMoveAnalysisInput = {
-    moveNumber: number;
-  
-    playerColor: PlayerColor;
-  
-    playerMove: string;
-    bestMove: string;
-  
-    beforeEvaluation: number;
-    afterEvaluation: number;
+  moveNumber: number;
 
-    legalMoveCount: number;
-    decisionImportance: DecisionImportance;
+  playerColor: PlayerColor;
+
+  playerMove: string;
+  bestMove: string;
+
+  beforeEvaluation: number;
+  afterEvaluation: number;
+
+  legalMoveCount: number;
+  decisionImportance: DecisionImportance;
 };
-  
-export function createMoveAnalysis(
-input: CreateMoveAnalysisInput
-): MoveAnalysis {
-const centipawnLoss =
-    calculateCentipawnLoss(
-    input.beforeEvaluation,
-    input.afterEvaluation
-    );
 
-return {
+export function createMoveAnalysis(input: CreateMoveAnalysisInput): MoveAnalysis {
+  const centipawnLoss = calculateCentipawnLoss(input.beforeEvaluation, input.afterEvaluation);
+
+  return {
     ...input,
 
     centipawnLoss,
 
-    quality:
-    classifyMoveQuality(
-        centipawnLoss
-    ),
-};
+    quality: classifyMoveQuality(centipawnLoss),
+  };
 }

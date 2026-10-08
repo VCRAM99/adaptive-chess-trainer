@@ -1,53 +1,32 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-  } from "vitest";
-  
-  import {
-    getOpponentMultiPv,
-    MAX_OPPONENT_MULTIPV,
-    OpponentAnalysisEngine,
-  } from "./opponentAnalysis";
-  
-  describe("getOpponentMultiPv", () => {
-    it("uses the legal move count when below the maximum", () => {
-      expect(
-        getOpponentMultiPv(8)
-      ).toBe(8);
-  
-      expect(
-        getOpponentMultiPv(17)
-      ).toBe(17);
-    });
-  
-    it("caps MultiPV at the configured maximum", () => {
-      expect(
-        getOpponentMultiPv(35)
-      ).toBe(
-        MAX_OPPONENT_MULTIPV
-      );
-    });
-  
-    it("never returns less than one", () => {
-      expect(
-        getOpponentMultiPv(0)
-      ).toBe(1);
-  
-      expect(
-        getOpponentMultiPv(-5)
-      ).toBe(1);
-    });
-  
-    it("uses a whole-number candidate count", () => {
-      expect(
-        getOpponentMultiPv(12.9)
-      ).toBe(12);
-    });
+  getOpponentMultiPv,
+  MAX_OPPONENT_MULTIPV,
+  OpponentAnalysisEngine,
+} from "./opponentAnalysis";
+
+describe("getOpponentMultiPv", () => {
+  it("uses the legal move count when below the maximum", () => {
+    expect(getOpponentMultiPv(8)).toBe(8);
+
+    expect(getOpponentMultiPv(17)).toBe(17);
   });
+
+  it("caps MultiPV at the configured maximum", () => {
+    expect(getOpponentMultiPv(35)).toBe(MAX_OPPONENT_MULTIPV);
+  });
+
+  it("never returns less than one", () => {
+    expect(getOpponentMultiPv(0)).toBe(1);
+
+    expect(getOpponentMultiPv(-5)).toBe(1);
+  });
+
+  it("uses a whole-number candidate count", () => {
+    expect(getOpponentMultiPv(12.9)).toBe(12);
+  });
+});
 
 class MockWorker {
   static instances: MockWorker[] = [];
@@ -128,7 +107,7 @@ describe("OpponentAnalysisEngine bestmove (none)", () => {
       expect.objectContaining({
         message: "Stockfish returned no legal move.",
       }),
-      1
+      1,
     );
     expect(onResult).not.toHaveBeenCalled();
     expect(onTerminal).not.toHaveBeenCalled();
@@ -146,10 +125,7 @@ describe("OpponentAnalysisEngine bestmove (none)", () => {
 
     expect(engine.isAnalyzing()).toBe(false);
     expect(engine.isReady()).toBe(false);
-    expect(onError).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Worker failed" }),
-      1
-    );
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: "Worker failed" }), 1);
 
     engine.stop();
   });

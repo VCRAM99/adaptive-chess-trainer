@@ -1,10 +1,6 @@
-
 import { describe, expect, it } from "vitest";
 import { createDefaultProfile } from "./profileStorage";
-import {
-  getGuestImportEligibility,
-  hasMeaningfulProgress,
-} from "./guestMigration";
+import { getGuestImportEligibility, hasMeaningfulProgress } from "./guestMigration";
 
 describe("guest progress migration", () => {
   it("treats a default profile as empty", () => {
@@ -32,24 +28,14 @@ describe("guest progress migration", () => {
 
     const accountProfile = createDefaultProfile();
 
-    expect(
-      getGuestImportEligibility(
-        guestProfile,
-        accountProfile
-      )
-    ).toEqual({ eligible: true });
+    expect(getGuestImportEligibility(guestProfile, accountProfile)).toEqual({ eligible: true });
   });
 
   it("rejects importing when guest has no progress", () => {
     const guestProfile = createDefaultProfile();
     const accountProfile = createDefaultProfile();
 
-    expect(
-      getGuestImportEligibility(
-        guestProfile,
-        accountProfile
-      )
-    ).toEqual({
+    expect(getGuestImportEligibility(guestProfile, accountProfile)).toEqual({
       eligible: false,
       reason: "no-guest-progress",
     });
@@ -68,12 +54,7 @@ describe("guest progress migration", () => {
       bestRating: 900,
     };
 
-    expect(
-      getGuestImportEligibility(
-        guestProfile,
-        accountProfile
-      )
-    ).toEqual({
+    expect(getGuestImportEligibility(guestProfile, accountProfile)).toEqual({
       eligible: false,
       reason: "account-not-empty",
     });

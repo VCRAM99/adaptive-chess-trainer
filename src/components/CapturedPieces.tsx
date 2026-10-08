@@ -13,10 +13,7 @@ const PIECE_NAMES: Record<CapturedPieceType, string> = {
   p: "pawn",
 };
 
-const CLASSIC_GLYPHS: Record<
-  "w" | "b",
-  Record<CapturedPieceType, string>
-> = {
+const CLASSIC_GLYPHS: Record<"w" | "b", Record<CapturedPieceType, string>> = {
   w: {
     q: "♕",
     r: "♖",
@@ -42,34 +39,20 @@ type CapturedPiecesProps = {
 function pieceAsset(
   pieceSet: PieceSet,
   pieceColor: "w" | "b",
-  type: CapturedPieceType
+  type: CapturedPieceType,
 ): string | null {
-  if (pieceSet === "classic") {
-    return null;
-  }
+  if (pieceSet === "classic") return null;
 
-  const folder =
-    pieceSet === "minimal" ? "minimal" : "modern";
+  const folder = pieceSet === "minimal" ? "minimal" : "modern";
   const file = `${pieceColor}${type.toUpperCase()}.svg`;
 
   return `${import.meta.env.BASE_URL}pieces/${folder}/${file}`;
 }
 
-function CapturedPieces({
-  pieces,
-  capturer,
-  pieceSet,
-}: CapturedPiecesProps) {
+function CapturedPieces({ pieces, capturer, pieceSet }: CapturedPiecesProps) {
   const pieceColor = capturedPieceColor(capturer);
 
-  if (pieces.length === 0) {
-    return (
-      <div
-        className="captured-pieces"
-        aria-hidden="true"
-      />
-    );
-  }
+  if (pieces.length === 0) return <div className="captured-pieces" aria-hidden="true" />;
 
   const summary = pieces
     .map(({ type, count }) => {
@@ -81,26 +64,14 @@ function CapturedPieces({
     .join(", ");
 
   return (
-    <div
-      className="captured-pieces"
-      aria-label={`Captured pieces: ${summary}`}
-    >
+    <div className="captured-pieces" aria-label={`Captured pieces: ${summary}`}>
       {pieces.map(({ type, count }) => {
-        const src = pieceAsset(
-          pieceSet,
-          pieceColor,
-          type
-        );
+        const src = pieceAsset(pieceSet, pieceColor, type);
 
         return (
           <div className="captured-piece" key={type}>
             {src ? (
-              <img
-                className="captured-piece__icon"
-                src={src}
-                alt=""
-                draggable={false}
-              />
+              <img className="captured-piece__icon" src={src} alt="" draggable={false} />
             ) : (
               <span
                 className={`captured-piece__glyph captured-piece__glyph--${pieceColor}`}
@@ -110,9 +81,7 @@ function CapturedPieces({
               </span>
             )}
 
-            <span className="captured-piece__count">
-              {count}
-            </span>
+            <span className="captured-piece__count">{count}</span>
           </div>
         );
       })}

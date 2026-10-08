@@ -37,29 +37,16 @@ function BoardInfoRow({
           tabIndex={0}
         >
           <p className="board-participant">
-            <span className="board-participant__name">
-              You
-            </span>
-            <span className="board-participant__color">
-              {label}
-            </span>
-            <span className="board-participant__rating">
-              {playerRating}
-            </span>
+            <span className="board-participant__name">You</span>
+            <span className="board-participant__color">{label}</span>
+            <span className="board-participant__rating">{playerRating}</span>
           </p>
         </div>
       ) : (
-        <OpponentIdentity
-          colorLabel={label}
-          engineStatus={engineStatus}
-        />
+        <OpponentIdentity colorLabel={label} engineStatus={engineStatus} />
       )}
 
-      <CapturedPieces
-        pieces={capturedPieces}
-        capturer={color}
-        pieceSet={pieceSet}
-      />
+      <CapturedPieces pieces={capturedPieces} capturer={color} pieceSet={pieceSet} />
     </div>
   );
 }
@@ -72,11 +59,7 @@ function OpponentIdentity({
   engineStatus: EngineStatus;
 }) {
   const statusLabel =
-    engineStatus === "thinking"
-      ? "THINKING"
-      : engineStatus === "error"
-        ? "ENGINE ERROR"
-        : "READY";
+    engineStatus === "thinking" ? "THINKING" : engineStatus === "error" ? "ENGINE ERROR" : "READY";
 
   return (
     <div
@@ -86,20 +69,13 @@ function OpponentIdentity({
       tabIndex={0}
     >
       <span
-        className={
-          `engine-status-dot ` +
-          `engine-status-dot--${engineStatus}`
-        }
+        className={`engine-status-dot ` + `engine-status-dot--${engineStatus}`}
         aria-hidden="true"
       />
 
       <p className="board-participant">
-        <span className="board-participant__name">
-          Adaptive Opponent
-        </span>
-        <span className="board-participant__color">
-          {label}
-        </span>
+        <span className="board-participant__name">Adaptive Opponent</span>
+        <span className="board-participant__color">{label}</span>
       </p>
     </div>
   );

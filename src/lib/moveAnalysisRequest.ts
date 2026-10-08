@@ -18,21 +18,17 @@ export type ExpectedMoveAnalysis = {
   playerColor: PlayerColor;
 };
 
-export function createMoveAnalysisRequestId(
-  gameGeneration: number,
-  sequence: number
-): string {
+export function createMoveAnalysisRequestId(gameGeneration: number, sequence: number): string {
   return `${gameGeneration}:${sequence}`;
 }
 
+// Reject analysis from an older request, game generation, or position.
 export function shouldApplyMoveAnalysis(
   delivered: MoveAnalysisDelivery,
   expected: ExpectedMoveAnalysis | null,
-  pendingOpponentFen: string | null
+  pendingOpponentFen: string | null,
 ): boolean {
-  if (!expected || pendingOpponentFen === null) {
-    return false;
-  }
+  if (!expected || pendingOpponentFen === null) return false;
 
   return (
     delivered.requestId === expected.requestId &&
@@ -75,24 +71,16 @@ export function resolveMoveAnalysisUpdate(input: {
 
   if (
     !input.delivered ||
-    !shouldApplyMoveAnalysis(
-      input.delivered,
-      input.expected,
-      input.pendingOpponentFen
-    )
+    !shouldApplyMoveAnalysis(input.delivered, input.expected, input.pendingOpponentFen)
   ) {
     return unchanged;
   }
 
-  const alreadyRated =
-    input.lastRatedRequestId === input.delivered.requestId;
+  const alreadyRated = input.lastRatedRequestId === input.delivered.requestId;
 
   const nextRating = alreadyRated
     ? input.estimatedRating
-    : updateSkillFromAnalysis(
-        input.estimatedRating,
-        input.delivered.analysis
-      );
+    : updateSkillFromAnalysis(input.estimatedRating, input.delivered.analysis);
 
   return {
     accepted: true,

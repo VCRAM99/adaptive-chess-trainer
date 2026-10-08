@@ -24,21 +24,14 @@ type CloudPreferencesRow = {
 };
 
 function isRevision(value: unknown): value is number {
-  return (
-    typeof value === "number" &&
-    Number.isInteger(value) &&
-    value >= 0
-  );
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
 }
 
 async function requireSessionUser(userId: string): Promise<void> {
-  const { data: authData, error: authError } =
-    await supabase.auth.getUser();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
 
   if (authError || authData.user?.id !== userId) {
-    throw new Error(
-      "Cannot save profile: account session changed."
-    );
+    throw new Error("Cannot save profile: account session changed.");
   }
 }
 
@@ -49,9 +42,7 @@ async function requireSessionUser(userId: string): Promise<void> {
  * Invalid JSON throws so the caller does not replace it with a
  * default profile and save that default back.
  */
-export async function loadCloudProfile(
-  userId: string
-): Promise<CloudProfileSnapshot | null> {
+export async function loadCloudProfile(userId: string): Promise<CloudProfileSnapshot | null> {
   const { data, error } = await supabase
     .from("player_profiles")
     .select("user_id, profile_data, revision, updated_at")
@@ -62,16 +53,12 @@ export async function loadCloudProfile(
     throw error;
   }
 
-  if (!data) {
-    return null;
-  }
+  if (!data) return null;
 
   const row = data as CloudProfileRow;
 
   if (row.user_id !== userId) {
-    throw new Error(
-      "Cloud profile does not belong to this account."
-    );
+    throw new Error("Cloud profile does not belong to this account.");
   }
 
   const profile = parseStoredProfile(row.profile_data);
@@ -97,7 +84,7 @@ export async function loadCloudProfile(
 export async function saveCloudProfile(
   userId: string,
   profile: PlayerProfile,
-  expectedRevision: number
+  expectedRevision: number,
 ): Promise<number> {
   await requireSessionUser(userId);
 
@@ -105,22 +92,17 @@ export async function saveCloudProfile(
     throw new InvalidCloudDataError("profile");
   }
 
-  const { data, error } = await supabase.rpc(
-    "save_player_profile",
-    {
-      incoming_profile: profile,
-      expected_revision: expectedRevision,
-    }
-  );
+  const { data, error } = await supabase.rpc("save_player_profile", {
+    incoming_profile: profile,
+    expected_revision: expectedRevision,
+  });
 
   if (error) {
     throw error;
   }
 
   if (typeof data !== "number") {
-    throw new Error(
-      "Supabase did not return a profile revision."
-    );
+    throw new Error("Supabase did not return a profile revision.");
   }
 
   return data;
@@ -132,9 +114,7 @@ export async function saveCloudProfile(
  * Returns null when no row exists. Invalid JSON throws instead
  * of being replaced with defaults.
  */
-export async function loadCloudPreferences(
-  userId: string
-): Promise<UserPreferences | null> {
+export async function loadCloudPreferences(userId: string): Promise<UserPreferences | null> {
   const { data, error } = await supabase
     .from("user_preferences")
     .select("user_id, preferences_data, updated_at")
@@ -145,21 +125,15 @@ export async function loadCloudPreferences(
     throw error;
   }
 
-  if (!data) {
-    return null;
-  }
+  if (!data) return null;
 
   const row = data as CloudPreferencesRow;
 
   if (row.user_id !== userId) {
-    throw new Error(
-      "Cloud preferences do not belong to this account."
-    );
+    throw new Error("Cloud preferences do not belong to this account.");
   }
 
-  const preferences = parseStoredPreferences(
-    row.preferences_data
-  );
+  const preferences = parseStoredPreferences(row.preferences_data);
 
   if (!preferences) {
     throw new InvalidCloudDataError("preferences");
@@ -175,32 +149,27 @@ export async function loadCloudPreferences(
  */
 export async function saveCloudPreferences(
   userId: string,
-  preferences: UserPreferences
+  preferences: UserPreferences,
 ): Promise<void> {
-  const { data: authData, error: authError } =
-    await supabase.auth.getUser();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
 
   if (authError || authData.user?.id !== userId) {
-    throw new Error(
-      "Cannot save preferences: account session changed."
-    );
+    throw new Error("Cannot save preferences: account session changed.");
   }
 
   if (!parseStoredPreferences(preferences)) {
     throw new InvalidCloudDataError("preferences");
   }
 
-  const { error } = await supabase
-    .from("user_preferences")
-    .upsert(
-      {
-        user_id: userId,
-        preferences_data: preferences,
-      },
-      {
-        onConflict: "user_id",
-      }
-    );
+  const { error } = await supabase.from("user_preferences").upsert(
+    {
+      user_id: userId,
+      preferences_data: preferences,
+    },
+    {
+      onConflict: "user_id",
+    },
+  );
 
   if (error) {
     throw error;

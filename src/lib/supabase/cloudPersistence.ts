@@ -1,10 +1,6 @@
 import type { PlayerProfile } from "../profile/types";
 import type { UserPreferences } from "../preferences/types";
-import {
-  isAccountSessionError,
-  isStaleRevisionError,
-  isTransientCloudError,
-} from "./cloudErrors";
+import { isAccountSessionError, isStaleRevisionError, isTransientCloudError } from "./cloudErrors";
 
 /**
  * Failed cloud writes stay pending and retry with bounded backoff:
@@ -20,8 +16,7 @@ export const CLOUD_SAVE_RETRY_DELAYS_MS = [500, 1000, 2000, 4000] as const;
  */
 export const MAX_SAFE_REVISION_REBASES = 2;
 
-export const CLOUD_SAVE_PENDING_MESSAGE =
-  "Progress is not saved yet. Retrying...";
+export const CLOUD_SAVE_PENDING_MESSAGE = "Progress is not saved yet. Retrying...";
 
 export const CLOUD_SAVE_ERROR_MESSAGE =
   "Progress could not be saved. Your latest changes are still on this device.";
@@ -80,9 +75,7 @@ export function serializePlayerProfile(profile: PlayerProfile): string {
 }
 
 function stableStringify(value: unknown): string {
-  if (value === null || typeof value !== "object") {
-    return JSON.stringify(value) ?? "null";
-  }
+  if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
 
   if (Array.isArray(value)) {
     return `[${value.map((item) => stableStringify(item)).join(",")}]`;
@@ -170,9 +163,7 @@ export type ProfileCloudSaver = {
    * the user chose to keep. Does not write to the cloud.
    * A mismatched account or revision leaves the conflict in place.
    */
-  useServerProfile(
-    expected: ConfirmedConflict
-  ): DiscardedCloudConflict | null;
+  useServerProfile(expected: ConfirmedConflict): DiscardedCloudConflict | null;
   whenIdle(): Promise<void>;
   pendingProfile(): PlayerProfile | null;
   hasPending(): boolean;
@@ -203,7 +194,7 @@ export function createProfileCloudSaver(deps: {
   saveProfile: (
     userId: string,
     profile: PlayerProfile,
-    expectedRevision: number
+    expectedRevision: number,
   ) => Promise<number>;
   loadProfile: (userId: string) => Promise<CloudProfileSnapshot | null>;
   getSessionUserId: () => Promise<string | null>;
@@ -235,9 +226,7 @@ export function createProfileCloudSaver(deps: {
     cancelTimer = schedule(delayMs, () => {
       cancelTimer = null;
 
-      if (job?.generation !== generationAtSchedule) {
-        return;
-      }
+      if (job?.generation !== generationAtSchedule) return;
 
       enqueueAttempt(generationAtSchedule);
     });
@@ -248,7 +237,7 @@ export function createProfileCloudSaver(deps: {
       .then(() => execute(generationAtStart))
       .then(
         () => undefined,
-        () => undefined
+        () => undefined,
       );
   }
 
@@ -256,16 +245,12 @@ export function createProfileCloudSaver(deps: {
     await deps.enqueue(async () => {
       const current = job;
 
-      if (!current || current.generation !== generationAtStart) {
-        return;
-      }
+      if (!current || current.generation !== generationAtStart) return;
 
       try {
         const sessionUserId = await deps.getSessionUserId();
 
-        if (job?.generation !== generationAtStart) {
-          return;
-        }
+        if (job?.generation !== generationAtStart) return;
 
         if (sessionUserId !== current.userId) {
           if (current.explicitUpload) {
@@ -279,7 +264,7 @@ export function createProfileCloudSaver(deps: {
         const revision = await deps.saveProfile(
           current.userId,
           current.profile,
-          current.expectedRevision
+          current.expectedRevision,
         );
 
         if (!job || job.generation !== generationAtStart) {
@@ -306,9 +291,7 @@ export function createProfileCloudSaver(deps: {
           },
         });
       } catch (error) {
-        if (!job || job.generation !== generationAtStart) {
-          return;
-        }
+        if (!job || job.generation !== generationAtStart) return;
 
         if (isStaleRevisionError(error)) {
           if (current.explicitUpload) {
@@ -329,10 +312,7 @@ export function createProfileCloudSaver(deps: {
           return;
         }
 
-        if (
-          isTransientCloudError(error) &&
-          current.attempts < CLOUD_SAVE_RETRY_DELAYS_MS.length
-        ) {
+        if (isTransientCloudError(error) && current.attempts < CLOUD_SAVE_RETRY_DELAYS_MS.length) {
           const delay = CLOUD_SAVE_RETRY_DELAYS_MS[current.attempts];
           job = {
             ...current,
@@ -354,9 +334,7 @@ export function createProfileCloudSaver(deps: {
     try {
       server = await deps.loadProfile(current.userId);
     } catch {
-      if (job?.generation !== current.generation) {
-        return;
-      }
+      if (job?.generation !== current.generation) return;
 
       publish({
         notice: {
@@ -368,9 +346,7 @@ export function createProfileCloudSaver(deps: {
       return;
     }
 
-    if (!job || job.generation !== current.generation) {
-      return;
-    }
+    if (!job || job.generation !== current.generation) return;
 
     if (!server) {
       conflict = null;
@@ -401,8 +377,7 @@ export function createProfileCloudSaver(deps: {
     }
 
     const serverMatchesBase =
-      current.baseSerialized !== null &&
-      serverSerialized === current.baseSerialized;
+      current.baseSerialized !== null && serverSerialized === current.baseSerialized;
 
     if (serverMatchesBase && current.rebases < MAX_SAFE_REVISION_REBASES) {
       job = {
@@ -437,14 +412,9 @@ export function createProfileCloudSaver(deps: {
       server = null;
     }
 
-    if (!job || job.generation !== current.generation) {
-      return;
-    }
+    if (!job || job.generation !== current.generation) return;
 
-    if (
-      server &&
-      serializePlayerProfile(server.profile) === current.serialized
-    ) {
+    if (server && serializePlayerProfile(server.profile) === current.serialized) {
       job = null;
       conflict = null;
       publish({
@@ -470,18 +440,14 @@ export function createProfileCloudSaver(deps: {
   }
 
   function keepExplicitConflict(current: ProfileJob) {
-    if (!job || job.generation !== current.generation) {
-      return;
-    }
+    if (!job || job.generation !== current.generation) return;
 
     job = {
       ...job,
       explicitUpload: false,
     };
 
-    if (!conflict || conflict.userId !== current.userId) {
-      return;
-    }
+    if (!conflict || conflict.userId !== current.userId) return;
 
     publish({ notice: conflictNotice(conflict) });
   }
@@ -490,13 +456,7 @@ export function createProfileCloudSaver(deps: {
     requestSave(input) {
       const serialized = serializePlayerProfile(input.profile);
 
-      if (
-        job &&
-        job.userId === input.userId &&
-        job.serialized === serialized
-      ) {
-        return;
-      }
+      if (job && job.userId === input.userId && job.serialized === serialized) return;
 
       generation += 1;
       clearTimer();
@@ -524,9 +484,7 @@ export function createProfileCloudSaver(deps: {
     },
 
     retry() {
-      if (!job || conflict) {
-        return;
-      }
+      if (!job || conflict) return;
 
       job = {
         ...job,
@@ -604,9 +562,7 @@ export function createProfileCloudSaver(deps: {
     },
 
     conflictSnapshot() {
-      if (!conflict) {
-        return null;
-      }
+      if (!conflict) return null;
 
       return {
         userId: conflict.userId,
@@ -625,10 +581,7 @@ type PreferenceJob = {
 };
 
 export type PreferencesCloudSaver = {
-  requestSave(input: {
-    userId: string;
-    preferences: UserPreferences;
-  }): void;
+  requestSave(input: { userId: string; preferences: UserPreferences }): void;
   cancel(): void;
   retry(): void;
   whenIdle(): Promise<void>;
@@ -638,10 +591,7 @@ export type PreferencesCloudSaver = {
 
 export function createPreferencesCloudSaver(deps: {
   enqueue: Enqueue;
-  savePreferences: (
-    userId: string,
-    preferences: UserPreferences
-  ) => Promise<void>;
+  savePreferences: (userId: string, preferences: UserPreferences) => Promise<void>;
   getSessionUserId: () => Promise<string | null>;
   onChange: (notice: CloudPersistenceNotice | null) => void;
   schedule?: Schedule;
@@ -662,9 +612,7 @@ export function createPreferencesCloudSaver(deps: {
     cancelTimer = schedule(delayMs, () => {
       cancelTimer = null;
 
-      if (job?.generation !== generationAtSchedule) {
-        return;
-      }
+      if (job?.generation !== generationAtSchedule) return;
 
       enqueueAttempt(generationAtSchedule);
     });
@@ -675,7 +623,7 @@ export function createPreferencesCloudSaver(deps: {
       .then(() => execute(generationAtStart))
       .then(
         () => undefined,
-        () => undefined
+        () => undefined,
       );
   }
 
@@ -683,16 +631,12 @@ export function createPreferencesCloudSaver(deps: {
     await deps.enqueue(async () => {
       const current = job;
 
-      if (!current || current.generation !== generationAtStart) {
-        return;
-      }
+      if (!current || current.generation !== generationAtStart) return;
 
       try {
         const sessionUserId = await deps.getSessionUserId();
 
-        if (job?.generation !== generationAtStart) {
-          return;
-        }
+        if (job?.generation !== generationAtStart) return;
 
         if (sessionUserId !== current.userId) {
           deps.onChange(SESSION_NOTICE);
@@ -712,19 +656,14 @@ export function createPreferencesCloudSaver(deps: {
         job = null;
         deps.onChange(null);
       } catch (error) {
-        if (!job || job.generation !== generationAtStart) {
-          return;
-        }
+        if (!job || job.generation !== generationAtStart) return;
 
         if (isAccountSessionError(error)) {
           deps.onChange(SESSION_NOTICE);
           return;
         }
 
-        if (
-          isTransientCloudError(error) &&
-          current.attempts < CLOUD_SAVE_RETRY_DELAYS_MS.length
-        ) {
+        if (isTransientCloudError(error) && current.attempts < CLOUD_SAVE_RETRY_DELAYS_MS.length) {
           const delay = CLOUD_SAVE_RETRY_DELAYS_MS[current.attempts];
           job = {
             ...current,
@@ -744,13 +683,7 @@ export function createPreferencesCloudSaver(deps: {
     requestSave(input) {
       const serialized = JSON.stringify(input.preferences);
 
-      if (
-        job &&
-        job.userId === input.userId &&
-        job.serialized === serialized
-      ) {
-        return;
-      }
+      if (job && job.userId === input.userId && job.serialized === serialized) return;
 
       generation += 1;
       clearTimer();
@@ -772,9 +705,7 @@ export function createPreferencesCloudSaver(deps: {
     },
 
     retry() {
-      if (!job) {
-        return;
-      }
+      if (!job) return;
 
       job = {
         ...job,
@@ -816,7 +747,7 @@ export function createImmediateQueue(): {
 
       pending = result.then(
         () => undefined,
-        () => undefined
+        () => undefined,
       );
 
       return result;

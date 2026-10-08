@@ -1,8 +1,5 @@
 import type { AnalyzedMove } from "./types";
-import {
-  calculateGameSummary,
-  type GameSummary,
-} from "./gameSummary";
+import { calculateGameSummary, type GameSummary } from "./gameSummary";
 
 export type PlayerColor = "white" | "black";
 
@@ -11,30 +8,19 @@ export type MatchSummary = {
   opponent: GameSummary;
 };
 
-function getOpponentColor(
-  playerColor: PlayerColor
-): PlayerColor {
-  return playerColor === "white"
-    ? "black"
-    : "white";
+function getOpponentColor(playerColor: PlayerColor): PlayerColor {
+  return playerColor === "white" ? "black" : "white";
 }
 
 export function calculateMatchSummary(
   moves: AnalyzedMove[],
-  playerColor: PlayerColor
+  playerColor: PlayerColor,
 ): MatchSummary {
-  const opponentColor =
-    getOpponentColor(playerColor);
+  const opponentColor = getOpponentColor(playerColor);
 
   return {
-    player: calculateGameSummary(
-      moves,
-      playerColor
-    ),
+    player: calculateGameSummary(moves, playerColor),
 
-    opponent: calculateGameSummary(
-      moves,
-      opponentColor
-    ),
+    opponent: calculateGameSummary(moves, opponentColor),
   };
 }

@@ -13,13 +13,9 @@ import type { StoredGame } from "./profile/types";
 import { buildGameRecord } from "./postGame/buildGameRecord";
 import { createPersistentGameId } from "./persistentGameId";
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function createHistoryGame(
-  id: string,
-  playedAt = "2026-10-08T16:00:00.000Z"
-): StoredGame {
+function createHistoryGame(id: string, playedAt = "2026-10-08T16:00:00.000Z"): StoredGame {
   return createStoredGame({
     id,
     playedAt,
@@ -61,7 +57,7 @@ describe("createPersistentGameId", () => {
       persistentId,
       "2026-10-08T16:00:00.000Z",
       "2026-10-08T16:05:00.000Z",
-      "draw"
+      "draw",
     );
 
     const reviewed = createHistoryGame(completed.id);
@@ -80,38 +76,23 @@ describe("stored game ids", () => {
     const profile = addStoredGame(
       addStoredGame(
         createDefaultProfile(),
-        createHistoryGame("game-1", "2026-10-01T12:00:00.000Z")
+        createHistoryGame("game-1", "2026-10-01T12:00:00.000Z"),
       ),
-      createHistoryGame("game-2", "2026-10-02T12:00:00.000Z")
+      createHistoryGame("game-2", "2026-10-02T12:00:00.000Z"),
     );
 
     saveProfile(profile);
 
-    expect(loadProfile().games.map((game) => game.id)).toEqual([
-      "game-1",
-      "game-2",
-    ]);
+    expect(loadProfile().games.map((game) => game.id)).toEqual(["game-1", "game-2"]);
   });
 
   it("retains distinct games from separate sessions", () => {
-    const firstGame = createHistoryGame(
-      createPersistentGameId(),
-      "2026-10-08T16:00:00.000Z"
-    );
-    const secondGame = createHistoryGame(
-      createPersistentGameId(),
-      "2026-10-08T17:00:00.000Z"
-    );
+    const firstGame = createHistoryGame(createPersistentGameId(), "2026-10-08T16:00:00.000Z");
+    const secondGame = createHistoryGame(createPersistentGameId(), "2026-10-08T17:00:00.000Z");
 
-    const profile = addStoredGame(
-      addStoredGame(createDefaultProfile(), firstGame),
-      secondGame
-    );
+    const profile = addStoredGame(addStoredGame(createDefaultProfile(), firstGame), secondGame);
 
-    expect(profile.games.map((game) => game.id)).toEqual([
-      firstGame.id,
-      secondGame.id,
-    ]);
+    expect(profile.games.map((game) => game.id)).toEqual([firstGame.id, secondGame.id]);
   });
 
   it("still rejects a second save of the same game", () => {

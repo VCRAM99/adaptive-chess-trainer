@@ -16,9 +16,7 @@ const tierCounts: GameSummary["tierCounts"] = {
   wood: 7,
 };
 
-function createSummary(
-  overrides: Partial<GameSummary> = {}
-): GameSummary {
+function createSummary(overrides: Partial<GameSummary> = {}): GameSummary {
   return {
     accuracy: 87.5,
     averageCentipawnLoss: 12.3,
@@ -32,9 +30,7 @@ function createSummary(
   };
 }
 
-function createMove(
-  overrides: Partial<AnalyzedMove> = {}
-): AnalyzedMove {
+function createMove(overrides: Partial<AnalyzedMove> = {}): AnalyzedMove {
   return {
     ply: 7,
     san: "Nf3",
@@ -57,36 +53,19 @@ describe("GameAnalysisPanel", () => {
   });
 
   it("shows accuracy, average centipawn loss, and all seven tiers", () => {
-    render(
-      <GameAnalysisPanel
-        summary={createSummary()}
-        selectedMove={null}
-      />
-    );
+    render(<GameAnalysisPanel summary={createSummary()} selectedMove={null} />);
 
     expect(screen.getByText("87.5%")).toBeTruthy();
     expect(screen.getByText("12.3")).toBeTruthy();
     expect(screen.getByText("28 graded")).toBeTruthy();
 
-    const labels = [
-      "Diamond",
-      "Platinum",
-      "Gold",
-      "Silver",
-      "Bronze",
-      "Steel",
-      "Wood",
-    ];
+    const labels = ["Diamond", "Platinum", "Gold", "Silver", "Bronze", "Steel", "Wood"];
 
     for (const [index, label] of labels.entries()) {
       const name = screen.getByText(label);
       expect(name.className).toBe("tier-summary-row__name");
-      expect(name.nextElementSibling?.textContent).toBe(
-        String(index + 1)
-      );
-      expect(name.parentElement?.className).toContain(
-        `tier-summary-${label.toLowerCase()}`
-      );
+      expect(name.nextElementSibling?.textContent).toBe(String(index + 1));
+      expect(name.parentElement?.className).toContain(`tier-summary-${label.toLowerCase()}`);
     }
   });
 
@@ -98,25 +77,20 @@ describe("GameAnalysisPanel", () => {
           averageCentipawnLoss: null,
         })}
         selectedMove={null}
-      />
+      />,
     );
 
     expect(screen.getAllByText("N/A")).toHaveLength(2);
   });
 
   it("shows the selected move tier, played move, and best move", () => {
-    render(
-      <GameAnalysisPanel
-        summary={createSummary()}
-        selectedMove={createMove()}
-      />
-    );
+    render(<GameAnalysisPanel summary={createSummary()} selectedMove={createMove()} />);
 
     expect(screen.getByText("MOVE 7 · WHITE")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Nf3" })).toBeTruthy();
-    expect(
-      screen.getByText("Gold", { selector: ".move-tier" }).className
-    ).toContain("move-tier-gold");
+    expect(screen.getByText("Gold", { selector: ".move-tier" }).className).toContain(
+      "move-tier-gold",
+    );
     expect(screen.getByText("g1f3")).toBeTruthy();
     expect(screen.getByText("e2e4")).toBeTruthy();
     expect(screen.getByText("CPL")).toBeTruthy();
@@ -138,31 +112,23 @@ describe("GameAnalysisPanel", () => {
           centipawnLoss: null,
           isForcedMove: true,
         })}
-      />
+      />,
     );
 
     expect(screen.getByText("MOVE 7 · BLACK")).toBeTruthy();
-    expect(screen.getByText("Diamond").className).toContain(
-      "move-tier-diamond"
-    );
+    expect(screen.getByText("Diamond").className).toContain("move-tier-diamond");
     expect(screen.getByText("Unavailable")).toBeTruthy();
     expect(screen.getByText("EVAL")).toBeTruthy();
     expect(screen.getByText("Mate")).toBeTruthy();
-    expect(
-      screen.getByText("Forced move — excluded from accuracy.")
-    ).toBeTruthy();
+    expect(screen.getByText("Forced move — excluded from accuracy.")).toBeTruthy();
     expect(screen.queryByText("Accuracy")).toBeNull();
   });
 
   it("shows only the review heading while analysis is still unavailable", () => {
-    render(
-      <GameAnalysisPanel summary={null} selectedMove={null} />
-    );
+    render(<GameAnalysisPanel summary={null} selectedMove={null} />);
 
     expect(screen.getByText("POST-GAME REVIEW")).toBeTruthy();
-    expect(
-      screen.getByRole("heading", { name: "Game Analysis" })
-    ).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Game Analysis" })).toBeTruthy();
     expect(screen.queryByText("Accuracy")).toBeNull();
     expect(screen.queryByText("Move Quality")).toBeNull();
     expect(screen.queryByText(/MOVE /)).toBeNull();
@@ -178,7 +144,7 @@ describe("GameAnalysisPanel", () => {
           centipawnLoss: null,
           qualitySource: "unavailable",
         })}
-      />
+      />,
     );
 
     expect(screen.getByText("Unavailable")).toBeTruthy();

@@ -1,4 +1,3 @@
-
 import { createSaveQueue } from "./saveQueue";
 
 export const profileSaveQueue = createSaveQueue();

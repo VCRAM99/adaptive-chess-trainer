@@ -1,67 +1,48 @@
 export type OpponentCandidate = {
-    rank: number;
-    move: string;
-    evaluation: number;
-    centipawnLoss: number;
-    mate: number | null;
-  };
+  rank: number;
+  move: string;
+  evaluation: number;
+  centipawnLoss: number;
+  mate: number | null;
+};
 
 export function calculateCandidateLoss(
-    bestEvaluation: number,
-    candidateEvaluation: number
+  bestEvaluation: number,
+  candidateEvaluation: number,
 ): number {
-    return Math.max(
-        0,
-        bestEvaluation - candidateEvaluation
-    );
+  return Math.max(0, bestEvaluation - candidateEvaluation);
 }
 
 type CreateOpponentCandidateInput = {
-    rank: number;
-    move: string;
-    evaluation: number;
-    bestEvaluation: number;
-    mate?: number | null;
+  rank: number;
+  move: string;
+  evaluation: number;
+  bestEvaluation: number;
+  mate?: number | null;
 };
-  
-export function createOpponentCandidate(
-    input: CreateOpponentCandidateInput
-): OpponentCandidate {
-    return {
-        rank: input.rank,
-        move: input.move,
-        evaluation: input.evaluation,
 
-        centipawnLoss:
-        calculateCandidateLoss(
-            input.bestEvaluation,
-            input.evaluation
-        ),
-        mate: input.mate ?? null,
-    };
+export function createOpponentCandidate(input: CreateOpponentCandidateInput): OpponentCandidate {
+  return {
+    rank: input.rank,
+    move: input.move,
+    evaluation: input.evaluation,
+
+    centipawnLoss: calculateCandidateLoss(input.bestEvaluation, input.evaluation),
+    mate: input.mate ?? null,
+  };
 }
 
 export function filterCandidatesByMaxLoss(
-    candidates: OpponentCandidate[],
-    maxLoss: number
-  ): OpponentCandidate[] {
-    if (candidates.length === 0) {
-      return [];
-    }
-  
-    const safeMaxLoss =
-      Math.max(0, maxLoss);
-  
-    const filtered =
-      candidates.filter(
-        (candidate) =>
-          candidate.centipawnLoss <=
-          safeMaxLoss
-      );
-  
-    if (filtered.length > 0) {
-      return filtered;
-    }
-  
-    return [candidates[0]];
+  candidates: OpponentCandidate[],
+  maxLoss: number,
+): OpponentCandidate[] {
+  if (candidates.length === 0) return [];
+
+  const safeMaxLoss = Math.max(0, maxLoss);
+
+  const filtered = candidates.filter((candidate) => candidate.centipawnLoss <= safeMaxLoss);
+
+  if (filtered.length > 0) return filtered;
+
+  return [candidates[0]];
 }

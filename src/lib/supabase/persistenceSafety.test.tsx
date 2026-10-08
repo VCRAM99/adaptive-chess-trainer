@@ -25,7 +25,7 @@ describe("conflict confirmation", () => {
         openedFor,
         live,
         sessionUserId: "user-1",
-      })
+      }),
     ).toBe("cancel");
   });
 
@@ -37,7 +37,7 @@ describe("conflict confirmation", () => {
         openedFor,
         live,
         sessionUserId: "user-1",
-      })
+      }),
     ).toBe("cancel");
   });
 
@@ -50,14 +50,12 @@ describe("conflict confirmation", () => {
         openedFor,
         live,
         sessionUserId: "user-1",
-      })
+      }),
     ).toBe("upload-local");
   });
 
   it("confirms discarding unsaved local progress", () => {
-    expect(CONFLICT_USE_CLOUD_CONFIRMATION.description).toMatch(
-      /discarded/i
-    );
+    expect(CONFLICT_USE_CLOUD_CONFIRMATION.description).toMatch(/discarded/i);
     expect(
       resolveConflictConfirmation({
         choice: "confirm",
@@ -65,7 +63,7 @@ describe("conflict confirmation", () => {
         openedFor,
         live,
         sessionUserId: "user-1",
-      })
+      }),
     ).toBe("use-cloud");
   });
 
@@ -77,7 +75,7 @@ describe("conflict confirmation", () => {
         openedFor,
         live: { userId: "user-2", serverRevision: 4 },
         sessionUserId: "user-2",
-      })
+      }),
     ).toBe("stale");
 
     expect(
@@ -87,7 +85,7 @@ describe("conflict confirmation", () => {
         openedFor,
         live,
         sessionUserId: "user-2",
-      })
+      }),
     ).toBe("stale");
   });
 });
@@ -121,21 +119,21 @@ describe("sign-out confirmation", () => {
         currentUserId: null,
         loadedUserId: null,
         persistedUserId: "account-1",
-      })
+      }),
     ).toBe(false);
     expect(
       mayWriteGuestProfile({
         currentUserId: null,
         loadedUserId: "account-1",
         persistedUserId: null,
-      })
+      }),
     ).toBe(false);
     expect(
       mayWriteGuestProfile({
         currentUserId: null,
         loadedUserId: null,
         persistedUserId: null,
-      })
+      }),
     ).toBe(true);
   });
 });
@@ -154,12 +152,10 @@ describe("confirmation dialog", () => {
         {...CONFLICT_UPLOAD_CONFIRMATION}
         onCancel={onCancel}
         onConfirm={onConfirm}
-      />
+      />,
     );
 
-    expect(
-      screen.getByText(CONFLICT_UPLOAD_CONFIRMATION.description)
-    ).toBeTruthy();
+    expect(screen.getByText(CONFLICT_UPLOAD_CONFIRMATION.description)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onCancel).toHaveBeenCalledOnce();
     expect(onConfirm).not.toHaveBeenCalled();
@@ -174,13 +170,13 @@ describe("confirmation dialog", () => {
         {...CONFLICT_USE_CLOUD_CONFIRMATION}
         onCancel={onCancel}
         onConfirm={onConfirm}
-      />
+      />,
     );
 
     fireEvent.click(
       screen.getByRole("button", {
         name: CONFLICT_USE_CLOUD_CONFIRMATION.confirmLabel,
-      })
+      }),
     );
     expect(onConfirm).toHaveBeenCalledOnce();
     expect(onCancel).not.toHaveBeenCalled();

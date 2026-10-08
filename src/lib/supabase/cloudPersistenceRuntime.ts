@@ -9,24 +9,15 @@ import {
   type DiscardedCloudConflict,
   type SavedCloudProfile,
 } from "./cloudPersistence";
-import {
-  preferencesSaveQueue,
-  profileSaveQueue,
-} from "./saveQueues";
-import {
-  loadCloudProfile,
-  saveCloudPreferences,
-  saveCloudProfile,
-} from "./storage";
+import { preferencesSaveQueue, profileSaveQueue } from "./saveQueues";
+import { loadCloudProfile, saveCloudPreferences, saveCloudProfile } from "./storage";
 
 export type CloudPersistenceUpdate = {
   notice: CloudPersistenceNotice | null;
   profileSaved?: SavedCloudProfile;
 };
 
-const listeners = new Set<
-  (update: CloudPersistenceUpdate) => void
->();
+const listeners = new Set<(update: CloudPersistenceUpdate) => void>();
 
 let profileNotice: CloudPersistenceNotice | null = null;
 let preferencesNotice: CloudPersistenceNotice | null = null;
@@ -38,7 +29,7 @@ function mergedNotice(): CloudPersistenceNotice | null {
     pending: 1,
   };
   const notices = [profileNotice, preferencesNotice].filter(
-    (notice): notice is CloudPersistenceNotice => notice !== null
+    (notice): notice is CloudPersistenceNotice => notice !== null,
   );
 
   notices.sort((left, right) => rank[right.tone] - rank[left.tone]);
@@ -114,14 +105,12 @@ export function retryPendingCloudSaves(): void {
   preferencesSaver.retry();
 }
 
-export function uploadConflictingLocalProfile(
-  expected: ConfirmedConflict
-): boolean {
+export function uploadConflictingLocalProfile(expected: ConfirmedConflict): boolean {
   return profileSaver.uploadLocal(expected);
 }
 
 export function discardConflictingLocalProfile(
-  expected: ConfirmedConflict
+  expected: ConfirmedConflict,
 ): DiscardedCloudConflict | null {
   return profileSaver.useServerProfile(expected);
 }
@@ -135,7 +124,7 @@ export function hasPendingCloudWork(): boolean {
 }
 
 export function subscribeCloudPersistence(
-  listener: (update: CloudPersistenceUpdate) => void
+  listener: (update: CloudPersistenceUpdate) => void,
 ): () => void {
   listeners.add(listener);
 

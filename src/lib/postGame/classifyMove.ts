@@ -1,8 +1,6 @@
 import type { MoveTier } from "./types";
 
-export function classifyMove(
-  centipawnLoss: number
-): MoveTier {
+export function classifyMove(centipawnLoss: number): MoveTier {
   if (!Number.isFinite(centipawnLoss)) {
     throw new Error("Invalid centipawn loss");
   }

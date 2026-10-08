@@ -9,10 +9,8 @@ import {
   type MoveAnalysisDelivery,
 } from "./moveAnalysisRequest";
 
-const BEFORE_FEN =
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const AFTER_FEN =
-  "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
+const BEFORE_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const AFTER_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
 
 function analysis() {
   return createMoveAnalysis({
@@ -27,9 +25,7 @@ function analysis() {
   });
 }
 
-function delivery(
-  overrides: Partial<MoveAnalysisDelivery> = {}
-): MoveAnalysisDelivery {
+function delivery(overrides: Partial<MoveAnalysisDelivery> = {}): MoveAnalysisDelivery {
   return {
     requestId: createMoveAnalysisRequestId(1, 1),
     gameGeneration: 1,
@@ -40,9 +36,7 @@ function delivery(
   };
 }
 
-function expected(
-  overrides: Partial<ExpectedMoveAnalysis> = {}
-): ExpectedMoveAnalysis {
+function expected(overrides: Partial<ExpectedMoveAnalysis> = {}): ExpectedMoveAnalysis {
   return {
     requestId: createMoveAnalysisRequestId(1, 1),
     gameGeneration: 1,
@@ -53,9 +47,7 @@ function expected(
   };
 }
 
-function resolve(
-  overrides: Partial<Parameters<typeof resolveMoveAnalysisUpdate>[0]> = {}
-) {
+function resolve(overrides: Partial<Parameters<typeof resolveMoveAnalysisUpdate>[0]> = {}) {
   return resolveMoveAnalysisUpdate({
     delivered: delivery(),
     expected: expected(),
@@ -74,9 +66,7 @@ describe("resolveMoveAnalysisUpdate", () => {
 
     expect(update.accepted).toBe(true);
     expect(update.acceptedAnalysis).toBe(delivered.analysis);
-    expect(update.estimatedRating).toBe(
-      updateSkillFromAnalysis(700, delivered.analysis)
-    );
+    expect(update.estimatedRating).toBe(updateSkillFromAnalysis(700, delivered.analysis));
     expect(update.opponentTargetSkill).toBe(update.estimatedRating);
     expect(update.estimatedRating).not.toBe(700);
   });

@@ -2,10 +2,7 @@ import type { TrainingMode } from "../trainingDifficulty";
 
 export type PlayerColor = "white" | "black";
 
-export type StoredGameResult =
-  | "win"
-  | "loss"
-  | "draw";
+export type StoredGameResult = "win" | "loss" | "draw";
 
 export type StoredMoveTiers = {
   diamond: number;

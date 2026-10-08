@@ -30,14 +30,10 @@ const transientFailure = new TypeError("Failed to fetch");
 
 const staleRevision = {
   code: "P0001",
-  message:
-    "Profile revision conflict: expected revision does not match",
+  message: "Profile revision conflict: expected revision does not match",
 };
 
-function withRating(
-  profile: PlayerProfile,
-  rating: number
-): PlayerProfile {
+function withRating(profile: PlayerProfile, rating: number): PlayerProfile {
   return {
     ...profile,
     estimatedRating: rating,
@@ -50,14 +46,8 @@ describe("cloud profile saves", () => {
   let sessionUserId: string | null;
   let profiles: PlayerProfile[];
   let revisions: number[];
-  let saveImpl: (
-    userId: string,
-    profile: PlayerProfile,
-    revision: number
-  ) => Promise<number>;
-  let loadImpl: () => Promise<
-    { profile: PlayerProfile; revision: number } | null
-  >;
+  let saveImpl: (userId: string, profile: PlayerProfile, revision: number) => Promise<number>;
+  let loadImpl: () => Promise<{ profile: PlayerProfile; revision: number } | null>;
   let saveCount: number;
   let notices: Array<CloudPersistenceNotice | null>;
   let saved: SavedCloudProfile[];
@@ -104,15 +94,13 @@ describe("cloud profile saves", () => {
   async function saveProfile(
     profile: PlayerProfile,
     expectedRevision = 1,
-    baseProfile: PlayerProfile | null = base
+    baseProfile: PlayerProfile | null = base,
   ) {
     saver.requestSave({
       userId: "user-1",
       profile,
       expectedRevision,
-      baseSerialized: baseProfile
-        ? serializePlayerProfile(baseProfile)
-        : null,
+      baseSerialized: baseProfile ? serializePlayerProfile(baseProfile) : null,
     });
     await saver.whenIdle();
   }
@@ -193,9 +181,7 @@ describe("cloud profile saves", () => {
     await vi.advanceTimersByTimeAsync(30_000);
     await saver.whenIdle();
 
-    expect(saveCount).toBe(
-      CLOUD_SAVE_RETRY_DELAYS_MS.length + 1
-    );
+    expect(saveCount).toBe(CLOUD_SAVE_RETRY_DELAYS_MS.length + 1);
     expect(notices.at(-1)).toMatchObject({
       tone: "error",
       message: CLOUD_SAVE_ERROR_MESSAGE,
@@ -239,9 +225,7 @@ describe("cloud profile saves", () => {
     await saver.whenIdle();
 
     expect(profiles).toEqual([newer]);
-    expect(saved[0]?.serializedProfile).toBe(
-      serializePlayerProfile(newer)
-    );
+    expect(saved[0]?.serializedProfile).toBe(serializePlayerProfile(newer));
   });
 
   it("does not apply an older in-flight save over a newer profile", async () => {
@@ -284,9 +268,7 @@ describe("cloud profile saves", () => {
 
     expect(profiles).toEqual([older, newer]);
     expect(revisions).toEqual([1, 2]);
-    expect(saved.map((entry) => entry.serializedProfile)).toEqual([
-      serializePlayerProfile(newer),
-    ]);
+    expect(saved.map((entry) => entry.serializedProfile)).toEqual([serializePlayerProfile(newer)]);
   });
 
   it("drops a pending retry on sign-out", async () => {
@@ -480,7 +462,7 @@ describe("cloud profile saves", () => {
       saver.uploadLocal({
         userId: "user-1",
         serverRevision: 11,
-      })
+      }),
     ).toBe(true);
     await saver.whenIdle();
 
@@ -507,13 +489,13 @@ describe("cloud profile saves", () => {
       saver.uploadLocal({
         userId: "user-2",
         serverRevision: 5,
-      })
+      }),
     ).toBe(false);
     expect(
       saver.useServerProfile({
         userId: "user-1",
         serverRevision: 4,
-      })
+      }),
     ).toBeNull();
 
     expect(saveCount).toBe(callsBefore);
@@ -554,7 +536,7 @@ describe("cloud profile saves", () => {
       saver.uploadLocal({
         userId: "user-1",
         serverRevision: 5,
-      })
+      }),
     ).toBe(true);
     await saver.whenIdle();
 
