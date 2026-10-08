@@ -16,6 +16,8 @@ import {
 
 import { ArrowLeft, UserRound } from "lucide-react";
 
+import type { User } from "@supabase/supabase-js";
+
 import type {
   AccentTheme,
   BoardTheme,
@@ -42,6 +44,7 @@ import type {
 import {
   getDisplayedRating,
 } from "../lib/displayRating";
+import Dialog from "../components/ui/Dialog";
 
 type ProfilePageProps = {
   profile: PlayerProfile;
@@ -49,6 +52,9 @@ type ProfilePageProps = {
   accentTheme: AccentTheme;
   boardTheme: BoardTheme;
   pieceSet: PieceSet;
+
+  currentUser: User | null;
+  isAuthLoading: boolean;
 
   onAccentThemeChange: (
     theme: AccentTheme
@@ -63,7 +69,17 @@ type ProfilePageProps = {
   ) => void;
 
   onBackToGame: () => void;
+  onOpenAuthDialog: () => void;
   onResetProgress: () => void;
+  onChangePassword: () => void;
+  onSignOut: () => void;
+
+  onImportGuestProgress: () => Promise<boolean>;
+  isGuestImporting: boolean;
+  guestImportError: string | null;
+  canImportGuestProgress: boolean;
+guestImportGameCount: number;
+guestImportRating: number | null;
 };
 
 function ProfilePage({
@@ -71,11 +87,22 @@ function ProfilePage({
   accentTheme,
   boardTheme,
   pieceSet,
+  currentUser,
+  isAuthLoading,
   onBoardThemeChange,
   onPieceSetChange,
   onAccentThemeChange,
   onBackToGame,
+  onOpenAuthDialog,
   onResetProgress,
+  onChangePassword,
+  onSignOut,
+  onImportGuestProgress,
+  isGuestImporting,
+  guestImportError,
+  canImportGuestProgress,
+  guestImportGameCount,
+  guestImportRating,
 }: ProfilePageProps) {
   const [
     difficultyFilter,
@@ -100,6 +127,8 @@ function ProfilePage({
     isResetDialogOpen,
     setIsResetDialogOpen,
   ] = useState(false);
+  const [isGuestImportDialogOpen, setIsGuestImportDialogOpen] =
+  useState(false);
 
   return (
     <main className="profile-page">
@@ -116,20 +145,42 @@ function ProfilePage({
 
             <h1>Player Profile</h1>
 
+            <p className="profile-account-name">
+              {isAuthLoading
+                ? "Loading..."
+                : currentUser?.user_metadata?.display_name ||
+                  currentUser?.user_metadata?.full_name ||
+                  currentUser?.email ||
+                  "Guest"}
+            </p>
+
           </div>
         </div>
 
-        <button
-          type="button"
-          className="profile-nav-button"
-          onClick={onBackToGame}
-          aria-label="Back to Game"
-        >
+        <div className="profile-header__actions">
+          {!isAuthLoading && !currentUser && (
+            <button
+              type="button"
+              className="auth-nav-button"
+              onClick={onOpenAuthDialog}
+            >
+              Sign In / Create Account
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="profile-nav-button"
+            onClick={onBackToGame}
+            aria-label="Back to Game"
+          >
           <ArrowLeft size={20} aria-hidden="true" />
           <span className="profile-nav-tooltip" role="tooltip">
             BACK TO GAME
           </span>
         </button>
+        </div>
+
       </header>
 
       <div className="profile-dashboard">
@@ -332,20 +383,139 @@ function ProfilePage({
           <h2>Data Management</h2>
 
           <p>
-            Manage the progress saved locally
-            on this device.
+            Manage your account and saved chess progress.
           </p>
         </div>
 
-        <button
-          type="button"
-          className="reset-progress-button"
-          onClick={() =>
-            setIsResetDialogOpen(true)
-          }
-        >
-          Reset Progress
-        </button>
+        <div className="profile-data-management__actions">
+          {currentUser?.identities?.some(
+            (identity) => identity.provider === "email"
+          ) && (
+            <button
+              type="button"
+              className="change-password-button"
+              onClick={onChangePassword}
+            >
+              Change Password
+            </button>
+          )}
+          {currentUser && (
+            <button
+              type="button"
+              className="sign-out-button"
+              onClick={onSignOut}
+              disabled={isGuestImporting}
+            >
+              Sign Out
+            </button>
+          )}
+
+          {currentUser && (
+            <button
+              type="button"
+              className="import-guest-button"
+              disabled={
+                !canImportGuestProgress ||
+                isGuestImporting ||
+                isAuthLoading
+              }
+              onClick={() =>
+                setIsGuestImportDialogOpen(true)
+              }
+            >
+              {isGuestImporting
+                ? "Importing..."
+                : "Import Guest Progress"}
+            </button>
+          )}
+
+
+          <button
+            type="button"
+            className="reset-progress-button"
+            onClick={() => setIsResetDialogOpen(true)}
+            disabled={isGuestImporting}
+          >
+            Reset Progress
+          </button>
+        </div>
+
+
+        {isGuestImportDialogOpen && currentUser && (
+          <Dialog
+            open={true}
+            title="Import Guest Progress?"
+            description="Copy your saved guest chess progress into this account."
+            onClose={() => {
+              if (!isGuestImporting) {
+                setIsGuestImportDialogOpen(false);
+              }
+            }}
+          >
+            <div className="reset-dialog-content">
+              <div className="guest-import-summary">
+                <div className="guest-import-summary__item">
+                  <span>Guest Rating</span>
+                  <strong>
+                    {guestImportRating ?? "—"} Elo
+                  </strong>
+                </div>
+
+                <div className="guest-import-summary__item">
+                  <span>Saved Games</span>
+                  <strong>{guestImportGameCount}</strong>
+                </div>
+              </div>
+
+              <p className="guest-import-note">
+                Your original guest progress will remain
+                saved in this browser.
+              </p>
+
+              {guestImportError && (
+                <p role="alert" className="profile-error">
+                  {guestImportError}
+                </p>
+              )}
+
+              <div className="reset-dialog-actions">
+                <button
+                  type="button"
+                  className="reset-cancel-button"
+                  disabled={isGuestImporting}
+                  onClick={() =>
+                    setIsGuestImportDialogOpen(false)
+                  }
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className="reset-confirm-button"
+                  disabled={
+                    !canImportGuestProgress ||
+                    isGuestImporting
+                  }
+                  onClick={async () => {
+                    const succeeded =
+                      await onImportGuestProgress();
+
+                    if (succeeded) {
+                      setIsGuestImportDialogOpen(false);
+                    }
+                  }}
+                >
+                  {isGuestImporting
+                    ? "Importing..."
+                    : "Import Progress"}
+                </button>
+              </div>
+            </div>
+          </Dialog>
+        )}
+
+
       </section>
       {isResetDialogOpen && (
         <ResetProgressDialog
