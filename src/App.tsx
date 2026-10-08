@@ -14,6 +14,12 @@ import type { TrainingMode } from "./lib/trainingDifficulty";
 import { createOpponentConfig } from "./lib/trainingDifficulty";
 import { updateOpponentForm, } from "./lib/opponentForm";
 import { getDisplayedRating } from "./lib/displayRating";
+import { getBoardParticipants } from "./lib/boardOrientation";
+import {
+  getCapturedPiecesByColor,
+  getCapturedPiecesFromSans,
+} from "./lib/capturedPieces";
+import BoardInfoRow from "./components/BoardInfoRow";
 import "./App.css";
 import { devLog } from "./lib/devLogger";
 import NewGameDialog, { type NewGameSettings, } from "./components/NewGameDialog";
@@ -80,73 +86,6 @@ const MOVE_TIERS = [
   "wood",
 ] as const;
 
-
-type BoardIdentityProps = {
-  type: "player" | "opponent";
-
-  playerRating: number;
-
-  engineStatus:
-    | "ready"
-    | "thinking"
-    | "error";
-};
-
-function BoardIdentity({
-  type,
-  playerRating,
-  engineStatus,
-}: BoardIdentityProps) {
-  if (type === "player") {
-    return (
-      <div
-        className="board-identity board-identity--player"
-        data-tooltip="PLAYER ELO"
-        aria-label={`Player Elo: ${playerRating}`}
-        tabIndex={0}
-      >
-        <div className="board-player-identity">
-          <UserRound
-            size={17}
-            aria-hidden="true"
-          />
-
-          <p className="board-player-rating">
-            {playerRating}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const statusLabel =
-    engineStatus === "thinking"
-      ? "THINKING"
-      : engineStatus === "error"
-        ? "ENGINE ERROR"
-        : "READY";
-
-  return (
-    <div
-      className="board-identity board-identity--opponent"
-      data-tooltip={statusLabel}
-      aria-label={`Adaptive opponent: ${statusLabel}`}
-      tabIndex={0}
-    >
-      <span
-        className={
-          `engine-status-dot ` +
-          `engine-status-dot--${engineStatus}`
-        }
-        aria-hidden="true"
-      />
-
-      <p className="board-opponent-label">
-        Adaptive Opponent
-      </p>
-    </div>
-  );
-}
 
 function App() {
   const gameIdRef = useRef(0);
@@ -1566,25 +1505,28 @@ async function handleImportGuestProgress(): Promise<boolean> {
       function blockReviewMove() {
         return false;
       }
-    const topColor: PlayerColor =
-      boardOrientation === "white"
-        ? "black"
-        : "white";
+  const boardParticipants = getBoardParticipants(
+    playerColor,
+    boardOrientation
+  );
 
-    const bottomColor: PlayerColor =
-      boardOrientation === "white"
-        ? "white"
-        : "black";
-
-  const topIdentity: "player" | "opponent" =
-  topColor === playerColor
-    ? "player"
-    : "opponent";
-  
-  const bottomIdentity: "player" | "opponent" =
-    bottomColor === playerColor
-      ? "player"
-      : "opponent";
+  const capturedPieces =
+    isReviewMode && completedGame
+      ? getCapturedPiecesFromSans(
+          completedGame.moves
+            .slice(
+              0,
+              Math.max(
+                0,
+                Math.min(
+                  selectedReviewPly,
+                  completedGame.moves.length
+                )
+              )
+            )
+            .map((move) => move.san)
+        )
+      : getCapturedPiecesByColor(game);
   
   const displayedPlayerRating =
     getDisplayedRating(
@@ -1859,6 +1801,11 @@ async function handleImportGuestProgress(): Promise<boolean> {
     <div className="app">
       <header className="app-header">
         <div className="app-header__brand">
+          <img
+            className="app-header__logo"
+            src={`${import.meta.env.BASE_URL}images/chess-trainer-logo.png`}
+            alt=""
+          />
           <h1>ADAPTIVE CHESS TRAINER</h1>
         </div>
 
@@ -1893,14 +1840,17 @@ async function handleImportGuestProgress(): Promise<boolean> {
         <div className="game-board-column">
         <section className="board-section">
           <div className="game-board-area">
-            <BoardIdentity
-              type={topIdentity}
-              playerRating={
-                displayedPlayerRating
+            <BoardInfoRow
+              role={boardParticipants.top.role}
+              color={boardParticipants.top.color}
+              playerRating={displayedPlayerRating}
+              engineStatus={engineStatus}
+              capturedPieces={
+                capturedPieces[
+                  boardParticipants.top.color
+                ]
               }
-              engineStatus={
-                engineStatus
-              }
+              pieceSet={userPreferences.pieceSet}
             />
 
             <ChessBoard
@@ -1922,14 +1872,17 @@ async function handleImportGuestProgress(): Promise<boolean> {
               }
             />
 
-            <BoardIdentity
-              type={bottomIdentity}
-              playerRating={
-                displayedPlayerRating
+            <BoardInfoRow
+              role={boardParticipants.bottom.role}
+              color={boardParticipants.bottom.color}
+              playerRating={displayedPlayerRating}
+              engineStatus={engineStatus}
+              capturedPieces={
+                capturedPieces[
+                  boardParticipants.bottom.color
+                ]
               }
-              engineStatus={
-                engineStatus
-              }
+              pieceSet={userPreferences.pieceSet}
             />
           </div>
         </section>
