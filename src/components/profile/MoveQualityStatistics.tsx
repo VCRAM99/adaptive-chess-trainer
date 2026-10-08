@@ -1,29 +1,14 @@
 import type {
     StoredMoveTiers,
   } from "../../lib/profile/types";
+  import {
+    formatTierName,
+    MOVE_TIERS,
+  } from "../../lib/postGame/moveTiers";
   
   type MoveQualityStatisticsProps = {
     moveTiers: StoredMoveTiers;
   };
-  
-  const MOVE_TIERS = [
-    "diamond",
-    "platinum",
-    "gold",
-    "silver",
-    "bronze",
-    "steel",
-    "wood",
-  ] as const;
-  
-  function formatTierName(
-    tier: (typeof MOVE_TIERS)[number]
-  ): string {
-    return (
-      tier.charAt(0).toUpperCase() +
-      tier.slice(1)
-    );
-  }
   
   function MoveQualityStatistics({
     moveTiers,

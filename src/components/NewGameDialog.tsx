@@ -8,10 +8,7 @@ import {
   import type {
     TrainingMode,
   } from "../lib/trainingDifficulty";
-  
-  type PlayerColor =
-    | "white"
-    | "black";
+  import type { PlayerColor } from "../lib/profile/types";
   
   export type NewGameSettings = {
     playerColor: PlayerColor;

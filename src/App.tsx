@@ -31,7 +31,7 @@ import ProfilePage from "./pages/ProfilePage";
 type AppPage = "game" | "profile";
 import { loadProfile, saveProfile, createDefaultProfile } from "./lib/profile/profileStorage";
 import { getStoredGameResult, } from "./lib/profile/createStoredGame";
-import type { PlayerProfile, StoredGame } from "./lib/profile/types";
+import type { PlayerColor, PlayerProfile, StoredGame } from "./lib/profile/types";
 import {
   createUnreviewedStoredGame,
   enrichStoredGame,
@@ -51,6 +51,7 @@ import { getGuestImportEligibility } from "./lib/profile/guestMigration";
 
 //PostGame
 import { buildGameRecord } from "./lib/postGame/buildGameRecord";
+import { formatTierName, MOVE_TIERS } from "./lib/postGame/moveTiers";
 import { createPersistentGameId } from "./lib/persistentGameId";
 import type { CompletedGameRecord, GameResult } from "./lib/postGame/types";
 import { usePostGameAnalysis } from "./hooks/usePostGameAnalysis";
@@ -94,8 +95,6 @@ import { importGuestProgress } from "./lib/supabase/guestImport";
 import PersistenceNotice from "./components/PersistenceNotice";
 import ConfirmActionDialog from "./components/ConfirmActionDialog";
 
-// Types for the player color and player color choice.
-type PlayerColor = "white" | "black";
 // Types for the promotion piece and pending promotion.
 type PromotionPiece = "q" | "r" | "b" | "n";
 type PendingPromotion = {
@@ -108,21 +107,6 @@ type StorageStatus =
   | "guest"
   | "account"
   | "error";
-
-function formatTierName(tier: string): string {
-  return tier.charAt(0).toUpperCase() + tier.slice(1);
-}
-
-const MOVE_TIERS = [
-  "diamond",
-  "platinum",
-  "gold",
-  "silver",
-  "bronze",
-  "steel",
-  "wood",
-] as const;
-
 
 function App() {
   const gameIdRef = useRef(0);
