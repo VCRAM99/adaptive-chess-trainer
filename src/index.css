@@ -554,28 +554,6 @@ button {
    Game Information Panel
    ======================================== */
 
-   .game-panel {
-    margin-top: calc(
-      var(--board-side-row, 2.36rem) +
-      var(--board-side-gap, 0.15rem)
-    );
-    display: flex;
-    flex-direction: column;
-  
-    align-self: start;
-    width: 100%;
-    min-width: 0;
-  
-    padding: var(--space-lg);
-  
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-
-    box-shadow:
-      0 12px 32px
-      rgb(0 0 0 / 0.18);
-  }
   
   .game-panel__title {
     margin: 0 0 var(--space-xl);
@@ -800,50 +778,6 @@ button {
    Application Shell
    ======================================== */
 
-   .app {
-    width: 100%;
-    min-height: 100vh;
-  
-    padding:
-      var(--space-lg)
-      var(--space-xl)
-      var(--space-2xl);
-  }
-  
-  .app-header {
-    display: grid;
-    grid-template-columns:
-      minmax(0, 600px)
-      minmax(0, 320px);
-    align-items: center;
-    justify-content: center;
-    gap: 32px;
-  
-    width: 100%;
-    max-width: 1180px;
-  
-    margin: 0 auto var(--space-lg);
-  }
-  
-  .app-header__brand {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    min-width: 0;
-  
-    gap: 0.65rem;
-  }
-
-  .app-header__logo {
-    display: block;
-    flex: 0 0 auto;
-
-    height: clamp(2rem, 3.2vw, 2.6rem);
-    width: auto;
-
-    object-fit: contain;
-  }
-  
   .app-header__brand h1 {
     margin: 0;
   
@@ -868,45 +802,7 @@ button {
     font-weight: 500;
   }
 
-  .profile-nav-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  
-    width: 42px;
-    height: 42px;
-  
-    padding: 0;
-  
-    background: var(--color-surface-raised);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-  
-    color: var(--color-text-secondary);
-  
-    cursor: pointer;
-  
-    transition:
-      color var(--transition-fast),
-      background var(--transition-fast),
-      border-color var(--transition-fast),
-      transform var(--transition-fast);
-  }
-  
-  .profile-nav-button:hover {
-    color: var(--accent);
-  
-    background: var(--accent-surface);
-    border-color: var(--accent-border);
-  
-    transform: translateY(-1px);
-  }
-  
-  .profile-nav-button:active {
-    transform: translateY(0);
-  }
-
-  /* ========================================
+/* ========================================
    Main Game Layout
    ======================================== */
 
@@ -914,47 +810,14 @@ button {
   --board-side-row: 2.36rem;
   --board-side-gap: 0.15rem;
 
-  display: grid;
-
-  grid-template-columns:
-    minmax(0, 720px)
-    minmax(260px, 320px);
-
-  align-items: start;
-  justify-content: center;
-
-  gap: clamp(
-    1.5rem,
-    4vw,
-    3rem
-  );
-
   width: 100%;
   max-width: 1180px;
 
   margin: 0 auto;
 }
 
-.board-section {
-  width: 100%;
-  min-width: 0;
-}
-
 @media (max-width: 900px) {
-  .app {
-    padding:
-      var(--space-md)
-      var(--space-md)
-      var(--space-xl);
-  }
-
-  .app-header {
-    max-width: 720px;
-  }
-
   .game-layout {
-    grid-template-columns: 1fr;
-
     max-width: 720px;
   }
 
@@ -1428,20 +1291,6 @@ button {
   }
 }
 
-.post-game-review {
-  display: flex;
-  flex-direction: column;
-
-  gap: var(--space-md);
-
-  margin-top: 0;
-
-  min-width: 0;
-  width: 100%;
-
-  box-sizing: border-box;
-}
-
 .analysis-header {
   display: flex;
   flex-direction: column;
@@ -1560,10 +1409,6 @@ button {
   letter-spacing: 0.065em;
   text-transform: uppercase;
 }
-.tier-summary {
-  margin-top: var(--space-lg);
-}
-
 .review-navigation {
   display: flex;
 
@@ -1642,61 +1487,6 @@ button {
   font-weight: 650;
 
   letter-spacing: 0.04em;
-}
-
-.review-move-details {
-  display: flex;
-  flex-direction: column;
-
-  width: 100%;
-  min-width: 0;
-
-  box-sizing: border-box;
-
-  padding: var(--space-lg);
-
-  background: var(--color-surface-raised);
-
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-
-.review-move-header {
-  display: flex;
-
-  align-items: flex-start;
-  justify-content: space-between;
-
-  gap: var(--space-lg);
-}
-
-.review-move-label {
-  color: var(--color-text-muted);
-
-  font-size: 0.67rem;
-  font-weight: 750;
-
-  letter-spacing: 0.065em;
-}
-
-.review-move-header h4 {
-  margin: 0.3rem 0 0;
-
-  color: var(--color-text);
-
-  font-size: 1.35rem;
-  font-weight: 750;
-}
-
-.review-move-stats {
-  display: grid;
-  grid-template-columns: 1fr auto;
-
-  align-items: center;
-
-  width: 100%;
-
-  margin-top: var(--space-lg);
 }
 
 .review-move-stats .review-move-value {
@@ -1819,14 +1609,6 @@ button {
   visibility: visible;
 }
 
-.review-move-note {
-  margin: var(--space-md) 0 0;
-
-  color: var(--color-text-secondary);
-
-  font-size: 0.76rem;
-}
-
 @media (max-width: 700px) {
   .analysis-header {
     align-items: flex-start;
@@ -1865,14 +1647,6 @@ button {
   border-radius: var(--radius-lg);
 
   min-width: 0;
-}
-
-.tier-summary {
-  margin-top: var(--space-lg);
-
-  border-top:
-    1px solid
-    var(--color-border);
 }
 
 .tier-summary__toggle {
