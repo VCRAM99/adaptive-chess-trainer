@@ -8,12 +8,13 @@ type ResetProgressDialogProps = {
 function ResetProgressDialog({
   onCancel,
   onConfirm,
+  
 }: ResetProgressDialogProps) {
   return (
     <Dialog
       open={true}
       title="Reset Progress?"
-      description="This will permanently delete your saved rating, statistics, and game history on this device."
+      description="This will permanently delete your saved rating, statistics, and game history."
       onClose={onCancel}
     >
       <div className="reset-dialog-content">

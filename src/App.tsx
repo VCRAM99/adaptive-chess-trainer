@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef} from "react";
+import { useState, useEffect, useRef, useCallback} from "react";
 import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
@@ -19,7 +19,7 @@ import { devLog } from "./lib/devLogger";
 import NewGameDialog, { type NewGameSettings, } from "./components/NewGameDialog";
 import ProfilePage from "./pages/ProfilePage";
 type AppPage = "game" | "profile";
-import { loadProfile, saveProfile, addStoredGame, resetProfile } from "./lib/profile/profileStorage";
+import { loadProfile, saveProfile, addStoredGame, createDefaultProfile } from "./lib/profile/profileStorage";
 import { createStoredGame, getStoredGameResult, } from "./lib/profile/createStoredGame";
 import type { PlayerProfile } from "./lib/profile/types";
 import { getCheckmateWinner, } from "./lib/postGame/gameResult";
@@ -27,6 +27,11 @@ import { applyAccentTheme } from "./lib/preferences/applyAccentTheme";
 import { loadPreferences, savePreferences } from "./lib/preferences/preferencesStorage";
 import type { AccentTheme } from "./lib/preferences/types";
 import { UserRound, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ChevronDown, } from "lucide-react";
+import AuthDialog from "./components/auth/AuthDialog";
+import PasswordRecoveryDialog from "./components/auth/PasswordRecoveryDialog";
+import ChangePasswordDialog from "./components/auth/ChangePasswordDialog";
+import { loadPlayerStorage } from "./lib/supabase/accountStorage";
+import { getGuestImportEligibility } from "./lib/profile/guestMigration";
 
 //PostGame
 import { buildGameRecord } from "./lib/postGame/buildGameRecord";
@@ -39,6 +44,13 @@ import { calculateMatchSummary } from "./lib/postGame/matchSummary";
 import { createEvaluationTimeline } from "./lib/postGame/evaluationTimeline";
 import EvaluationTimeline from "./components/EvaluationTimeline";
 
+// Supabase
+import { getAuthState, subscribeToAuthChanges, signOut } from "./lib/supabase/auth";
+import type { User } from "@supabase/supabase-js";
+import { loadCloudProfile, saveCloudPreferences, saveCloudProfile } from "./lib/supabase/storage";
+import { profileSaveQueue, preferencesSaveQueue } from "./lib/supabase/saveQueues";
+import { importGuestProgress } from "./lib/supabase/guestImport";
+
 // Types for the player color and player color choice.
 type PlayerColor = "white" | "black";
 // Types for the promotion piece and pending promotion.
@@ -47,6 +59,12 @@ type PendingPromotion = {
   from: Square;   
   to: Square;
 };
+
+type StorageStatus =
+  | "loading"
+  | "guest"
+  | "account"
+  | "error";
 
 function formatTierName(tier: string): string {
   return tier.charAt(0).toUpperCase() + tier.slice(1);
@@ -61,6 +79,7 @@ const MOVE_TIERS = [
   "steel",
   "wood",
 ] as const;
+
 
 type BoardIdentityProps = {
   type: "player" | "opponent";
@@ -86,9 +105,16 @@ function BoardIdentity({
         aria-label={`Player Elo: ${playerRating}`}
         tabIndex={0}
       >
-        <p className="board-player-rating">
-          {playerRating}
-        </p>
+        <div className="board-player-identity">
+          <UserRound
+            size={17}
+            aria-hidden="true"
+          />
+
+          <p className="board-player-rating">
+            {playerRating}
+          </p>
+        </div>
       </div>
     );
   }
@@ -160,10 +186,66 @@ function App() {
     loadProfile()
   );
 
+  const [isGuestImporting, setIsGuestImporting] =
+  useState(false);
+
+const [guestImportError, setGuestImportError] =
+  useState<string | null>(null);
+
+  const [storageStatus, setStorageStatus] =
+  useState<StorageStatus>("loading");
+
+  const loadedStorageUserRef =
+  useRef<string | null | undefined>(
+    undefined
+  );
+
+  
+  const lastPersistedProfileRef = useRef<{
+    userId: string | null;
+    serializedProfile: string;
+  } | null>(null);
+
+  const cloudProfileRevisionRef = useRef<{
+    userId: string;
+    revision: number;
+  } | null>(null);
+  const skipNextProfileSaveRef = useRef(false);
+
+  const [loadedStorageUserId, setLoadedStorageUserId] =
+  useState<string | null | undefined>(undefined);
+
   const [
     userPreferences,
     setUserPreferences,
   ] = useState(() => loadPreferences());
+
+  const [currentUser, setCurrentUser] =
+  useState<User | null>(null);
+
+  const [isAuthLoading, setIsAuthLoading] =
+  useState(true);
+
+  const [isAuthDialogOpen, setIsAuthDialogOpen] =
+  useState(false);
+
+  const currentUserId = currentUser?.id ?? null;
+
+  const closeAuthDialog = useCallback(() => {
+    setIsAuthDialogOpen(false);
+  }, []);
+
+  const [isPasswordRecoveryOpen, setIsPasswordRecoveryOpen] =
+  useState(false);
+
+  const closeChangePasswordDialog = useCallback(() => {
+    setIsChangePasswordOpen(false);
+  }, []);
+
+  const [
+    isChangePasswordOpen,
+    setIsChangePasswordOpen,
+  ] = useState(false);
 
   const [
     isNewGameDialogOpen,
@@ -174,6 +256,11 @@ function App() {
     hasStartedFirstGame,
     setHasStartedFirstGame,
   ] = useState(false);
+
+  const gameOwnerRef =
+  useRef<string | null | undefined>(undefined);
+
+  const authUserIdRef = useRef<string | null | undefined>(undefined);
 
   const opponentColor: PlayerColor =
   playerColor === "white"
@@ -293,6 +380,17 @@ function App() {
         ? "warning"
         : "normal";
       
+  const guestProfileForImport = loadProfile();
+
+  const guestImportEligibility =
+    currentUserId &&
+    storageStatus === "account" &&
+    loadedStorageUserId === currentUserId
+      ? getGuestImportEligibility(
+          guestProfileForImport,
+          playerProfile
+        )
+      : { eligible: false as const };
   // Analyze the opponent position with the
   // full-strength objective analysis engine.
   useEffect(() => {
@@ -317,14 +415,110 @@ function App() {
   ]);
 
   useEffect(() => {
-    applyAccentTheme(
-      userPreferences.accentTheme
+    applyAccentTheme(userPreferences.accentTheme);
+  }, [userPreferences.accentTheme]);
+  
+  useEffect(() => {
+    if (
+      storageStatus === "loading" ||
+      storageStatus === "error" ||
+      loadedStorageUserId === undefined ||
+      loadedStorageUserId !== currentUserId
+    ) {
+      return;
+    }
+  
+    if (loadedStorageUserId === null) {
+      savePreferences(userPreferences);
+      return;
+    }
+  
+    const userId = loadedStorageUserId;
+    const preferencesToSave = userPreferences;
+    
+    void preferencesSaveQueue
+      .enqueue(() =>
+        saveCloudPreferences(
+          userId,
+          preferencesToSave
+        )
+      )
+      .catch((error) => {
+        console.error(
+          "Failed to save cloud preferences:",
+          error
+        );
+      });
+  }, [
+    userPreferences,
+    storageStatus,
+    loadedStorageUserId,
+    currentUserId,
+  ]);
+
+
+
+  useEffect(() => {
+    let isMounted = true;
+  
+    void getAuthState()
+      .then(({ user }) => {
+        if (!isMounted) return;
+  
+        const nextUserId = user?.id ?? null;
+  
+        if (
+          authUserIdRef.current !== undefined &&
+          authUserIdRef.current !== nextUserId
+        ) {
+          gameOwnerRef.current = undefined;
+        }
+  
+        authUserIdRef.current = nextUserId;
+        setCurrentUser(user);
+        setIsAuthLoading(false);
+      })
+      .catch((error) => {
+        console.error(
+          "Failed to load authentication state:",
+          error
+        );
+  
+        if (isMounted) {
+          setIsAuthLoading(false);
+        }
+      });
+  
+    const unsubscribe = subscribeToAuthChanges(
+      ({ user, event }) => {
+        if (!isMounted) return;
+  
+        const nextUserId = user?.id ?? null;
+  
+        if (
+          authUserIdRef.current !== undefined &&
+          authUserIdRef.current !== nextUserId
+        ) {
+          gameOwnerRef.current = undefined;
+        }
+  
+        authUserIdRef.current = nextUserId;
+        setCurrentUser(user);
+        setIsAuthLoading(false);
+  
+        if (event === "PASSWORD_RECOVERY") {
+          setIsAuthDialogOpen(false);
+          setIsPasswordRecoveryOpen(true);
+        }
+      }
     );
   
-    savePreferences(
-      userPreferences
-    );
-  }, [userPreferences]);
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+  
 
   useEffect(() => {
     if (
@@ -465,6 +659,76 @@ function App() {
   ]);
 
   useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+  
+    let cancelled = false;
+  
+    async function loadActiveStorage() {
+      setStorageStatus("loading");
+      setLoadedStorageUserId(undefined);
+      loadedStorageUserRef.current = undefined;
+  
+      try {
+        const { profile, preferences, profileRevision } =
+          await loadPlayerStorage(currentUserId);
+  
+        if (cancelled) return;
+
+        cloudProfileRevisionRef.current =
+          currentUserId !== null &&
+          profileRevision !== null
+            ? {
+                userId: currentUserId,
+                revision: profileRevision,
+              }
+            : null;
+
+        lastPersistedProfileRef.current = {
+          userId: currentUserId,
+          serializedProfile: JSON.stringify(profile),
+        };
+  
+        skipNextProfileSaveRef.current = true;
+
+        setPlayerProfile(profile);
+        skipNextProfileSaveRef.current = true;
+        setUserPreferences(preferences);
+        setEstimatedPlayerRating(profile.estimatedRating);
+  
+        resetGame(
+          playerColor,
+          trainingMode,
+          profile.estimatedRating
+        );
+
+        gameOwnerRef.current = currentUserId;
+  
+        setIsNewGameDialogOpen(true);
+  
+        loadedStorageUserRef.current = currentUserId;
+        setLoadedStorageUserId(currentUserId);
+  
+        setStorageStatus(
+          currentUserId ? "account" : "guest"
+        );
+      } catch (error) {
+        if (cancelled) return;
+  
+        console.error("Failed to load player storage:", error);
+        setStorageStatus("error");
+      }
+    }
+  
+    void loadActiveStorage();
+  
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId, isAuthLoading]);
+
+  useEffect(() => {
     if (!latestAnalysis) {
       return;
     }
@@ -520,6 +784,27 @@ function App() {
   ]);
 
   useEffect(() => {
+    if (isAuthLoading) return;
+  
+    if (
+      storageStatus !== "guest" &&
+      storageStatus !== "account"
+    ) {
+      return;
+    }
+  
+    if (
+      loadedStorageUserId === undefined ||
+      loadedStorageUserId !== currentUserId
+    ) {
+      return;
+    }
+
+    if (skipNextProfileSaveRef.current) {
+      skipNextProfileSaveRef.current = false;
+      return;
+    }
+  
     setPlayerProfile((currentProfile) => {
       if (
         currentProfile.estimatedRating ===
@@ -532,22 +817,111 @@ function App() {
   
       const updatedProfile: PlayerProfile = {
         ...currentProfile,
-  
-        estimatedRating:
-          estimatedPlayerRating,
-  
+        estimatedRating: estimatedPlayerRating,
         bestRating: Math.max(
           currentProfile.bestRating,
           estimatedPlayerRating
         ),
       };
   
-      saveProfile(updatedProfile);
-  
       return updatedProfile;
     });
-  }, [estimatedPlayerRating]);
+  }, [
+    estimatedPlayerRating,
+    storageStatus,
+    loadedStorageUserId,
+    currentUserId,
+    isAuthLoading,
+    completedGame,
+    matchSummary,
+    playerColor,
+    trainingMode,
+  ]);
 
+
+  //profile save effect
+
+
+  useEffect(() => {
+    if (
+      isAuthLoading ||
+      (storageStatus !== "guest" &&
+        storageStatus !== "account") ||
+      loadedStorageUserId === undefined ||
+      loadedStorageUserId !== currentUserId
+    ) {
+      return;
+    }
+  
+    const userId = loadedStorageUserId;
+    const serializedProfile = JSON.stringify(playerProfile);
+  
+    if (
+      lastPersistedProfileRef.current?.userId === userId &&
+      lastPersistedProfileRef.current.serializedProfile ===
+        serializedProfile
+    ) {
+      return;
+    }
+  
+    if (userId === null) {
+      saveProfile(playerProfile);
+  
+      lastPersistedProfileRef.current = {
+        userId: null,
+        serializedProfile,
+      };
+  
+      return;
+    }
+  
+    const profileToSave = playerProfile;
+  
+    void profileSaveQueue
+      .enqueue(async () => {
+        const revisionState =
+          cloudProfileRevisionRef.current;
+  
+        if (
+          !revisionState ||
+          revisionState.userId !== userId ||
+          authUserIdRef.current !== userId
+        ) {
+          return;
+        }
+  
+        const newRevision = await saveCloudProfile(
+          userId,
+          profileToSave,
+          revisionState.revision
+        );
+  
+        cloudProfileRevisionRef.current = {
+          userId,
+          revision: newRevision,
+        };
+  
+        lastPersistedProfileRef.current = {
+          userId,
+          serializedProfile,
+        };
+      })
+      .catch((error) => {
+        console.error(
+          "Failed to save cloud profile:",
+          error
+        );
+      });
+  }, [
+    playerProfile,
+    storageStatus,
+    loadedStorageUserId,
+    currentUserId,
+    isAuthLoading,
+  ]);
+  
+  
+  //game save effect
   useEffect(() => {
     if (!game.isGameOver()) {
       return;
@@ -613,14 +987,106 @@ function App() {
     );
   }
 
+
+//guest import progress
+
+async function handleImportGuestProgress(): Promise<boolean> {
+  if (
+    !currentUserId ||
+    isAuthLoading ||
+    storageStatus !== "account" ||
+    loadedStorageUserId !== currentUserId ||
+    isGuestImporting
+  ) {
+    return false;
+  }
+
+  const importingUserId = currentUserId;
+
+  setIsGuestImporting(true);
+  setGuestImportError(null);
+
+  try {
+    await importGuestProgress(importingUserId);
+
+    const importedSnapshot =
+      await loadCloudProfile(importingUserId);
+
+    if (!importedSnapshot) {
+      throw new Error(
+        "Imported profile could not be loaded."
+      );
+    }
+
+    // Don't apply data from a previous account.
+    if (
+      authUserIdRef.current !== importingUserId ||
+      loadedStorageUserRef.current !== importingUserId
+    ) {
+      return false;
+    }
+
+    cloudProfileRevisionRef.current = {
+      userId: importingUserId,
+      revision: importedSnapshot.revision,
+    };
+
+    lastPersistedProfileRef.current = {
+      userId: importingUserId,
+      serializedProfile: JSON.stringify(
+        importedSnapshot.profile
+      ),
+    };
+
+    setPlayerProfile(importedSnapshot.profile);
+
+    setEstimatedPlayerRating(
+      importedSnapshot.profile.estimatedRating
+    );
+
+    resetGame(
+      playerColor,
+      trainingMode,
+      importedSnapshot.profile.estimatedRating
+    );
+
+    gameOwnerRef.current = importingUserId;
+
+    setIsNewGameDialogOpen(true);
+
+    return true;
+  } catch (error) {
+    console.error(
+      "Failed to import guest progress:",
+      error
+    );
+
+    setGuestImportError(
+      error instanceof Error
+        ? error.message
+        : "Guest progress could not be imported."
+    );
+
+    return false;
+  } finally {
+    setIsGuestImporting(false);
+  }
+}
+
+
+
   //Reset the player profile and the estimated player rating.
   function handleResetProgress() {
-    const freshProfile =
-      resetProfile();
+    if (
+      isGuestImporting ||
+      storageStatus === "loading" ||
+      storageStatus === "error"
+    ) {
+      return;
+    }
+    const freshProfile = createDefaultProfile();
   
-    setPlayerProfile(
-      freshProfile
-    );
+    setPlayerProfile(freshProfile);
   
     setEstimatedPlayerRating(
       freshProfile.estimatedRating
@@ -917,7 +1383,8 @@ function App() {
   // Reset the game to a new position.
   function resetGame(
     color: PlayerColor,
-    mode: TrainingMode
+    mode: TrainingMode,
+    startingRating = estimatedPlayerRating,
   ) {
     cancelOpponentAnalysis();
     cancelPostGameAnalysis();
@@ -925,6 +1392,7 @@ function App() {
     setSelectedReviewPly(0);
 
     gameIdRef.current += 1;
+    gameOwnerRef.current = undefined;
 
     completedGameIdRef.current = null;
     gameStartedAtRef.current = new Date().toISOString();
@@ -938,7 +1406,7 @@ function App() {
     handledOpponentFenRef.current = null;
     opponentFormRef.current = 0;
 
-    gameStartRatingRef.current = estimatedPlayerRating;
+    gameStartRatingRef.current = startingRating;
     storedGameIdRef.current = null;
     const newGame = new Chess();
 
@@ -960,7 +1428,7 @@ function App() {
       );
 
       setPendingOpponentSkill(
-        estimatedPlayerRating
+        startingRating
       );
     } else {
       setPendingOpponentFen(null);
@@ -980,6 +1448,7 @@ function App() {
       settings.playerColor,
       settings.trainingMode
     );
+    gameOwnerRef.current = currentUserId;
   }
 
   // Undo the most recent move. 
@@ -1140,6 +1609,27 @@ function App() {
     );
 
   useEffect(() => {
+    if (isAuthLoading) return;
+
+    if (
+      storageStatus !== "guest" &&
+      storageStatus !== "account"
+    ) {
+      return;
+    }
+
+    if (
+      loadedStorageUserId === undefined ||
+      loadedStorageUserId !== currentUserId
+    ) {
+      return;
+    }
+
+    if (
+      gameOwnerRef.current !== currentUserId
+    ) {
+      return;
+    }
     if (
       !completedGame ||
       !matchSummary 
@@ -1220,18 +1710,8 @@ function App() {
       },
     });
   
-    setPlayerProfile(
-      (currentProfile) => {
-        const updatedProfile =
-          addStoredGame(
-            currentProfile,
-            storedGame
-          );
-  
-        saveProfile(updatedProfile);
-  
-        return updatedProfile;
-      }
+    setPlayerProfile((currentProfile) =>
+      addStoredGame(currentProfile, storedGame)
     );
   
     storedGameIdRef.current =
@@ -1242,6 +1722,7 @@ function App() {
     playerColor,
     trainingMode,
     estimatedPlayerRating,
+    isAuthLoading,
   ]);
 
   const postGamePlayerResult:
@@ -1288,41 +1769,88 @@ function App() {
         ? "DRAW"
         : null;
 
+
+  async function handleSignOut() {
+    try {
+      const { error } = await signOut();
+  
+      if (error) {
+        throw error;
+      }
+  
+      setCurrentUser(null);
+    } catch (error) {
+      console.error("Failed to sign out:", error);
+      window.alert("Unable to sign out. Please try again.");
+    }
+  }
   //Display Profile Page FINAL BEFORE RETURN
   if (appPage === "profile") {
     return (
-      <ProfilePage
-        profile={playerProfile}
-        accentTheme={
-          userPreferences.accentTheme
-        }
-        boardTheme={userPreferences.boardTheme}
-        pieceSet={
-          userPreferences.pieceSet
-        }
-        onAccentThemeChange={
-          handleAccentThemeChange
-        }
-
-        onPieceSetChange={(pieceSet) => {
-          setUserPreferences((current) => ({
-            ...current,
-            pieceSet,
-          }));
-        }}
-        onBoardThemeChange={(boardTheme) => {
-          setUserPreferences((current) => ({
-            ...current,
-            boardTheme,
-          }));
-        }}
-        onBackToGame={() =>
-          setAppPage("game")
-        }
-        onResetProgress={
-          handleResetProgress
-        }
-      />
+      <>
+        <ProfilePage
+          profile={playerProfile}
+          canImportGuestProgress={
+            guestImportEligibility.eligible
+          }
+          guestImportGameCount={
+            guestProfileForImport.games.length
+          }
+          guestImportRating={
+            guestImportEligibility.eligible
+              ? guestProfileForImport.estimatedRating
+              : null
+          }
+          currentUser={currentUser}
+          isAuthLoading={isAuthLoading}
+          accentTheme={userPreferences.accentTheme}
+          boardTheme={userPreferences.boardTheme}
+          pieceSet={userPreferences.pieceSet}
+          onAccentThemeChange={handleAccentThemeChange}
+          onPieceSetChange={(pieceSet) => {
+            setUserPreferences((current) => ({
+              ...current,
+              pieceSet,
+            }));
+          }}
+          onBoardThemeChange={(boardTheme) => {
+            setUserPreferences((current) => ({
+              ...current,
+              boardTheme,
+            }));
+          }}
+          onBackToGame={() => setAppPage("game")}
+          onResetProgress={handleResetProgress}
+          onImportGuestProgress={handleImportGuestProgress}
+          isGuestImporting={isGuestImporting}
+          guestImportError={guestImportError}
+          onOpenAuthDialog={() =>
+            setIsAuthDialogOpen(true)
+          }
+          onChangePassword={() =>
+            setIsChangePasswordOpen(true)
+          }
+          onSignOut={handleSignOut}
+        />
+  
+        <AuthDialog
+          open={isAuthDialogOpen}
+          onClose={closeAuthDialog}
+        />
+  
+        <PasswordRecoveryDialog
+          open={isPasswordRecoveryOpen}
+          onClose={() =>
+            setIsPasswordRecoveryOpen(false)
+          }
+        />
+  
+        <ChangePasswordDialog
+          open={isChangePasswordOpen}
+          email={currentUser?.email ?? ""}
+          onClose={closeChangePasswordDialog}
+        />
+      </>
     );
   }
 
@@ -1332,25 +1860,33 @@ function App() {
       <header className="app-header">
         <div className="app-header__brand">
           <h1>ADAPTIVE CHESS TRAINER</h1>
-
-          {/* <p>Train Smarter - Play Stronger</p> */}
         </div>
 
-        <button
-          type="button"
-          className="profile-nav-button"
-          onClick={() =>
-            setAppPage("profile")
-          }
-          aria-label="Player profile"
-          data-tooltip="PLAYER PROFILE"
-        >
-          <UserRound
-            size={21}
-            strokeWidth={1.8}
-            aria-hidden="true"
-          />
-        </button>
+        <div className="app-header__actions">
+          {!isAuthLoading && !currentUser && (
+            <button
+              type="button"
+              className="auth-nav-button"
+              onClick={() => setIsAuthDialogOpen(true)}
+            >
+              Sign In / Create Account
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="profile-nav-button"
+            onClick={() => setAppPage("profile")}
+            aria-label="Player profile"
+            data-tooltip="PLAYER PROFILE"
+          >
+            <UserRound
+              size={21}
+              strokeWidth={1.8}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
       </header>
 
       <main className="game-layout">
@@ -1728,6 +2264,19 @@ function App() {
           onCancel={() => setPendingPromotion(null)}
         />
       )}
+      <AuthDialog
+        open={isAuthDialogOpen}
+        onClose={closeAuthDialog}
+      />
+      <PasswordRecoveryDialog
+        open={isPasswordRecoveryOpen}
+        onClose={() => setIsPasswordRecoveryOpen(false)}
+      />
+      <ChangePasswordDialog
+        open={isChangePasswordOpen}
+        email={currentUser?.email ?? ""}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
     </div>
   );
 }
