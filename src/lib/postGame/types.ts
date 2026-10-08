@@ -39,9 +39,3 @@ export type AnalyzedMove = GameMoveRecord & {
   | "unavailable";
   isForcedMove: boolean;
 };
-
-export type GameAnalysis = {
-  gameId: string;
-  analyzedMoves: AnalyzedMove[];
-  analyzedAt: string;
-};

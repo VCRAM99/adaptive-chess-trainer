@@ -11,10 +11,7 @@ import type { PlayerProfile } from "../profile/types";
 import type { UserPreferences } from "../preferences/types";
 import { InvalidCloudDataError } from "./cloudErrors";
 import { supabase } from "./client";
-import {
-  loadPlayerStorage,
-  savePlayerStorage,
-} from "./accountStorage";
+import { loadPlayerStorage } from "./accountStorage";
 import {
   loadCloudPreferences,
   loadCloudProfile,
@@ -231,19 +228,7 @@ describe("cloud storage validation", () => {
     expect(loaded.profile.estimatedRating).toBe(740);
     expect(loaded.profileRevision).toBeNull();
     expect(from).not.toHaveBeenCalled();
-
-    await savePlayerStorage(null, {
-      ...loaded,
-      profile: {
-        ...loaded.profile,
-        estimatedRating: 760,
-        bestRating: 760,
-      },
-    });
-
-    expect(from).not.toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalled();
-    expect(loadProfile().estimatedRating).toBe(760);
   });
 
   it("uses revision 0 when the account has no cloud profile yet", async () => {

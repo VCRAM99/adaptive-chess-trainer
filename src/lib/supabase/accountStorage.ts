@@ -5,20 +5,16 @@ import type { UserPreferences } from "../preferences/types";
 import {
   createDefaultProfile,
   loadProfile,
-  saveProfile,
 } from "../profile/profileStorage";
 
 import {
   createDefaultPreferences,
   loadPreferences,
-  savePreferences,
 } from "../preferences/preferencesStorage";
 
 import {
   loadCloudProfile,
   loadCloudPreferences,
-  saveCloudProfile,
-  saveCloudPreferences,
 } from "./storage";
 
 export type PlayerStorageData = {
@@ -62,33 +58,4 @@ export async function loadPlayerStorage(
     profileRevision:
       cloudProfile?.revision ?? 0,
   };
-}
-
-export async function savePlayerStorage(
-  userId: string | null,
-  data: PlayerStorageData
-): Promise<void> {
-  if (!userId) {
-    saveProfile(data.profile);
-    savePreferences(data.preferences);
-    return;
-  }
-
-  if (data.profileRevision === null) {
-    throw new Error(
-      "Cloud profile revision is missing."
-    );
-  }
-
-  await Promise.all([
-    saveCloudProfile(
-      userId,
-      data.profile,
-      data.profileRevision
-    ),
-    saveCloudPreferences(
-      userId,
-      data.preferences
-    ),
-  ]);
 }
