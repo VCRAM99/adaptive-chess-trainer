@@ -42,7 +42,7 @@ import { getCheckmateWinner, } from "./lib/postGame/gameResult";
 import { applyAccentTheme } from "./lib/preferences/applyAccentTheme";
 import { loadPreferences, savePreferences } from "./lib/preferences/preferencesStorage";
 import type { AccentTheme } from "./lib/preferences/types";
-import { UserRound, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, ChevronDown, } from "lucide-react";
+import { UserRound, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, } from "lucide-react";
 import AuthDialog from "./components/auth/AuthDialog";
 import PasswordRecoveryDialog from "./components/auth/PasswordRecoveryDialog";
 import ChangePasswordDialog from "./components/auth/ChangePasswordDialog";
@@ -51,7 +51,7 @@ import { getGuestImportEligibility } from "./lib/profile/guestMigration";
 
 //PostGame
 import { buildGameRecord } from "./lib/postGame/buildGameRecord";
-import { formatTierName, MOVE_TIERS } from "./lib/postGame/moveTiers";
+import GameAnalysisPanel from "./components/GameAnalysisPanel";
 import { createPersistentGameId } from "./lib/persistentGameId";
 import type { CompletedGameRecord, GameResult } from "./lib/postGame/types";
 import { usePostGameAnalysis } from "./hooks/usePostGameAnalysis";
@@ -2281,159 +2281,11 @@ async function handleImportGuestProgress(): Promise<boolean> {
             reviewError !== null
           }
         />
-        {completedGame && isReviewMode &&(
-          <section className="post-game-review">
-            <div className="analysis-header">
-              <span className="analysis-eyebrow">
-                POST-GAME REVIEW
-              </span>
-
-              <h2>Game Analysis</h2>
-
-              <span className="analysis-perspective">
-                Evaluation · White Perspective
-              </span>
-            </div>
-            {matchSummary && (
-              <div className="game-summary">
-                <div className="game-summary-main">
-              
-                  <div className="analysis-stat">
-                    <span>Accuracy</span>
-              
-                    <strong>
-                      {matchSummary.player.accuracy !== null
-                        ? `${matchSummary.player.accuracy.toFixed(1)}%`
-                        : "N/A"}
-                    </strong>
-                  </div>
-              
-                  <div className="analysis-stat">
-                    <span>Avg CPL</span>
-              
-                    <strong>
-                      {matchSummary.player.averageCentipawnLoss !== null
-                        ? matchSummary.player.averageCentipawnLoss.toFixed(1)
-                        : "N/A"}
-                    </strong>
-                  </div>
-                </div>
-
-                <details className="tier-summary">
-                  <summary className="tier-summary__toggle">
-
-                    <span>Move Quality</span>
-
-                    <span className="tier-summary__toggle-right">
-                      {matchSummary.player.gradableMoves} graded
-
-                      <ChevronDown
-                        className="tier-summary__chevron"
-                        size={17}
-                        strokeWidth={1.8}
-                        aria-hidden="true"
-                      />
-                    </span>
-
-                  </summary>
-
-                  <div className="tier-summary-list">
-
-                    {MOVE_TIERS.map((tier) => (
-                      <div
-                        className={
-                          `tier-summary-row ` +
-                          `tier-summary-${tier}`
-                        }
-                        key={tier}
-                      >
-                        <span className="tier-summary-row__name">
-                          {formatTierName(tier)}
-                        </span>
-
-                        <strong>
-                          {
-                            matchSummary.player
-                              .tierCounts[tier]
-                          }
-                        </strong>
-                      </div>
-                    ))}
-
-                  </div>
-                </details>
-              </div>
-            )}
-
-
-            {selectedAnalyzedMove && (
-              <div className="review-move-details">
-                <div className="review-move-header">
-                <div>
-                  <span className="review-move-label">
-                    MOVE {selectedAnalyzedMove.ply} ·{" "}
-                    {selectedAnalyzedMove.playedBy === "white"
-                      ? "WHITE"
-                      : "BLACK"}
-                  </span>
-
-                  <h4>{selectedAnalyzedMove.san}</h4>
-                </div>
-              
-                  {selectedAnalyzedMove.tier && (
-                    <span
-                      className={`move-tier move-tier-${selectedAnalyzedMove.tier}`}
-                    >
-                      {formatTierName(
-                        selectedAnalyzedMove.tier
-                      )}
-                    </span>
-                  )}
-                </div>
-              
-                <div className="review-move-stats">
-                  <span
-                    className="review-move-value review-move-value--played"
-                    data-tooltip="PLAYED MOVE"
-                    tabIndex={0}
-                  >
-                    {selectedAnalyzedMove.uci}
-                  </span>
-
-                  <span
-                    className="review-move-value review-move-value--best"
-                    data-tooltip="BEST MOVE"
-                    tabIndex={0}
-                  >
-                    {selectedAnalyzedMove.bestMoveUci ?? "Unavailable"}
-                  </span>
-
-                  <div className="review-eval-stat">
-                    <span>
-                      {selectedAnalyzedMove.qualitySource === "mate"
-                        ? "EVAL"
-                        : "CPL"}
-                    </span>
-
-                    <strong>
-                      {selectedAnalyzedMove.qualitySource === "centipawn" &&
-                      selectedAnalyzedMove.centipawnLoss !== null
-                        ? selectedAnalyzedMove.centipawnLoss.toFixed(1)
-                        : selectedAnalyzedMove.qualitySource === "mate"
-                          ? "Mate"
-                          : "N/A"}
-                    </strong>
-                  </div>
-                </div>
-              
-                {selectedAnalyzedMove.isForcedMove && (
-                  <p className="review-move-note">
-                    Forced move — excluded from accuracy.
-                  </p>
-                )}
-              </div>
-            )}   
-          </section>
+        {completedGame && isReviewMode && (
+          <GameAnalysisPanel
+            summary={matchSummary?.player ?? null}
+            selectedMove={selectedAnalyzedMove}
+          />
         )}
         </div>
       </main>
