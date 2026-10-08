@@ -27,6 +27,12 @@ export type PlayerStorageData = {
   profileRevision: number | null;
 };
 
+/**
+ * Guest sessions read and write local storage only.
+ * An authenticated load uses the cloud row when it exists.
+ * A missing row starts at revision 0. Invalid cloud JSON
+ * throws, so it is not replaced with an empty default.
+ */
 export async function loadPlayerStorage(
   userId: string | null
 ): Promise<PlayerStorageData> {

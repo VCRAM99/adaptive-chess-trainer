@@ -1,6 +1,7 @@
 import {
   useMemo,
   useState,
+  type ReactNode,
 } from "react";
 
 import CareerStatistics from "../components/profile/CareerStatistics";
@@ -78,8 +79,9 @@ type ProfilePageProps = {
   isGuestImporting: boolean;
   guestImportError: string | null;
   canImportGuestProgress: boolean;
-guestImportGameCount: number;
-guestImportRating: number | null;
+  guestImportGameCount: number;
+  guestImportRating: number | null;
+  persistenceNotice?: ReactNode;
 };
 
 function ProfilePage({
@@ -103,6 +105,7 @@ function ProfilePage({
   canImportGuestProgress,
   guestImportGameCount,
   guestImportRating,
+  persistenceNotice,
 }: ProfilePageProps) {
   const [
     difficultyFilter,
@@ -182,6 +185,8 @@ function ProfilePage({
         </div>
 
       </header>
+
+      {persistenceNotice}
 
       <div className="profile-dashboard">
         <DifficultyFilter

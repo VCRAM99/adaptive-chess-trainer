@@ -64,9 +64,35 @@ import EvaluationTimeline from "./components/EvaluationTimeline";
 // Supabase
 import { getAuthState, subscribeToAuthChanges, signOut } from "./lib/supabase/auth";
 import type { User } from "@supabase/supabase-js";
-import { loadCloudProfile, saveCloudPreferences, saveCloudProfile } from "./lib/supabase/storage";
-import { profileSaveQueue, preferencesSaveQueue } from "./lib/supabase/saveQueues";
+import { loadCloudProfile } from "./lib/supabase/storage";
+import { InvalidCloudDataError } from "./lib/supabase/cloudErrors";
+import {
+  serializePlayerProfile,
+  type CloudPersistenceNotice,
+} from "./lib/supabase/cloudPersistence";
+import {
+  cancelPendingCloudSaves,
+  discardConflictingLocalProfile,
+  getProfileConflict,
+  hasPendingCloudWork,
+  requestPreferencesCloudSave,
+  requestProfileCloudSave,
+  retryPendingCloudSaves,
+  subscribeCloudPersistence,
+  uploadConflictingLocalProfile,
+} from "./lib/supabase/cloudPersistenceRuntime";
+import {
+  beginSignOut,
+  CONFLICT_UPLOAD_CONFIRMATION,
+  CONFLICT_USE_CLOUD_CONFIRMATION,
+  mayWriteGuestProfile,
+  resolveConflictConfirmation,
+  resolveSignOutConfirmation,
+  SIGN_OUT_CONFIRMATION,
+} from "./lib/supabase/persistenceSafety";
 import { importGuestProgress } from "./lib/supabase/guestImport";
+import PersistenceNotice from "./components/PersistenceNotice";
+import ConfirmActionDialog from "./components/ConfirmActionDialog";
 
 // Types for the player color and player color choice.
 type PlayerColor = "white" | "black";
@@ -145,6 +171,22 @@ const [guestImportError, setGuestImportError] =
 
   const [storageStatus, setStorageStatus] =
   useState<StorageStatus>("loading");
+
+  const [storageProblem, setStorageProblem] =
+    useState<string | null>(null);
+
+  const [cloudNotice, setCloudNotice] =
+    useState<CloudPersistenceNotice | null>(null);
+
+  const [safetyConfirm, setSafetyConfirm] = useState<
+    | {
+        kind: "upload-local" | "use-cloud";
+        userId: string;
+        serverRevision: number;
+      }
+    | { kind: "sign-out" }
+    | null
+  >(null);
 
   const loadedStorageUserRef =
   useRef<string | null | undefined>(
@@ -380,6 +422,43 @@ const [guestImportError, setGuestImportError] =
   useEffect(() => {
     applyAccentTheme(userPreferences.accentTheme);
   }, [userPreferences.accentTheme]);
+
+  useEffect(() => {
+    return subscribeCloudPersistence((update) => {
+      const saved = update.profileSaved;
+
+      if (saved && authUserIdRef.current === saved.userId) {
+        cloudProfileRevisionRef.current = {
+          userId: saved.userId,
+          revision: saved.revision,
+        };
+        lastPersistedProfileRef.current = {
+          userId: saved.userId,
+          serializedProfile: saved.serializedProfile,
+        };
+      }
+
+      if (
+        update.notice &&
+        (update.notice.tone === "error" ||
+          update.notice.tone === "conflict")
+      ) {
+        console.error(update.notice.message);
+      }
+
+      setCloudNotice(update.notice);
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      cancelPendingCloudSaves();
+    };
+  }, [currentUserId]);
+
+  useEffect(() => {
+    setSafetyConfirm(null);
+  }, [currentUserId]);
   
   useEffect(() => {
     if (
@@ -397,21 +476,11 @@ const [guestImportError, setGuestImportError] =
     }
   
     const userId = loadedStorageUserId;
-    const preferencesToSave = userPreferences;
-    
-    void preferencesSaveQueue
-      .enqueue(() =>
-        saveCloudPreferences(
-          userId,
-          preferencesToSave
-        )
-      )
-      .catch((error) => {
-        console.error(
-          "Failed to save cloud preferences:",
-          error
-        );
-      });
+
+    requestPreferencesCloudSave({
+      userId,
+      preferences: userPreferences,
+    });
   }, [
     userPreferences,
     storageStatus,
@@ -630,6 +699,7 @@ const [guestImportError, setGuestImportError] =
   
     async function loadActiveStorage() {
       setStorageStatus("loading");
+      setStorageProblem(null);
       setLoadedStorageUserId(undefined);
       loadedStorageUserRef.current = undefined;
   
@@ -650,7 +720,7 @@ const [guestImportError, setGuestImportError] =
 
         lastPersistedProfileRef.current = {
           userId: currentUserId,
-          serializedProfile: JSON.stringify(profile),
+          serializedProfile: serializePlayerProfile(profile),
         };
   
         skipNextProfileSaveRef.current = true;
@@ -680,6 +750,13 @@ const [guestImportError, setGuestImportError] =
         if (cancelled) return;
   
         console.error("Failed to load player storage:", error);
+        setStorageProblem(
+          error instanceof InvalidCloudDataError
+            ? error.message
+            : currentUserId
+              ? "Cloud progress could not be loaded, so it was left unchanged."
+              : "Saved progress on this device could not be loaded."
+        );
         setStorageStatus("error");
       }
     }
@@ -795,7 +872,8 @@ const [guestImportError, setGuestImportError] =
     }
   
     const userId = loadedStorageUserId;
-    const serializedProfile = JSON.stringify(playerProfile);
+    const serializedProfile =
+      serializePlayerProfile(playerProfile);
   
     if (
       lastPersistedProfileRef.current?.userId === userId &&
@@ -806,6 +884,17 @@ const [guestImportError, setGuestImportError] =
     }
   
     if (userId === null) {
+      if (
+        !mayWriteGuestProfile({
+          currentUserId: userId,
+          loadedUserId: userId,
+          persistedUserId:
+            lastPersistedProfileRef.current?.userId ?? null,
+        })
+      ) {
+        return;
+      }
+
       saveProfile(playerProfile);
   
       lastPersistedProfileRef.current = {
@@ -816,43 +905,26 @@ const [guestImportError, setGuestImportError] =
       return;
     }
   
-    const profileToSave = playerProfile;
-  
-    void profileSaveQueue
-      .enqueue(async () => {
-        const revisionState =
-          cloudProfileRevisionRef.current;
-  
-        if (
-          !revisionState ||
-          revisionState.userId !== userId ||
-          authUserIdRef.current !== userId
-        ) {
-          return;
-        }
-  
-        const newRevision = await saveCloudProfile(
-          userId,
-          profileToSave,
-          revisionState.revision
-        );
-  
-        cloudProfileRevisionRef.current = {
-          userId,
-          revision: newRevision,
-        };
-  
-        lastPersistedProfileRef.current = {
-          userId,
-          serializedProfile,
-        };
-      })
-      .catch((error) => {
-        console.error(
-          "Failed to save cloud profile:",
-          error
-        );
-      });
+    const revisionState =
+      cloudProfileRevisionRef.current;
+
+    if (
+      !revisionState ||
+      revisionState.userId !== userId ||
+      authUserIdRef.current !== userId
+    ) {
+      return;
+    }
+
+    requestProfileCloudSave({
+      userId,
+      profile: playerProfile,
+      expectedRevision: revisionState.revision,
+      baseSerialized:
+        lastPersistedProfileRef.current?.userId === userId
+          ? lastPersistedProfileRef.current.serializedProfile
+          : null,
+    });
   }, [
     playerProfile,
     storageStatus,
@@ -993,7 +1065,7 @@ async function handleImportGuestProgress(): Promise<boolean> {
 
     lastPersistedProfileRef.current = {
       userId: importingUserId,
-      serializedProfile: JSON.stringify(
+      serializedProfile: serializePlayerProfile(
         importedSnapshot.profile
       ),
     };
@@ -1743,26 +1815,174 @@ async function handleImportGuestProgress(): Promise<boolean> {
         : null;
 
 
-  async function handleSignOut() {
+  function handleRetryCloudSave() {
+    retryPendingCloudSaves();
+  }
+
+  function openConflictConfirmation(
+    action: "upload-local" | "use-cloud"
+  ) {
+    if (
+      cloudNotice?.tone !== "conflict" ||
+      cloudNotice.userId == null ||
+      cloudNotice.serverRevision == null ||
+      cloudNotice.userId !== authUserIdRef.current
+    ) {
+      return;
+    }
+
+    setSafetyConfirm({
+      kind: action,
+      userId: cloudNotice.userId,
+      serverRevision: cloudNotice.serverRevision,
+    });
+  }
+
+  function applyCloudProfile(chosen: {
+    userId: string;
+    profile: PlayerProfile;
+    revision: number;
+  }) {
+    if (authUserIdRef.current !== chosen.userId) {
+      return;
+    }
+
+    cloudProfileRevisionRef.current = {
+      userId: chosen.userId,
+      revision: chosen.revision,
+    };
+    lastPersistedProfileRef.current = {
+      userId: chosen.userId,
+      serializedProfile: serializePlayerProfile(chosen.profile),
+    };
+    skipNextProfileSaveRef.current = true;
+    setPlayerProfile(chosen.profile);
+    setEstimatedPlayerRating(chosen.profile.estimatedRating);
+  }
+
+  function handleCancelSafetyConfirm() {
+    if (safetyConfirm?.kind === "sign-out") {
+      resolveSignOutConfirmation("cancel");
+    } else if (
+      safetyConfirm?.kind === "upload-local" ||
+      safetyConfirm?.kind === "use-cloud"
+    ) {
+      resolveConflictConfirmation({
+        choice: "cancel",
+        action: safetyConfirm.kind,
+        openedFor: safetyConfirm,
+        live: getProfileConflict(),
+        sessionUserId: authUserIdRef.current ?? null,
+      });
+    }
+
+    setSafetyConfirm(null);
+  }
+
+  function handleConfirmSafety() {
+    const pending = safetyConfirm;
+    setSafetyConfirm(null);
+
+    if (!pending) {
+      return;
+    }
+
+    if (pending.kind === "sign-out") {
+      if (resolveSignOutConfirmation("confirm").signOut) {
+        void performSignOut();
+      }
+      return;
+    }
+
+    const decision = resolveConflictConfirmation({
+      choice: "confirm",
+      action: pending.kind,
+      openedFor: pending,
+      live: getProfileConflict(),
+      sessionUserId: authUserIdRef.current ?? null,
+    });
+
+    if (decision === "upload-local") {
+      uploadConflictingLocalProfile(pending);
+      return;
+    }
+
+    if (decision === "use-cloud") {
+      const chosen = discardConflictingLocalProfile(pending);
+
+      if (chosen) {
+        applyCloudProfile(chosen);
+      }
+    }
+  }
+
+  async function performSignOut() {
     try {
       const { error } = await signOut();
-  
+
       if (error) {
         throw error;
       }
-  
+
       setCurrentUser(null);
     } catch (error) {
       console.error("Failed to sign out:", error);
       window.alert("Unable to sign out. Please try again.");
     }
   }
+
+  function handleSignOut() {
+    if (beginSignOut(hasPendingCloudWork()) === "confirm") {
+      setSafetyConfirm({ kind: "sign-out" });
+      return;
+    }
+
+    void performSignOut();
+  }
+
+  const persistenceBannerNotice: CloudPersistenceNotice | null =
+    storageProblem
+      ? {
+          tone: "error",
+          message: storageProblem,
+        }
+      : cloudNotice;
+
+  const persistenceBanner = persistenceBannerNotice ? (
+    <PersistenceNotice
+      notice={persistenceBannerNotice}
+      onPrimary={
+        persistenceBannerNotice.tone === "conflict"
+          ? () => openConflictConfirmation("upload-local")
+          : handleRetryCloudSave
+      }
+      onSecondary={
+        persistenceBannerNotice.tone === "conflict"
+          ? () => openConflictConfirmation("use-cloud")
+          : undefined
+      }
+    />
+  ) : null;
+
+  const safetyDialog = safetyConfirm ? (
+    <ConfirmActionDialog
+      {...(safetyConfirm.kind === "sign-out"
+        ? SIGN_OUT_CONFIRMATION
+        : safetyConfirm.kind === "upload-local"
+          ? CONFLICT_UPLOAD_CONFIRMATION
+          : CONFLICT_USE_CLOUD_CONFIRMATION)}
+      onCancel={handleCancelSafetyConfirm}
+      onConfirm={handleConfirmSafety}
+    />
+  ) : null;
+
   //Display Profile Page FINAL BEFORE RETURN
   if (appPage === "profile") {
     return (
       <>
         <ProfilePage
           profile={playerProfile}
+          persistenceNotice={persistenceBanner}
           canImportGuestProgress={
             guestImportEligibility.eligible
           }
@@ -1823,6 +2043,7 @@ async function handleImportGuestProgress(): Promise<boolean> {
           email={currentUser?.email ?? ""}
           onClose={closeChangePasswordDialog}
         />
+        {safetyDialog}
       </>
     );
   }
@@ -1866,6 +2087,8 @@ async function handleImportGuestProgress(): Promise<boolean> {
           </button>
         </div>
       </header>
+
+      {persistenceBanner}
 
       <main className="game-layout">
         <div className="game-board-column">
@@ -2260,6 +2483,7 @@ async function handleImportGuestProgress(): Promise<boolean> {
         email={currentUser?.email ?? ""}
         onClose={() => setIsChangePasswordOpen(false)}
       />
+      {safetyDialog}
     </div>
   );
 }

@@ -47,11 +47,13 @@ import type {
       const parsed: unknown =
         JSON.parse(storedValue);
   
-      if (!isValidProfile(parsed)) {
+      const profile = parseStoredProfile(parsed);
+
+      if (!profile) {
         return createDefaultProfile();
       }
-  
-      return parsed;
+
+      return profile;
     } catch {
       return createDefaultProfile();
     }
@@ -92,7 +94,13 @@ import type {
     };
   }
   
-  function isValidProfile(
+  export function parseStoredProfile(
+    value: unknown
+  ): PlayerProfile | null {
+    return isValidProfile(value) ? value : null;
+  }
+
+  export function isValidProfile(
     value: unknown
   ): value is PlayerProfile {
     if (

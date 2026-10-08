@@ -82,7 +82,7 @@ const VALID_PIECE_SETS: PieceSet[] = [
     );
   }
   
-  function isValidPreferences(
+  export function isValidPreferences(
     value: unknown
   ): value is UserPreferences {
     if (
@@ -104,6 +104,43 @@ const VALID_PIECE_SETS: PieceSet[] = [
     );
   }
   
+  /**
+   * Accepts a stored preferences object, including the
+   * pre-board-theme shape that only has an accent.
+   * Returns null when the value is not a preferences object.
+   */
+  export function parseStoredPreferences(
+    value: unknown
+  ): UserPreferences | null {
+    if (
+      typeof value !== "object" ||
+      value === null
+    ) {
+      return null;
+    }
+
+    const stored =
+      value as Partial<UserPreferences>;
+
+    if (
+      stored.version === PREFERENCES_VERSION &&
+      isAccentTheme(stored.accentTheme)
+    ) {
+      return {
+        version: PREFERENCES_VERSION,
+        accentTheme: stored.accentTheme,
+        boardTheme: isBoardTheme(stored.boardTheme)
+          ? stored.boardTheme
+          : DEFAULT_BOARD_THEME,
+        pieceSet: isPieceSet(stored.pieceSet)
+          ? stored.pieceSet
+          : DEFAULT_PIECE_SET,
+      };
+    }
+
+    return isValidPreferences(value) ? value : null;
+  }
+
   export function loadPreferences(): UserPreferences {
     const storedValue = localStorage.getItem(
       PREFERENCES_STORAGE_KEY
@@ -116,51 +153,30 @@ const VALID_PIECE_SETS: PieceSet[] = [
     try {
       const parsed: unknown =
         JSON.parse(storedValue);
-  
-      if (
-        typeof parsed !== "object" ||
-        parsed === null
-      ) {
+
+      const preferences =
+        parseStoredPreferences(parsed);
+
+      if (!preferences) {
         return createDefaultPreferences();
       }
-  
-      const stored =
-        parsed as Partial<UserPreferences>;
-  
-      // Migrate preferences saved before board
-      // themes were introduced.
+
+      // Keep the previous local migration write:
+      // a versioned accent preference is normalized
+      // and stored again.
       if (
-        stored.version ===
+        typeof parsed === "object" &&
+        parsed !== null &&
+        (parsed as Partial<UserPreferences>).version ===
           PREFERENCES_VERSION &&
-        isAccentTheme(stored.accentTheme)
+        isAccentTheme(
+          (parsed as Partial<UserPreferences>).accentTheme
+        )
       ) {
-        const migrated: UserPreferences = {
-          version: PREFERENCES_VERSION,
-      
-          accentTheme:
-            stored.accentTheme,
-      
-          boardTheme:
-            isBoardTheme(stored.boardTheme)
-              ? stored.boardTheme
-              : DEFAULT_BOARD_THEME,
-      
-          pieceSet:
-            isPieceSet(stored.pieceSet)
-              ? stored.pieceSet
-              : DEFAULT_PIECE_SET,
-        };
-      
-        savePreferences(migrated);
-      
-        return migrated;
+        savePreferences(preferences);
       }
-  
-      if (!isValidPreferences(parsed)) {
-        return createDefaultPreferences();
-      }
-  
-      return parsed;
+
+      return preferences;
     } catch {
       return createDefaultPreferences();
     }
