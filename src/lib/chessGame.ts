@@ -103,6 +103,26 @@ export function applyMove(
  * Returns a new game with its last move undone.
  * Returns null when there are no moves to undo.
  */
+/**
+ * Undo is available during an active game after the
+ * player has moved. Finished games and review mode
+ * stay locked for every training mode.
+ */
+export function isUndoAllowed(
+  game: Chess,
+  playerColor: "white" | "black",
+  isReviewMode: boolean
+): boolean {
+  if (isReviewMode || game.isGameOver()) {
+    return false;
+  }
+
+  return game.history().some((_, index) => {
+    const moveColor = index % 2 === 0 ? "white" : "black";
+    return moveColor === playerColor;
+  });
+}
+
 export function undoLastMove(game: Chess): Chess | null {
   if (game.history().length === 0) {
     return null;

@@ -7,6 +7,7 @@ import {
   copyGame,
   isLegalMove,
   requiresPromotion,
+  isUndoAllowed,
   undoLastMove,
   getGameStatus,
   getMoveHistory,
@@ -191,5 +192,66 @@ describe("chess game logic", () => {
     expect(previousGame).not.toBeNull();
     expect(getMoveHistory(previousGame!)).toEqual(["e4"]);
     expect(getMoveHistory(game)).toEqual(["e4", "e5"]);
+  });
+
+  it("allows undo during an active game after the player has moved", () => {
+    const game = new Chess();
+    game.move("e4");
+
+    expect(game.isGameOver()).toBe(false);
+    expect(isUndoAllowed(game, "white", false)).toBe(true);
+    expect(isUndoAllowed(game, "black", false)).toBe(false);
+  });
+
+  it("keeps undo disabled in review mode", () => {
+    const game = new Chess();
+    game.move("e4");
+
+    expect(isUndoAllowed(game, "white", true)).toBe(false);
+  });
+
+  it("disables undo after checkmate", () => {
+    const game = new Chess();
+    for (const move of ["e4", "e5", "Qh5", "Nc6", "Bc4", "Nf6", "Qxf7"]) {
+      game.move(move);
+    }
+
+    expect(game.isCheckmate()).toBe(true);
+    expect(isUndoAllowed(game, "white", false)).toBe(false);
+    expect(isUndoAllowed(game, "black", false)).toBe(false);
+  });
+
+  it("disables undo after stalemate", () => {
+    const game = new Chess("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1");
+
+    expect(game.isStalemate()).toBe(true);
+    expect(isUndoAllowed(game, "black", false)).toBe(false);
+  });
+
+  it("disables undo after threefold repetition", () => {
+    const game = new Chess();
+    for (const move of ["Nf3", "Nf6", "Ng1", "Ng8", "Nf3", "Nf6", "Ng1", "Ng8"]) {
+      game.move(move);
+    }
+
+    expect(game.isThreefoldRepetition()).toBe(true);
+    expect(game.isDraw()).toBe(true);
+    expect(isUndoAllowed(game, "white", false)).toBe(false);
+  });
+
+  it("disables undo when material is insufficient", () => {
+    const game = new Chess("8/8/8/8/8/8/k7/K7 w - - 0 1");
+
+    expect(game.isInsufficientMaterial()).toBe(true);
+    expect(game.isDraw()).toBe(true);
+    expect(isUndoAllowed(game, "white", false)).toBe(false);
+  });
+
+  it("disables undo after the fifty-move rule", () => {
+    const game = new Chess("8/8/8/8/8/8/k7/K7 w - - 100 80");
+
+    expect(game.isDraw()).toBe(true);
+    expect(game.isGameOver()).toBe(true);
+    expect(isUndoAllowed(game, "white", false)).toBe(false);
   });
 });

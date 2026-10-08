@@ -3,7 +3,7 @@ import { Chess, type Square } from "chess.js";
 import ChessBoard from "./components/ChessBoard";
 import GamePanel from "./components/GamePanel";
 import PromotionDialog from "./components/PromotionDialog";
-import { applyMove, isLegalMove, requiresPromotion, undoLastMove, getGameStatus as getChessGameStatus } from "./lib/chessGame";
+import { applyMove, isLegalMove, requiresPromotion, undoLastMove, isUndoAllowed, getGameStatus as getChessGameStatus } from "./lib/chessGame";
 import { parseUciMove } from "./engine/uci";
 import { useMoveAnalysis } from "./hooks/useMoveAnalysis";
 import { updateSkillFromAnalysis } from "./lib/skillEstimator";
@@ -1434,22 +1434,11 @@ async function handleImportGuestProgress(): Promise<boolean> {
 
   // Undo the most recent move. 
   function undoMove() {
-    if (isReviewMode) {
+    if (!isUndoAllowed(game, playerColor, isReviewMode)) {
       return;
     }
   
     const history = game.history();
-  
-    // If the player has not made a move yet,
-    // there is nothing for them to undo.
-    const hasPlayerMove = history.some(
-      (_, index) =>
-        getMoveColor(index) === playerColor
-    );
-  
-    if (!hasPlayerMove) {
-      return;
-    }
   
     cancelOpponentAnalysis();
     cancelPostGameAnalysis();
@@ -1596,12 +1585,6 @@ async function handleImportGuestProgress(): Promise<boolean> {
           opponentStatus === "starting"
         ? "thinking"
         : "ready";
-
-  const canUndoPlayerMove =
-    game.history().some(
-      (_, index) =>
-        getMoveColor(index) === playerColor
-    );
 
   useEffect(() => {
     if (!completedStoredGame) {
@@ -2029,8 +2012,7 @@ async function handleImportGuestProgress(): Promise<boolean> {
 
           onUndo={undoMove}
           undoDisabled={
-            isReviewMode ||
-            !canUndoPlayerMove
+            !isUndoAllowed(game, playerColor, isReviewMode)
           }
 
           onNewGame={requestNewGame}
