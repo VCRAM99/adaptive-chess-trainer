@@ -25,9 +25,15 @@ import { devLog } from "./lib/devLogger";
 import NewGameDialog, { type NewGameSettings, } from "./components/NewGameDialog";
 import ProfilePage from "./pages/ProfilePage";
 type AppPage = "game" | "profile";
-import { loadProfile, saveProfile, addStoredGame, createDefaultProfile } from "./lib/profile/profileStorage";
-import { createStoredGame, getStoredGameResult, } from "./lib/profile/createStoredGame";
-import type { PlayerProfile } from "./lib/profile/types";
+import { loadProfile, saveProfile, createDefaultProfile } from "./lib/profile/profileStorage";
+import { getStoredGameResult, } from "./lib/profile/createStoredGame";
+import type { PlayerProfile, StoredGame } from "./lib/profile/types";
+import {
+  createUnreviewedStoredGame,
+  enrichStoredGame,
+  insertCompletedGame,
+  isHistoryStorageReady,
+} from "./lib/profile/storedGameHistory";
 import { getCheckmateWinner, } from "./lib/postGame/gameResult";
 import { applyAccentTheme } from "./lib/preferences/applyAccentTheme";
 import { loadPreferences, savePreferences } from "./lib/preferences/preferencesStorage";
@@ -268,7 +274,11 @@ const [guestImportError, setGuestImportError] =
   // Store the estimated player rating.
   const [estimatedPlayerRating, setEstimatedPlayerRating] = useState(() => playerProfile.estimatedRating);
   const gameStartRatingRef = useRef(estimatedPlayerRating);
-  const storedGameIdRef = useRef<string | null>(null);
+  const [completedStoredGame, setCompletedStoredGame] =
+    useState<StoredGame | null>(null);
+  const completedGameOwnerRef = useRef<string | null>(null);
+  const discardedGameIdsRef = useRef(new Set<string>());
+  const activeReviewGameIdRef = useRef<string | null>(null);
 
   const [
     pendingOpponentSkill,
@@ -901,7 +911,26 @@ const [guestImportError, setGuestImportError] =
   
       completedGameIdRef.current =
         gameIdRef.current;
-  
+
+      const storedGame = createUnreviewedStoredGame({
+        id: record.id,
+        playedAt: record.completedAt,
+        playerColor,
+        trainingMode,
+        result: getStoredGameResult(
+          record.result,
+          playerColor
+        ),
+        ratingBefore: gameStartRatingRef.current,
+        ratingAfter: estimatedPlayerRating,
+        moveCount: record.moves.filter(
+          (move) => move.playedBy === playerColor
+        ).length,
+      });
+
+      completedGameOwnerRef.current =
+        gameOwnerRef.current ?? null;
+      setCompletedStoredGame(storedGame);
       setCompletedGame(record);
   
       devLog("Completed game captured", {
@@ -1026,7 +1055,16 @@ async function handleImportGuestProgress(): Promise<boolean> {
       return;
     }
     const freshProfile = createDefaultProfile();
-  
+    const completedId =
+      completedStoredGame?.id ?? completedGame?.id;
+
+    if (completedId) {
+      discardedGameIdsRef.current.add(completedId);
+    }
+
+    activeReviewGameIdRef.current = null;
+    cancelPostGameAnalysis();
+    setCompletedStoredGame(null);
     setPlayerProfile(freshProfile);
   
     setEstimatedPlayerRating(
@@ -1206,6 +1244,7 @@ async function handleImportGuestProgress(): Promise<boolean> {
     );
 
     setIsReviewMode(true);
+    activeReviewGameIdRef.current = completedGame.id;
     startPostGameAnalysis(completedGame);
   }
 
@@ -1329,6 +1368,7 @@ async function handleImportGuestProgress(): Promise<boolean> {
   ) {
     cancelOpponentAnalysis();
     cancelPostGameAnalysis();
+    activeReviewGameIdRef.current = null;
     setIsReviewMode(false);
     setSelectedReviewPly(0);
 
@@ -1349,7 +1389,6 @@ async function handleImportGuestProgress(): Promise<boolean> {
     opponentFormRef.current = 0;
 
     gameStartRatingRef.current = startingRating;
-    storedGameIdRef.current = null;
     const newGame = new Chess();
 
     setPlayerColor(color);
@@ -1414,6 +1453,17 @@ async function handleImportGuestProgress(): Promise<boolean> {
   
     cancelOpponentAnalysis();
     cancelPostGameAnalysis();
+    activeReviewGameIdRef.current = null;
+
+    if (
+      completedStoredGame &&
+      !playerProfile.games.some(
+        (storedGame) =>
+          storedGame.id === completedStoredGame.id
+      )
+    ) {
+      setCompletedStoredGame(null);
+    }
   
     completedGameIdRef.current = null;
     setCompletedGame(null);
@@ -1554,120 +1604,97 @@ async function handleImportGuestProgress(): Promise<boolean> {
     );
 
   useEffect(() => {
-    if (isAuthLoading) return;
-
-    if (
-      storageStatus !== "guest" &&
-      storageStatus !== "account"
-    ) {
+    if (!completedStoredGame) {
       return;
     }
 
     if (
-      loadedStorageUserId === undefined ||
-      loadedStorageUserId !== currentUserId
+      !isHistoryStorageReady({
+        isAuthLoading,
+        storageStatus,
+        loadedStorageUserId,
+        currentUserId,
+      })
     ) {
       return;
     }
 
-    if (
-      gameOwnerRef.current !== currentUserId
-    ) {
-      return;
-    }
-    if (
-      !completedGame ||
-      !matchSummary 
-    ) {
-      return;
-    }
-  
-    if (
-      storedGameIdRef.current ===
-      completedGame.id
-    ) {
-      return;
-    }
-  
-    const storedGame = createStoredGame({
-      id: completedGame.id,
-  
-      playedAt:
-        completedGame.completedAt,
-  
-      playerColor,
-      trainingMode,
-  
-      result: getStoredGameResult(
-        completedGame.result,
-        playerColor
-      ),
-  
-      ratingBefore:
-        gameStartRatingRef.current,
-  
-      ratingAfter:
-        estimatedPlayerRating,
-  
-      // matchSummary.player already represents
-      // whichever side the human played.
-      accuracy:
-        matchSummary.player.accuracy,
-  
-      averageCentipawnLoss:
-        matchSummary.player
-          .averageCentipawnLoss,
-  
-      moveCount:
-          completedGame.moves.filter(
-            (move) =>
-              move.playedBy === playerColor
-          ).length,
-  
-      moveTiers: {
-        diamond:
-          matchSummary.player
-            .tierCounts.diamond,
-  
-        platinum:
-          matchSummary.player
-            .tierCounts.platinum,
-  
-        gold:
-          matchSummary.player
-            .tierCounts.gold,
-  
-        silver:
-          matchSummary.player
-            .tierCounts.silver,
-  
-        bronze:
-          matchSummary.player
-            .tierCounts.bronze,
-  
-        steel:
-          matchSummary.player
-            .tierCounts.steel,
-  
-        wood:
-          matchSummary.player
-            .tierCounts.wood,
-      },
-    });
-  
+    const game = completedStoredGame;
+    const historyContext = {
+      discardedIds: discardedGameIdsRef.current,
+      gameOwnerId: completedGameOwnerRef.current,
+      currentOwnerId: currentUserId,
+      activeReviewGameId: activeReviewGameIdRef.current,
+    };
+
     setPlayerProfile((currentProfile) =>
-      addStoredGame(currentProfile, storedGame)
+      insertCompletedGame(
+        currentProfile,
+        game,
+        historyContext
+      )
     );
-  
-    storedGameIdRef.current =
-      completedGame.id;
   }, [
+    completedStoredGame,
+    isAuthLoading,
+    storageStatus,
+    loadedStorageUserId,
+    currentUserId,
+  ]);
+
+  useEffect(() => {
+    if (
+      !isReviewComplete ||
+      !completedGame ||
+      !matchSummary ||
+      !isHistoryStorageReady({
+        isAuthLoading,
+        storageStatus,
+        loadedStorageUserId,
+        currentUserId,
+      })
+    ) {
+      return;
+    }
+
+    const gameId = completedGame.id;
+    const playerSummary = matchSummary.player;
+
+    setPlayerProfile((currentProfile) =>
+      enrichStoredGame(
+        currentProfile,
+        gameId,
+        {
+          accuracy: playerSummary.accuracy,
+          averageCentipawnLoss:
+            playerSummary.averageCentipawnLoss,
+          moveTiers: {
+            diamond: playerSummary.tierCounts.diamond,
+            platinum: playerSummary.tierCounts.platinum,
+            gold: playerSummary.tierCounts.gold,
+            silver: playerSummary.tierCounts.silver,
+            bronze: playerSummary.tierCounts.bronze,
+            steel: playerSummary.tierCounts.steel,
+            wood: playerSummary.tierCounts.wood,
+          },
+        },
+        {
+          discardedIds: discardedGameIdsRef.current,
+          gameOwnerId: completedGameOwnerRef.current,
+          currentOwnerId: currentUserId,
+          activeReviewGameId:
+            activeReviewGameIdRef.current,
+        }
+      )
+    );
+  }, [
+    isReviewComplete,
     completedGame,
     matchSummary,
-    playerColor,
-    trainingMode,
-    estimatedPlayerRating,
     isAuthLoading,
+    storageStatus,
+    loadedStorageUserId,
+    currentUserId,
   ]);
 
   const postGamePlayerResult:
