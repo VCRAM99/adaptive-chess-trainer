@@ -1,15 +1,8 @@
-import type {
-  OpponentCandidate,
-} from "./opponentMove";
+import type { OpponentCandidate } from "./opponentMove";
 
-import {
-  getOpeningMoveCharacteristics,
-} from "./opponentOpeningMove";
+import { getOpeningMoveCharacteristics } from "./opponentOpeningMove";
 
-import {
-  getOpeningPreferenceAdjustment,
-} from "./opponentOpeningPreference";
-
+import { getOpeningPreferenceAdjustment } from "./opponentOpeningPreference";
 
 export type OpeningCandidateSelection = {
   candidate: OpponentCandidate;
@@ -18,84 +11,45 @@ export type OpeningCandidateSelection = {
   selectionDistance: number;
 };
 
-
 export function createOpeningCandidateSelections(
   candidates: OpponentCandidate[],
   desiredCpl: number,
   fen: string,
-  targetSkill: number
+  targetSkill: number,
 ): OpeningCandidateSelection[] {
-  return candidates.map(
-    (candidate) => {
-      const characteristics =
-        getOpeningMoveCharacteristics(
-          fen,
-          candidate.move
-        );
+  return candidates.map((candidate) => {
+    const characteristics = getOpeningMoveCharacteristics(fen, candidate.move);
 
-      const openingAdjustment =
-        getOpeningPreferenceAdjustment(
-          characteristics,
-          targetSkill
-        );
+    const openingAdjustment = getOpeningPreferenceAdjustment(characteristics, targetSkill);
 
-      const baseDistance =
-        Math.abs(
-          candidate.centipawnLoss -
-            desiredCpl
-        );
+    const baseDistance = Math.abs(candidate.centipawnLoss - desiredCpl);
 
-      const selectionDistance =
-        Math.max(
-          0,
-          baseDistance +
-            openingAdjustment
-        );
+    const selectionDistance = Math.max(0, baseDistance + openingAdjustment);
 
-      return {
-        candidate,
-        baseDistance,
-        openingAdjustment,
-        selectionDistance,
-      };
-    }
-  );
+    return {
+      candidate,
+      baseDistance,
+      openingAdjustment,
+      selectionDistance,
+    };
+  });
 }
-
 
 export function chooseOpeningAwareCandidate(
   candidates: OpponentCandidate[],
   desiredCpl: number,
   fen: string,
-  targetSkill: number
+  targetSkill: number,
 ): OpponentCandidate | null {
-  const selections =
-    createOpeningCandidateSelections(
-      candidates,
-      desiredCpl,
-      fen,
-      targetSkill
-    );
+  const selections = createOpeningCandidateSelections(candidates, desiredCpl, fen, targetSkill);
 
-  if (selections.length === 0) {
-    return null;
-  }
+  if (selections.length === 0) return null;
 
-  let bestSelection =
-    selections[0];
+  let bestSelection = selections[0];
 
-  for (
-    let index = 1;
-    index < selections.length;
-    index += 1
-  ) {
-    if (
-      selections[index]
-        .selectionDistance <
-      bestSelection.selectionDistance
-    ) {
-      bestSelection =
-        selections[index];
+  for (let index = 1; index < selections.length; index += 1) {
+    if (selections[index].selectionDistance < bestSelection.selectionDistance) {
+      bestSelection = selections[index];
     }
   }
 

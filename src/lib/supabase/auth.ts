@@ -26,31 +26,23 @@ export async function getAuthState(): Promise<AuthState> {
   };
 }
 
-export function subscribeToAuthChanges(
-  callback: (authState: AuthStateChange) => void
-) {
+export function subscribeToAuthChanges(callback: (authState: AuthStateChange) => void) {
   const {
     data: { subscription },
-  } = supabase.auth.onAuthStateChange(
-    (event, session) => {
-      callback({
-        event,
-        session,
-        user: session?.user ?? null,
-      });
-    }
-  );
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    callback({
+      event,
+      session,
+      user: session?.user ?? null,
+    });
+  });
 
   return () => {
     subscription.unsubscribe();
   };
 }
 
-export async function signUpWithEmail(
-  displayName: string,
-  email: string,
-  password: string
-) {
+export async function signUpWithEmail(displayName: string, email: string, password: string) {
   return supabase.auth.signUp({
     email,
     password,
@@ -62,10 +54,7 @@ export async function signUpWithEmail(
   });
 }
 
-export async function signInWithEmail(
-  email: string,
-  password: string
-) {
+export async function signInWithEmail(email: string, password: string) {
   return supabase.auth.signInWithPassword({
     email,
     password,
@@ -76,26 +65,19 @@ export async function signOut() {
   return supabase.auth.signOut();
 }
 
-export async function sendPasswordResetEmail(
-  email: string
-) {
+export async function sendPasswordResetEmail(email: string) {
   return supabase.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin,
   });
 }
 
-export async function updatePassword(
-  newPassword: string
-) {
+export async function updatePassword(newPassword: string) {
   return supabase.auth.updateUser({
     password: newPassword,
   });
 }
 
-export async function verifyCurrentPassword(
-  email: string,
-  password: string
-) {
+export async function verifyCurrentPassword(email: string, password: string) {
   return supabase.auth.signInWithPassword({
     email,
     password,

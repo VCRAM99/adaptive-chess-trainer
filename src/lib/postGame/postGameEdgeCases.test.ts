@@ -3,9 +3,7 @@ import type { AnalyzedMove } from "./types";
 import { calculateGameSummary } from "./gameSummary";
 import { calculatePlayerAccuracy } from "./accuracy";
 
-function createMove(
-  overrides: Partial<AnalyzedMove> = {}
-): AnalyzedMove {
+function createMove(overrides: Partial<AnalyzedMove> = {}): AnalyzedMove {
   return {
     ply: 1,
     san: "e4",
@@ -28,12 +26,7 @@ describe("post-game analysis edge cases", () => {
   it("returns null accuracy when the player has no moves", () => {
     const moves: AnalyzedMove[] = [];
 
-    expect(
-      calculatePlayerAccuracy(
-        moves,
-        "white"
-      )
-    ).toBeNull();
+    expect(calculatePlayerAccuracy(moves, "white")).toBeNull();
   });
 
   it("excludes forced moves from accuracy", () => {
@@ -51,12 +44,7 @@ describe("post-game analysis edge cases", () => {
       }),
     ];
 
-    expect(
-      calculatePlayerAccuracy(
-        moves,
-        "white"
-      )
-    ).toBe(80);
+    expect(calculatePlayerAccuracy(moves, "white")).toBe(80);
   });
 
   it("excludes ungradable moves from accuracy", () => {
@@ -74,12 +62,7 @@ describe("post-game analysis edge cases", () => {
       }),
     ];
 
-    expect(
-      calculatePlayerAccuracy(
-        moves,
-        "white"
-      )
-    ).toBe(90);
+    expect(calculatePlayerAccuracy(moves, "white")).toBe(90);
   });
 
   it("does not count opponent moves in player accuracy", () => {
@@ -97,12 +80,7 @@ describe("post-game analysis edge cases", () => {
       }),
     ];
 
-    expect(
-      calculatePlayerAccuracy(
-        moves,
-        "white"
-      )
-    ).toBe(100);
+    expect(calculatePlayerAccuracy(moves, "white")).toBe(100);
   });
 
   it("returns null accuracy when every player move is forced", () => {
@@ -120,12 +98,7 @@ describe("post-game analysis edge cases", () => {
       }),
     ];
 
-    expect(
-      calculatePlayerAccuracy(
-        moves,
-        "white"
-      )
-    ).toBeNull();
+    expect(calculatePlayerAccuracy(moves, "white")).toBeNull();
   });
 
   it("does not include mate penalties in average CPL", () => {
@@ -145,15 +118,9 @@ describe("post-game analysis edge cases", () => {
       }),
     ];
 
-    const summary =
-      calculateGameSummary(
-        moves,
-        "white"
-      );
+    const summary = calculateGameSummary(moves, "white");
 
-    expect(
-      summary.averageCentipawnLoss
-    ).toBe(20);
+    expect(summary.averageCentipawnLoss).toBe(20);
   });
 
   it("returns null average CPL when there are no centipawn-graded moves", () => {
@@ -165,15 +132,9 @@ describe("post-game analysis edge cases", () => {
       }),
     ];
 
-    const summary =
-      calculateGameSummary(
-        moves,
-        "white"
-      );
+    const summary = calculateGameSummary(moves, "white");
 
-    expect(
-      summary.averageCentipawnLoss
-    ).toBeNull();
+    expect(summary.averageCentipawnLoss).toBeNull();
   });
 
   it("counts forced moves separately from gradable moves", () => {
@@ -198,15 +159,9 @@ describe("post-game analysis edge cases", () => {
       }),
     ];
 
-    const summary =
-      calculateGameSummary(
-        moves,
-        "white"
-      );
+    const summary = calculateGameSummary(moves, "white");
 
-    expect(summary.totalPlayerMoves).toBe(
-      3
-    );
+    expect(summary.totalPlayerMoves).toBe(3);
 
     expect(summary.forcedMoves).toBe(1);
 

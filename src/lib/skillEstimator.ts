@@ -1,23 +1,12 @@
-import type {
-  DecisionDifficulty,
-  DecisionImportance,
-} from "./decisionDifficulty";
-
-import type {
-  MoveAnalysis,
-} from "./moveAnalysis";
-
 import {
   getDecisionDifficulty,
+  type DecisionDifficulty,
+  type DecisionImportance,
 } from "./decisionDifficulty";
-
+import type { MoveAnalysis } from "./moveAnalysis";
 
 export type SkillEvidence =
-  | "strong_positive"
-  | "positive"
-  | "neutral"
-  | "negative"
-  | "strong_negative";
+  "strong_positive" | "positive" | "neutral" | "negative" | "strong_negative";
 export const MIN_ESTIMATED_SKILL = 100;
 export const MAX_ESTIMATED_SKILL = 3000;
 
@@ -27,64 +16,40 @@ const NORMAL_ADJUSTMENT = 4;
 export function getSkillEvidence(
   centipawnLoss: number,
   difficulty: DecisionDifficulty,
-  importance: DecisionImportance
+  importance: DecisionImportance,
 ): SkillEvidence {
-  const loss = Math.max(
-    0,
-    centipawnLoss
-  );
+  const loss = Math.max(0, centipawnLoss);
 
   // Forced moves tell us almost nothing
   // about the player's skill.
-  if (difficulty === "forced") {
-    return "neutral";
-  }
+  if (difficulty === "forced") return "neutral";
 
   // Very accurate move.
   if (loss <= 20) {
-    if (
-      difficulty === "normal" &&
-      importance === "high"
-    ) {
-      return "strong_positive";
-    }
+    if (difficulty === "normal" && importance === "high") return "strong_positive";
 
-    if (
-      difficulty === "normal" &&
-      importance === "medium"
-    ) {
-      return "positive";
-    }
+    if (difficulty === "normal" && importance === "medium") return "positive";
 
     return "neutral";
   }
 
   // Reasonably accurate move.
   if (loss <= 50) {
-    if (
-      difficulty === "normal" &&
-      importance === "high"
-    ) {
-      return "positive";
-    }
+    if (difficulty === "normal" && importance === "high") return "positive";
 
     return "neutral";
   }
 
   // Moderate error.
   if (loss <= 100) {
-    if (importance === "high") {
-      return "negative";
-    }
+    if (importance === "high") return "negative";
 
     return "neutral";
   }
 
   // Clear mistake.
   if (loss <= 200) {
-    if (importance === "high") {
-      return "strong_negative";
-    }
+    if (importance === "high") return "strong_negative";
 
     return "negative";
   }
@@ -94,10 +59,7 @@ export function getSkillEvidence(
   return "strong_negative";
 }
 
-export function updateEstimatedSkill(
-  currentSkill: number,
-  evidence: SkillEvidence
-): number {
+export function updateEstimatedSkill(currentSkill: number, evidence: SkillEvidence): number {
   let adjustment = 0;
 
   switch (evidence) {
@@ -122,50 +84,29 @@ export function updateEstimatedSkill(
       break;
   }
 
-  const nextSkill =
-    currentSkill + adjustment;
+  const nextSkill = currentSkill + adjustment;
 
-  return Math.min(
-    MAX_ESTIMATED_SKILL,
-    Math.max(
-      MIN_ESTIMATED_SKILL,
-      nextSkill
-    )
-  );
+  return Math.min(MAX_ESTIMATED_SKILL, Math.max(MIN_ESTIMATED_SKILL, nextSkill));
 }
 
 export function updateSkillFromMove(
   currentSkill: number,
   centipawnLoss: number,
   difficulty: DecisionDifficulty,
-  importance: DecisionImportance
+  importance: DecisionImportance,
 ): number {
-  const evidence =
-    getSkillEvidence(
-      centipawnLoss,
-      difficulty,
-      importance
-    );
+  const evidence = getSkillEvidence(centipawnLoss, difficulty, importance);
 
-  return updateEstimatedSkill(
-    currentSkill,
-    evidence
-  );
+  return updateEstimatedSkill(currentSkill, evidence);
 }
 
-export function updateSkillFromAnalysis(
-  currentSkill: number,
-  analysis: MoveAnalysis
-): number {
-  const difficulty =
-    getDecisionDifficulty(
-      analysis.legalMoveCount
-    );
+export function updateSkillFromAnalysis(currentSkill: number, analysis: MoveAnalysis): number {
+  const difficulty = getDecisionDifficulty(analysis.legalMoveCount);
 
   return updateSkillFromMove(
     currentSkill,
     analysis.centipawnLoss,
     difficulty,
-    analysis.decisionImportance
+    analysis.decisionImportance,
   );
 }

@@ -13,27 +13,17 @@ export type UciMove = {
  *
  * Returns null for invalid move strings.
  */
-export function parseUciMove(
-  message: string
-): UciMove | null {
-  const match = /^([a-h][1-8])([a-h][1-8])([qrbn])?$/.exec(
-    message
-  );
+export function parseUciMove(message: string): UciMove | null {
+  const match = /^([a-h][1-8])([a-h][1-8])([qrbn])?$/.exec(message);
 
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
 
   const source = match[1] as Square;
   const target = match[2] as Square;
 
-  if (source === target) {
-    return null;
-  }
+  if (source === target) return null;
 
-  const promotion = match[3] as
-    | PromotionPiece
-    | undefined;
+  const promotion = match[3] as PromotionPiece | undefined;
 
   return {
     source,

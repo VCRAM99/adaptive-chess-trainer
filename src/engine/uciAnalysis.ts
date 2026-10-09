@@ -10,14 +10,10 @@ export type EngineEvaluation =
       depth: number;
     };
 
-export function parseEngineEvaluation(
-  message: string
-): EngineEvaluation | null {
+export function parseEngineEvaluation(message: string): EngineEvaluation | null {
   const depthMatch = /\bdepth\s+(\d+)/.exec(message);
 
-  if (!depthMatch) {
-    return null;
-  }
+  if (!depthMatch) return null;
 
   const depth = Number(depthMatch[1]);
 
@@ -31,8 +27,7 @@ export function parseEngineEvaluation(
     };
   }
 
-  const mateMatch =
-    /\bscore\s+mate\s+(-?\d+)/.exec(message);
+  const mateMatch = /\bscore\s+mate\s+(-?\d+)/.exec(message);
 
   if (mateMatch) {
     return {
@@ -51,25 +46,16 @@ export type CandidateMoveEvaluation = {
   evaluation: EngineEvaluation;
 };
 
-export function parseCandidateMoveEvaluation(
-  message: string
-): CandidateMoveEvaluation | null {
-  const evaluation =
-    parseEngineEvaluation(message);
+export function parseCandidateMoveEvaluation(message: string): CandidateMoveEvaluation | null {
+  const evaluation = parseEngineEvaluation(message);
 
-  if (!evaluation) {
-    return null;
-  }
+  if (!evaluation) return null;
 
-  const multiPvMatch =
-    /\bmultipv\s+(\d+)/.exec(message);
+  const multiPvMatch = /\bmultipv\s+(\d+)/.exec(message);
 
-  const pvMatch =
-    /\bpv\s+(\S+)/.exec(message);
+  const pvMatch = /\bpv\s+(\S+)/.exec(message);
 
-  if (!multiPvMatch || !pvMatch) {
-    return null;
-  }
+  if (!multiPvMatch || !pvMatch) return null;
 
   return {
     rank: Number(multiPvMatch[1]),

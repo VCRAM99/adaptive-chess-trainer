@@ -1,4 +1,3 @@
-
 /**
  * Runs asynchronous operations sequentially.
  *
@@ -9,14 +8,12 @@ export function createSaveQueue() {
   let pending: Promise<void> = Promise.resolve();
 
   return {
-    enqueue<T>(
-      operation: () => Promise<T>
-    ): Promise<T> {
+    enqueue<T>(operation: () => Promise<T>): Promise<T> {
       const result = pending.then(operation);
 
       pending = result.then(
         () => undefined,
-        () => undefined
+        () => undefined,
       );
 
       return result;

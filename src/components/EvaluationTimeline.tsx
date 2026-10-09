@@ -1,5 +1,4 @@
-import type { EvaluationPoint } from "../lib/postGame/evaluationTimeline";
-import { EVALUATION_GRAPH_LIMIT } from "../lib/postGame/evaluationTimeline";
+import { EVALUATION_GRAPH_LIMIT, type EvaluationPoint } from "../lib/postGame/evaluationTimeline";
 
 type EvaluationTimelineProps = {
   points: EvaluationPoint[];
@@ -13,42 +12,24 @@ const HEIGHT = 240;
 const CENTER_Y = HEIGHT / 2;
 //const PADDING_X = 0;
 
-function getX(
-  ply: number,
-  finalPly: number
-): number {
-  if (finalPly <= 0) {
-    return 0;
-  }
+function getX(ply: number, finalPly: number): number {
+  if (finalPly <= 0) return 0;
 
-  return (
-    (ply / finalPly) * WIDTH
-  );
+  return (ply / finalPly) * WIDTH;
 }
 
-function getSelectedPoint(
-  points: EvaluationPoint[],
-  selectedPly: number
-): EvaluationPoint | null {
-  return (
-    points.find(
-      (point) => point.ply === selectedPly
-    ) ?? null
-  );
+function getSelectedPoint(points: EvaluationPoint[], selectedPly: number): EvaluationPoint | null {
+  return points.find((point) => point.ply === selectedPly) ?? null;
 }
 
 function getY(evaluation: number): number {
-  const normalized =
-    evaluation / EVALUATION_GRAPH_LIMIT;
+  const normalized = evaluation / EVALUATION_GRAPH_LIMIT;
 
   return CENTER_Y - normalized * CENTER_Y;
 }
 
-function createLinePath(
-  points: EvaluationPoint[]
-): string {
-  const finalPly =
-  points[points.length - 1]?.ply ?? 0;
+function createLinePath(points: EvaluationPoint[]): string {
+  const finalPly = points[points.length - 1]?.ply ?? 0;
 
   let path = "";
   let drawing = false;
@@ -59,14 +40,9 @@ function createLinePath(
       continue;
     }
 
-    const x = getX(
-      point.ply,
-      finalPly
-    );
+    const x = getX(point.ply, finalPly);
 
-    const y = getY(
-      point.graphEvaluation
-    );
+    const y = getY(point.graphEvaluation);
 
     path += `${drawing ? " L" : " M"} ${x} ${y}`;
 
@@ -76,56 +52,31 @@ function createLinePath(
   return path;
 }
 
-function createAreaPath(
-  points: EvaluationPoint[]
-): string {
-  const validPoints = points.filter(
-    (point) => point.graphEvaluation !== null
-  );
+function createAreaPath(points: EvaluationPoint[]): string {
+  const validPoints = points.filter((point) => point.graphEvaluation !== null);
 
-  if (validPoints.length === 0) {
-    return "";
-  }
+  if (validPoints.length === 0) return "";
 
   const finalPly = points[points.length - 1]?.ply ?? 0;
 
   const firstPoint = validPoints[0];
-  const lastPoint =
-    validPoints[validPoints.length - 1];
+  const lastPoint = validPoints[validPoints.length - 1];
 
-  const firstX = getX(
-    firstPoint.ply,
-    finalPly
-  );
+  const firstX = getX(firstPoint.ply, finalPly);
 
-  const lastX = getX(
-    lastPoint.ply,
-    finalPly
-  );
+  const lastX = getX(lastPoint.ply, finalPly);
 
   const graphPath = validPoints
     .map((point, index) => {
-      const x = getX(
-        point.ply,
-        finalPly
-      );
+      const x = getX(point.ply, finalPly);
 
-      const y = getY(
-        point.graphEvaluation!
-      );
+      const y = getY(point.graphEvaluation!);
 
-      return `${
-        index === 0 ? "L" : "L"
-      } ${x} ${y}`;
+      return `${index === 0 ? "L" : "L"} ${x} ${y}`;
     })
     .join(" ");
 
-  return [
-    `M ${firstX} ${CENTER_Y}`,
-    graphPath,
-    `L ${lastX} ${CENTER_Y}`,
-    "Z",
-  ].join(" ");
+  return [`M ${firstX} ${CENTER_Y}`, graphPath, `L ${lastX} ${CENTER_Y}`, "Z"].join(" ");
 }
 
 export default function EvaluationTimeline({
@@ -133,30 +84,21 @@ export default function EvaluationTimeline({
   selectedPly,
   onSelectedPlyChange,
 }: EvaluationTimelineProps) {
-  if (points.length === 0) {
-    return null;
-  }
+  if (points.length === 0) return null;
 
   const finalPly = points[points.length - 1]?.ply ?? 0;
   const linePath = createLinePath(points);
 
-  const selectedPoint = getSelectedPoint(
-    points,
-    selectedPly
-  );
+  const selectedPoint = getSelectedPoint(points, selectedPly);
 
-  const areaPath =
-  createAreaPath(points);
-  
-  const selectedX = selectedPoint
-    ? getX(selectedPoint.ply, finalPly)
-    : null;
-  
+  const areaPath = createAreaPath(points);
+
+  const selectedX = selectedPoint ? getX(selectedPoint.ply, finalPly) : null;
+
   const selectedY =
-  selectedPoint?.graphEvaluation !== null &&
-  selectedPoint?.graphEvaluation !== undefined
-    ? getY(selectedPoint.graphEvaluation)
-    : null;
+    selectedPoint?.graphEvaluation !== null && selectedPoint?.graphEvaluation !== undefined
+      ? getY(selectedPoint.graphEvaluation)
+      : null;
 
   return (
     <div className="evaluation-timeline">
@@ -164,23 +106,16 @@ export default function EvaluationTimeline({
         <span>White Advantage</span>
 
         <strong>
-          {!selectedPoint ||
-          selectedPoint.evaluation === null
+          {!selectedPoint || selectedPoint.evaluation === null
             ? "N/A"
             : selectedPoint.isMate
               ? selectedPoint.mateIn !== null
                 ? selectedPoint.mateIn > 0
-                  ? `White M${Math.abs(
-                      selectedPoint.mateIn
-                    )}`
-                  : `Black M${Math.abs(
-                      selectedPoint.mateIn
-                    )}`
+                  ? `White M${Math.abs(selectedPoint.mateIn)}`
+                  : `Black M${Math.abs(selectedPoint.mateIn)}`
                 : "Mate"
               : selectedPoint.evaluation >= 0
-                ? `+${selectedPoint.evaluation.toFixed(
-                    2
-                  )}`
+                ? `+${selectedPoint.evaluation.toFixed(2)}`
                 : selectedPoint.evaluation.toFixed(2)}
         </strong>
 
@@ -193,13 +128,7 @@ export default function EvaluationTimeline({
           role="img"
           aria-label="Game evaluation graph"
         >
-          <rect
-            x={0}
-            y={0}
-            width={WIDTH}
-            height={CENTER_Y}
-            className="evaluation-white-region"
-          />
+          <rect x={0} y={0} width={WIDTH} height={CENTER_Y} className="evaluation-white-region" />
 
           <rect
             x={0}
@@ -208,23 +137,10 @@ export default function EvaluationTimeline({
             height={CENTER_Y}
             className="evaluation-black-region"
           />
-          <path
-            d={areaPath}
-            className="evaluation-area"
-          />
-          <path
-            d={linePath}
-            className="evaluation-line"
-            fill="none"
-          />
-          {selectedX !== null &&
-          selectedY !== null && (
-            <circle
-              cx={selectedX}
-              cy={selectedY}
-              r={7}
-              className="evaluation-selected-point"
-            />
+          <path d={areaPath} className="evaluation-area" />
+          <path d={linePath} className="evaluation-line" fill="none" />
+          {selectedX !== null && selectedY !== null && (
+            <circle cx={selectedX} cy={selectedY} r={7} className="evaluation-selected-point" />
           )}
         </svg>
 
@@ -235,11 +151,7 @@ export default function EvaluationTimeline({
           max={finalPly}
           step={1}
           value={selectedPly}
-          onChange={(event) =>
-            onSelectedPlyChange(
-              Number(event.target.value)
-            )
-          }
+          onChange={(event) => onSelectedPlyChange(Number(event.target.value))}
           aria-label="Review move"
         />
       </div>

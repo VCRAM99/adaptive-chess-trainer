@@ -1,7 +1,4 @@
-import {
-  useMemo,
-  useState,
-} from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import CareerStatistics from "../components/profile/CareerStatistics";
 import DifficultyFilter from "../components/profile/DifficultyFilter";
@@ -10,40 +7,25 @@ import RecentGames from "../components/profile/RecentGames";
 import ProgressSection from "../components/profile/ProgressSection";
 import ResetProgressDialog from "../components/profile/ResetProgressDialog";
 import PerformanceByMode from "../components/profile/PerformanceByMode";
-import {
-  ACCENT_THEMES,
-} from "../lib/preferences/accentThemes";
+import { ACCENT_THEMES } from "../lib/preferences/accentThemes";
 
 import { ArrowLeft, UserRound } from "lucide-react";
 
 import type { User } from "@supabase/supabase-js";
 
-import type {
-  AccentTheme,
-  BoardTheme,
-  PieceSet,
-} from "../lib/preferences/types";
+import type { AccentTheme, BoardTheme, PieceSet } from "../lib/preferences/types";
 
-import {
-  BOARD_THEMES,
-} from "../lib/preferences/boardThemes";
+import { BOARD_THEMES } from "../lib/preferences/boardThemes";
 
 import {
   calculateCareerStatistics,
   DEFAULT_DIFFICULTY_FILTER,
+  type DifficultyFilter as DifficultyFilterValue,
 } from "../lib/profile/statistics";
 
-import type {
-  DifficultyFilter as DifficultyFilterValue,
-} from "../lib/profile/statistics";
+import type { PlayerProfile } from "../lib/profile/types";
 
-import type {
-  PlayerProfile,
-} from "../lib/profile/types";
-
-import {
-  getDisplayedRating,
-} from "../lib/displayRating";
+import { getDisplayedRating } from "../lib/displayRating";
 import Dialog from "../components/ui/Dialog";
 
 type ProfilePageProps = {
@@ -56,17 +38,11 @@ type ProfilePageProps = {
   currentUser: User | null;
   isAuthLoading: boolean;
 
-  onAccentThemeChange: (
-    theme: AccentTheme
-  ) => void;
+  onAccentThemeChange: (theme: AccentTheme) => void;
 
-  onBoardThemeChange: (
-    theme: BoardTheme
-  ) => void;
+  onBoardThemeChange: (theme: BoardTheme) => void;
 
-  onPieceSetChange: (
-    pieceSet: PieceSet
-  ) => void;
+  onPieceSetChange: (pieceSet: PieceSet) => void;
 
   onBackToGame: () => void;
   onOpenAuthDialog: () => void;
@@ -78,8 +54,9 @@ type ProfilePageProps = {
   isGuestImporting: boolean;
   guestImportError: string | null;
   canImportGuestProgress: boolean;
-guestImportGameCount: number;
-guestImportRating: number | null;
+  guestImportGameCount: number;
+  guestImportRating: number | null;
+  persistenceNotice?: ReactNode;
 };
 
 function ProfilePage({
@@ -103,32 +80,17 @@ function ProfilePage({
   canImportGuestProgress,
   guestImportGameCount,
   guestImportRating,
+  persistenceNotice,
 }: ProfilePageProps) {
-  const [
-    difficultyFilter,
-    setDifficultyFilter,
-  ] =
-    useState<DifficultyFilterValue>(
-      DEFAULT_DIFFICULTY_FILTER
-    );
+  const [difficultyFilter, setDifficultyFilter] =
+    useState<DifficultyFilterValue>(DEFAULT_DIFFICULTY_FILTER);
 
   const statistics = useMemo(
-    () =>
-      calculateCareerStatistics(
-        profile.games,
-        difficultyFilter
-      ),
-    [
-      profile.games,
-      difficultyFilter,
-    ]
+    () => calculateCareerStatistics(profile.games, difficultyFilter),
+    [profile.games, difficultyFilter],
   );
-  const [
-    isResetDialogOpen,
-    setIsResetDialogOpen,
-  ] = useState(false);
-  const [isGuestImportDialogOpen, setIsGuestImportDialogOpen] =
-  useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [isGuestImportDialogOpen, setIsGuestImportDialogOpen] = useState(false);
 
   return (
     <main className="profile-page">
@@ -139,9 +101,7 @@ function ProfilePage({
           </div>
 
           <div>
-            <p className="profile-eyebrow">
-              ADAPTIVE CHESS TRAINER
-            </p>
+            <p className="profile-eyebrow">ADAPTIVE CHESS TRAINER</p>
 
             <h1>Player Profile</h1>
 
@@ -153,17 +113,12 @@ function ProfilePage({
                   currentUser?.email ||
                   "Guest"}
             </p>
-
           </div>
         </div>
 
         <div className="profile-header__actions">
           {!isAuthLoading && !currentUser && (
-            <button
-              type="button"
-              className="auth-nav-button"
-              onClick={onOpenAuthDialog}
-            >
+            <button type="button" className="auth-nav-button" onClick={onOpenAuthDialog}>
               Sign In / Create Account
             </button>
           )}
@@ -174,169 +129,117 @@ function ProfilePage({
             onClick={onBackToGame}
             aria-label="Back to Game"
           >
-          <ArrowLeft size={20} aria-hidden="true" />
-          <span className="profile-nav-tooltip" role="tooltip">
-            BACK TO GAME
-          </span>
-        </button>
+            <ArrowLeft size={20} aria-hidden="true" />
+            <span className="profile-nav-tooltip" role="tooltip">
+              BACK TO GAME
+            </span>
+          </button>
         </div>
-
       </header>
 
+      {persistenceNotice}
+
       <div className="profile-dashboard">
-        <DifficultyFilter
-          value={difficultyFilter}
-          onChange={setDifficultyFilter}
-        />
+        <DifficultyFilter value={difficultyFilter} onChange={setDifficultyFilter} />
 
         <CareerStatistics
           statistics={statistics}
-          currentRating={getDisplayedRating(
-            profile.estimatedRating
-          )}
-          bestRating={getDisplayedRating(
-            profile.bestRating
-          )}
+          currentRating={getDisplayedRating(profile.estimatedRating)}
+          bestRating={getDisplayedRating(profile.bestRating)}
         />
 
-        <MoveQualityStatistics
-          moveTiers={statistics.moveTiers}
-        />
+        <MoveQualityStatistics moveTiers={statistics.moveTiers} />
       </div>
       <PerformanceByMode games={profile.games} />
 
-      <ProgressSection
-        games={profile.games}
-        difficultyFilter={
-          difficultyFilter
-        }
-      />
-      <RecentGames
-        games={profile.games}
-        difficultyFilter={
-          difficultyFilter
-        }
-      />
+      <ProgressSection games={profile.games} difficultyFilter={difficultyFilter} />
+      <RecentGames games={profile.games} difficultyFilter={difficultyFilter} />
       <section className="profile-section profile-appearance">
         <div className="profile-section-heading">
           <div>
             <h2>Appearance</h2>
-            <p>
-              Personalize your trainer's accent color and board theme.
-            </p>
+            <p>Personalize your trainer's accent color and board theme.</p>
           </div>
         </div>
 
-        <h3 className="appearance-label">
-          Accent Color
-        </h3>
+        <h3 className="appearance-label">Accent Color</h3>
 
         <div className="accent-picker">
-          {Object.values(
-            ACCENT_THEMES
-          ).map((theme) => {
-            const isSelected =
-              accentTheme === theme.id;
+          {Object.values(ACCENT_THEMES).map((theme) => {
+            const isSelected = accentTheme === theme.id;
 
             return (
               <button
                 key={theme.id}
                 type="button"
-                className={
-                  isSelected
-                    ? "accent-option accent-option--selected"
-                    : "accent-option"
-                }
-                onClick={() =>
-                  onAccentThemeChange(theme.id)
-                }
+                className={isSelected ? "accent-option accent-option--selected" : "accent-option"}
+                onClick={() => onAccentThemeChange(theme.id)}
                 aria-pressed={isSelected}
               >
                 <span
                   className="accent-option__swatch"
                   style={{
-                    backgroundColor:
-                      `rgb(${theme.rgb})`,
+                    backgroundColor: `rgb(${theme.rgb})`,
                   }}
                 />
 
-                <span>
-                  {theme.label}
-                </span>
+                <span>{theme.label}</span>
               </button>
             );
           })}
         </div>
 
-        <h3 className="appearance-label">
-          Board Theme
-        </h3>
+        <h3 className="appearance-label">Board Theme</h3>
 
         <div className="board-theme-picker">
-          {Object.entries(BOARD_THEMES).map(
-            ([id, colors]) => {
-              const themeId = id as BoardTheme;
-              const isSelected =
-                boardTheme === themeId;
+          {Object.entries(BOARD_THEMES).map(([id, colors]) => {
+            const themeId = id as BoardTheme;
+            const isSelected = boardTheme === themeId;
 
-              const label =
-                themeId.charAt(0).toUpperCase() +
-                themeId.slice(1);
+            const label = themeId.charAt(0).toUpperCase() + themeId.slice(1);
 
-              return (
-                <button
-                  key={themeId}
-                  type="button"
-                  className={
-                    isSelected
-                      ? "board-theme-option board-theme-option--selected"
-                      : "board-theme-option"
-                  }
-                  onClick={() =>
-                    onBoardThemeChange(themeId)
-                  }
-                  aria-pressed={isSelected}
-                >
+            return (
+              <button
+                key={themeId}
+                type="button"
+                className={
+                  isSelected
+                    ? "board-theme-option board-theme-option--selected"
+                    : "board-theme-option"
+                }
+                onClick={() => onBoardThemeChange(themeId)}
+                aria-pressed={isSelected}
+              >
+                <span className="board-theme-option__swatch" aria-hidden="true">
                   <span
-                    className="board-theme-option__swatch"
-                    aria-hidden="true"
-                  >
-                    <span
-                      style={{
-                        backgroundColor:
-                          colors.light,
-                      }}
-                    />
-                    <span
-                      style={{
-                        backgroundColor:
-                          colors.dark,
-                      }}
-                    />
-                    <span
-                      style={{
-                        backgroundColor:
-                          colors.dark,
-                      }}
-                    />
-                    <span
-                      style={{
-                        backgroundColor:
-                          colors.light,
-                      }}
-                    />
-                  </span>
+                    style={{
+                      backgroundColor: colors.light,
+                    }}
+                  />
+                  <span
+                    style={{
+                      backgroundColor: colors.dark,
+                    }}
+                  />
+                  <span
+                    style={{
+                      backgroundColor: colors.dark,
+                    }}
+                  />
+                  <span
+                    style={{
+                      backgroundColor: colors.light,
+                    }}
+                  />
+                </span>
 
-                  <span>{label}</span>
-                </button>
-              );
-            }
-          )}
+                <span>{label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        <h3 className="appearance-label">
-          Piece Set
-        </h3>
+        <h3 className="appearance-label">Piece Set</h3>
 
         <div className="piece-set-picker">
           {(
@@ -355,21 +258,16 @@ function ProfilePage({
               },
             ] as const
           ).map((option) => {
-            const isSelected =
-              pieceSet === option.id;
+            const isSelected = pieceSet === option.id;
 
             return (
               <button
                 key={option.id}
                 type="button"
                 className={
-                  isSelected
-                    ? "piece-set-option piece-set-option--selected"
-                    : "piece-set-option"
+                  isSelected ? "piece-set-option piece-set-option--selected" : "piece-set-option"
                 }
-                onClick={() =>
-                  onPieceSetChange(option.id)
-                }
+                onClick={() => onPieceSetChange(option.id)}
                 aria-pressed={isSelected}
               >
                 <span>{option.label}</span>
@@ -382,20 +280,12 @@ function ProfilePage({
         <div>
           <h2>Data Management</h2>
 
-          <p>
-            Manage your account and saved chess progress.
-          </p>
+          <p>Manage your account and saved chess progress.</p>
         </div>
 
         <div className="profile-data-management__actions">
-          {currentUser?.identities?.some(
-            (identity) => identity.provider === "email"
-          ) && (
-            <button
-              type="button"
-              className="change-password-button"
-              onClick={onChangePassword}
-            >
+          {currentUser?.identities?.some((identity) => identity.provider === "email") && (
+            <button type="button" className="change-password-button" onClick={onChangePassword}>
               Change Password
             </button>
           )}
@@ -414,21 +304,12 @@ function ProfilePage({
             <button
               type="button"
               className="import-guest-button"
-              disabled={
-                !canImportGuestProgress ||
-                isGuestImporting ||
-                isAuthLoading
-              }
-              onClick={() =>
-                setIsGuestImportDialogOpen(true)
-              }
+              disabled={!canImportGuestProgress || isGuestImporting || isAuthLoading}
+              onClick={() => setIsGuestImportDialogOpen(true)}
             >
-              {isGuestImporting
-                ? "Importing..."
-                : "Import Guest Progress"}
+              {isGuestImporting ? "Importing..." : "Import Guest Progress"}
             </button>
           )}
-
 
           <button
             type="button"
@@ -439,7 +320,6 @@ function ProfilePage({
             Reset Progress
           </button>
         </div>
-
 
         {isGuestImportDialogOpen && currentUser && (
           <Dialog
@@ -456,9 +336,7 @@ function ProfilePage({
               <div className="guest-import-summary">
                 <div className="guest-import-summary__item">
                   <span>Guest Rating</span>
-                  <strong>
-                    {guestImportRating ?? "—"} Elo
-                  </strong>
+                  <strong>{guestImportRating ?? "—"} Elo</strong>
                 </div>
 
                 <div className="guest-import-summary__item">
@@ -468,8 +346,7 @@ function ProfilePage({
               </div>
 
               <p className="guest-import-note">
-                Your original guest progress will remain
-                saved in this browser.
+                Your original guest progress will remain saved in this browser.
               </p>
 
               {guestImportError && (
@@ -483,9 +360,7 @@ function ProfilePage({
                   type="button"
                   className="reset-cancel-button"
                   disabled={isGuestImporting}
-                  onClick={() =>
-                    setIsGuestImportDialogOpen(false)
-                  }
+                  onClick={() => setIsGuestImportDialogOpen(false)}
                 >
                   Cancel
                 </button>
@@ -493,35 +368,25 @@ function ProfilePage({
                 <button
                   type="button"
                   className="reset-confirm-button"
-                  disabled={
-                    !canImportGuestProgress ||
-                    isGuestImporting
-                  }
+                  disabled={!canImportGuestProgress || isGuestImporting}
                   onClick={async () => {
-                    const succeeded =
-                      await onImportGuestProgress();
+                    const succeeded = await onImportGuestProgress();
 
                     if (succeeded) {
                       setIsGuestImportDialogOpen(false);
                     }
                   }}
                 >
-                  {isGuestImporting
-                    ? "Importing..."
-                    : "Import Progress"}
+                  {isGuestImporting ? "Importing..." : "Import Progress"}
                 </button>
               </div>
             </div>
           </Dialog>
         )}
-
-
       </section>
       {isResetDialogOpen && (
         <ResetProgressDialog
-          onCancel={() =>
-            setIsResetDialogOpen(false)
-          }
+          onCancel={() => setIsResetDialogOpen(false)}
           onConfirm={() => {
             onResetProgress();
             setIsResetDialogOpen(false);

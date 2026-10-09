@@ -1,10 +1,6 @@
-import type {
-  PieceRenderObject,
-} from "react-chessboard";
+import type { PieceRenderObject } from "react-chessboard";
 
-import type {
-  PieceSet,
-} from "./types";
+import type { PieceSet } from "./types";
 
 const PIECE_NAMES = [
   "wK",
@@ -21,9 +17,7 @@ const PIECE_NAMES = [
   "bP",
 ] as const;
 
-function createPieceSet(
-  folder: string
-): PieceRenderObject {
+function createPieceSet(folder: string): PieceRenderObject {
   return Object.fromEntries(
     PIECE_NAMES.map((piece) => [
       piece,
@@ -40,19 +34,15 @@ function createPieceSet(
           }}
         />
       ),
-    ])
+    ]),
   ) as PieceRenderObject;
 }
 
-const MODERN_PIECES =
-  createPieceSet("modern");
+const MODERN_PIECES = createPieceSet("modern");
 
-const MINIMAL_PIECES =
-  createPieceSet("minimal");
+const MINIMAL_PIECES = createPieceSet("minimal");
 
-export function getCustomPieces(
-  pieceSet: PieceSet
-): PieceRenderObject | undefined {
+export function getCustomPieces(pieceSet: PieceSet): PieceRenderObject | undefined {
   switch (pieceSet) {
     case "modern":
       return MODERN_PIECES;

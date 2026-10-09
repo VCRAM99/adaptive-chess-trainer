@@ -16,9 +16,7 @@ describe("UCI response parser", () => {
   });
 
   it("recognizes a best move with ponder information", () => {
-    expect(
-      parseUciResponse("bestmove e7e5 ponder g1f3")
-    ).toEqual({
+    expect(parseUciResponse("bestmove e7e5 ponder g1f3")).toEqual({
       type: "bestmove",
       move: "e7e5",
     });
@@ -32,9 +30,7 @@ describe("UCI response parser", () => {
   });
 
   it("ignores search information", () => {
-    expect(
-      parseUciResponse("info depth 8 score cp 20")
-    ).toEqual({
+    expect(parseUciResponse("info depth 8 score cp 20")).toEqual({
       type: "other",
     });
   });

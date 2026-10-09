@@ -1,14 +1,8 @@
-
 import type { PlayerProfile } from "../profile/types";
 
-import {
-  createDefaultProfile,
-  loadProfile,
-} from "../profile/profileStorage";
+import { createDefaultProfile, loadProfile } from "../profile/profileStorage";
 
-import {
-  getGuestImportEligibility,
-} from "../profile/guestMigration";
+import { getGuestImportEligibility } from "../profile/guestMigration";
 
 import { loadCloudProfile } from "./storage";
 import { profileSaveQueue } from "./saveQueues";
@@ -20,47 +14,33 @@ import { supabase } from "./client";
  *
  * The original guest profile is preserved.
  */
-export async function importGuestProgress(
-  userId: string
-): Promise<PlayerProfile> {
+export async function importGuestProgress(userId: string): Promise<PlayerProfile> {
   return profileSaveQueue.enqueue(async () => {
-    const { data, error: authError } =
-      await supabase.auth.getUser();
+    const { data, error: authError } = await supabase.auth.getUser();
 
     if (authError || data.user?.id !== userId) {
-      throw new Error(
-        "Your account session changed. Please sign in again."
-      );
+      throw new Error("Your account session changed. Please sign in again.");
     }
 
     const guestProfile = loadProfile();
 
-    const accountSnapshot =
-    await loadCloudProfile(userId);
-  
-  const accountProfile =
-    accountSnapshot?.profile ??
-    createDefaultProfile();
+    const accountSnapshot = await loadCloudProfile(userId);
 
-    const eligibility = getGuestImportEligibility(
-      guestProfile,
-      accountProfile
-    );
+    const accountProfile = accountSnapshot?.profile ?? createDefaultProfile();
+
+    const eligibility = getGuestImportEligibility(guestProfile, accountProfile);
 
     if (!eligibility.eligible) {
       throw new Error(
         eligibility.reason === "no-guest-progress"
           ? "There is no guest progress to import."
-          : "This account already has progress."
+          : "This account already has progress.",
       );
     }
 
-    const { error } = await supabase.rpc(
-      "import_guest_profile",
-      {
-        incoming_profile: guestProfile,
-      }
-    );
+    const { error } = await supabase.rpc("import_guest_profile", {
+      incoming_profile: guestProfile,
+    });
 
     if (error) {
       throw error;

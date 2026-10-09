@@ -1,4 +1,3 @@
-
 import type { BoardTheme } from "./types";
 
 type BoardColors = {
@@ -24,4 +23,3 @@ export const BOARD_THEMES: Record<BoardTheme, BoardColors> = {
     dark: "#9274B8",
   },
 };
-

@@ -13,62 +13,43 @@ export type EvaluationPoint = {
 
 function evaluationToWhitePerspective(
   evaluation: EngineEvaluation,
-  sideToMove: "white" | "black"
+  sideToMove: "white" | "black",
 ): {
   evaluation: number;
   isMate: boolean;
   mateIn: number | null;
 } {
-  const direction =
-    sideToMove === "white" ? 1 : -1;
+  const direction = sideToMove === "white" ? 1 : -1;
 
   if (evaluation.type === "cp") {
     return {
-      evaluation:
-        (evaluation.value / 100) * direction,
+      evaluation: (evaluation.value / 100) * direction,
       isMate: false,
       mateIn: null,
     };
   }
 
-  const whiteMateValue =
-    evaluation.value * direction;
+  const whiteMateValue = evaluation.value * direction;
 
   return {
-    evaluation:
-      whiteMateValue > 0
-        ? EVALUATION_GRAPH_LIMIT
-        : -EVALUATION_GRAPH_LIMIT,
+    evaluation: whiteMateValue > 0 ? EVALUATION_GRAPH_LIMIT : -EVALUATION_GRAPH_LIMIT,
 
     isMate: true,
     mateIn: whiteMateValue,
   };
 }
 
-function clampEvaluation(
-  evaluation: number
-): number {
-  return Math.max(
-    -EVALUATION_GRAPH_LIMIT,
-    Math.min(
-      EVALUATION_GRAPH_LIMIT,
-      evaluation
-    )
-  );
+function clampEvaluation(evaluation: number): number {
+  return Math.max(-EVALUATION_GRAPH_LIMIT, Math.min(EVALUATION_GRAPH_LIMIT, evaluation));
 }
 
-export function createEvaluationTimeline(
-  reviews: ReviewedPosition[]
-): EvaluationPoint[] {
-  if (reviews.length === 0) {
-    return [];
-  }
+export function createEvaluationTimeline(reviews: ReviewedPosition[]): EvaluationPoint[] {
+  if (reviews.length === 0) return [];
 
   const points: EvaluationPoint[] = [];
 
   const firstReview = reviews[0];
-  const startingEvaluation =
-    firstReview.before.evaluation;
+  const startingEvaluation = firstReview.before.evaluation;
 
   if (startingEvaluation === null) {
     points.push({
@@ -79,35 +60,21 @@ export function createEvaluationTimeline(
       mateIn: null,
     });
   } else {
-    const convertedStart =
-      evaluationToWhitePerspective(
-        startingEvaluation,
-        "white"
-      );
+    const convertedStart = evaluationToWhitePerspective(startingEvaluation, "white");
 
     points.push({
       ply: 0,
-      evaluation:
-        convertedStart.evaluation,
-      graphEvaluation:
-        clampEvaluation(
-          convertedStart.evaluation
-        ),
-      isMate:
-        convertedStart.isMate,
-      mateIn:
-        convertedStart.mateIn,
+      evaluation: convertedStart.evaluation,
+      graphEvaluation: clampEvaluation(convertedStart.evaluation),
+      isMate: convertedStart.isMate,
+      mateIn: convertedStart.mateIn,
     });
   }
 
   for (const review of reviews) {
-    const sideToMoveAfter =
-      review.position.playedBy === "white"
-        ? "black"
-        : "white";
+    const sideToMoveAfter = review.position.playedBy === "white" ? "black" : "white";
 
-    const afterEvaluation =
-      review.after.evaluation;
+    const afterEvaluation = review.after.evaluation;
 
     if (afterEvaluation === null) {
       points.push({
@@ -121,20 +88,12 @@ export function createEvaluationTimeline(
       continue;
     }
 
-    const converted =
-      evaluationToWhitePerspective(
-        afterEvaluation,
-        sideToMoveAfter
-      );
+    const converted = evaluationToWhitePerspective(afterEvaluation, sideToMoveAfter);
 
     points.push({
       ply: review.position.ply,
-      evaluation:
-        converted.evaluation,
-      graphEvaluation:
-        clampEvaluation(
-          converted.evaluation
-        ),
+      evaluation: converted.evaluation,
+      graphEvaluation: clampEvaluation(converted.evaluation),
       isMate: converted.isMate,
       mateIn: converted.mateIn,
     });

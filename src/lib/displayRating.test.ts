@@ -9,7 +9,6 @@ describe("getDisplayedRating", () => {
     expect(getDisplayedRating(650)).toBe(750);
   });
 
-
   it("rounds displayed ratings", () => {
     expect(getDisplayedRating(975.6)).toBe(1076);
   });
