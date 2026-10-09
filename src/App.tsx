@@ -182,6 +182,12 @@ function App() {
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
 
   const currentUserId = currentUser?.id ?? null;
+  const [safetyConfirmUserId, setSafetyConfirmUserId] = useState(currentUserId);
+
+  if (safetyConfirmUserId !== currentUserId) {
+    setSafetyConfirmUserId(currentUserId);
+    setSafetyConfirm(null);
+  }
 
   const closeAuthDialog = useCallback(() => {
     setIsAuthDialogOpen(false);
@@ -345,10 +351,6 @@ function App() {
     return () => {
       cancelPendingCloudSaves();
     };
-  }, [currentUserId]);
-
-  useEffect(() => {
-    setSafetyConfirm(null);
   }, [currentUserId]);
 
   useEffect(() => {

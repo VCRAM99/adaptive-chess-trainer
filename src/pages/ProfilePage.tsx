@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 
+import AboutSection from "../components/profile/AboutSection";
 import CareerStatistics from "../components/profile/CareerStatistics";
 import DifficultyFilter from "../components/profile/DifficultyFilter";
 import MoveQualityStatistics from "../components/profile/MoveQualityStatistics";
@@ -276,6 +277,7 @@ function ProfilePage({
           })}
         </div>
       </section>
+      <AboutSection />
       <section className="profile-data-management">
         <div>
           <h2>Data Management</h2>

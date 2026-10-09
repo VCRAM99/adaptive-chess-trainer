@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { StoredGame } from "../../lib/profile/types";
 
@@ -57,17 +57,17 @@ function formatTrainingMode(mode: StoredGame["trainingMode"]): string {
 
 function RecentGames({ games, difficultyFilter }: RecentGamesProps) {
   const [visibleGameCount, setVisibleGameCount] = useState(INITIAL_GAME_LIMIT);
+  const [visibleCountFilter, setVisibleCountFilter] = useState(difficultyFilter);
+
+  if (visibleCountFilter !== difficultyFilter) {
+    setVisibleCountFilter(difficultyFilter);
+    setVisibleGameCount(INITIAL_GAME_LIMIT);
+  }
 
   const filteredGames = useMemo(
     () => getRecentGames(games, difficultyFilter),
     [games, difficultyFilter],
   );
-
-  // When the difficulty selection changes,
-  // return to the initial 10-game view.
-  useEffect(() => {
-    setVisibleGameCount(INITIAL_GAME_LIMIT);
-  }, [difficultyFilter]);
 
   const visibleGames = filteredGames.slice(0, visibleGameCount);
 

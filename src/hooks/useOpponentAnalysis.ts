@@ -29,19 +29,12 @@ export function useOpponentAnalysis() {
 
   const [terminalFen, setTerminalFen] = useState<string | null>(null);
 
-  const createEngine = useCallback(() => {
-    const generation = ++generationRef.current;
-
+  const attachEngine = useCallback((generation: number) => {
     searchTokenRef.current = 0;
 
     const engine = new OpponentAnalysisEngine();
 
     engineRef.current = engine;
-
-    setIsReady(false);
-    setIsAnalyzing(false);
-    setResult(null);
-    setError(null);
 
     engine.onResult((analysisResult) => {
       // Ignore a search replaced by New Game, Undo, or a newer position.
@@ -119,17 +112,19 @@ export function useOpponentAnalysis() {
   }, []);
 
   useEffect(() => {
-    createEngine();
+    const generation = generationRef.current + 1;
+    generationRef.current = generation;
+    attachEngine(generation);
 
     return () => {
-      ++generationRef.current;
+      generationRef.current += 1;
 
       activeFenRef.current = null;
 
       engineRef.current?.stop();
       engineRef.current = null;
     };
-  }, [createEngine]);
+  }, [attachEngine]);
 
   const analyze = useCallback((fen: string, candidateCount?: number) => {
     const engine = engineRef.current;
@@ -168,8 +163,10 @@ export function useOpponentAnalysis() {
     setIsReady(false);
     setIsAnalyzing(false);
 
-    createEngine();
-  }, [createEngine]);
+    const generation = generationRef.current + 1;
+    generationRef.current = generation;
+    attachEngine(generation);
+  }, [attachEngine]);
 
   return {
     isReady,
