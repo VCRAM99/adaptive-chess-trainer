@@ -1,0 +1,24 @@
+{
+    "redirects": [
+      {
+        "source": "/chesstrainer/app",
+        "destination": "/chesstrainer/app/",
+        "permanent": true
+      },
+      {
+        "source": "/",
+        "destination": "/chesstrainer/app/",
+        "permanent": false
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "/chesstrainer/app/",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/chesstrainer/app/:path*",
+        "destination": "/:path*"
+      }
+    ]
+  }
