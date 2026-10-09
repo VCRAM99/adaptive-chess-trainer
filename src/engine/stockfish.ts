@@ -1,5 +1,6 @@
 import { parseCandidateMoveEvaluation, type CandidateMoveEvaluation } from "./uciAnalysis";
 
+import { publicAssetUrl } from "../lib/basePath";
 import { devLog } from "../lib/devLogger";
 
 export const OPPONENT_MULTIPV = 8;
@@ -36,7 +37,7 @@ export class StockfishEngine {
     this.ready = false;
 
     try {
-      this.worker = new Worker("/stockfish/stockfish-19-lite-single.js");
+      this.worker = new Worker(publicAssetUrl("stockfish/stockfish-19-lite-single.js"));
     } catch (error) {
       const engineError = error instanceof Error ? error : new Error(String(error));
 

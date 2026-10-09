@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { publicAssetUrl } from "../lib/basePath";
 import { StockfishEngine } from "./stockfish";
 
 class MockWorker {
@@ -60,7 +61,7 @@ describe("StockfishEngine", () => {
 
     const worker = getWorker();
 
-    expect(worker.scriptUrl).toBe("/stockfish/stockfish-19-lite-single.js");
+    expect(worker.scriptUrl).toBe(publicAssetUrl("stockfish/stockfish-19-lite-single.js"));
 
     expect(worker.postMessage).toHaveBeenCalledWith("uci");
     expect(worker.postMessage).toHaveBeenCalledWith("isready");

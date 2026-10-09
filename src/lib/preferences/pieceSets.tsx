@@ -1,5 +1,6 @@
 import type { PieceRenderObject } from "react-chessboard";
 
+import { publicAssetUrl } from "../basePath";
 import type { PieceSet } from "./types";
 
 const PIECE_NAMES = [
@@ -23,7 +24,7 @@ function createPieceSet(folder: string): PieceRenderObject {
       piece,
       (props) => (
         <img
-          src={`/pieces/${folder}/${piece}.svg`}
+          src={publicAssetUrl(`pieces/${folder}/${piece}.svg`)}
           alt=""
           draggable={false}
           style={{

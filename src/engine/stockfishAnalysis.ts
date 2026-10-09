@@ -5,6 +5,7 @@ import {
   type EngineEvaluation,
 } from "./uciAnalysis";
 
+import { publicAssetUrl } from "../lib/basePath";
 import { parseUciResponse } from "./uciResponse";
 
 export type AnalysisResult = {
@@ -36,7 +37,7 @@ export class StockfishAnalysisEngine {
     if (this.worker) return;
 
     try {
-      this.worker = new Worker("/stockfish/stockfish-19-lite-single.js");
+      this.worker = new Worker(publicAssetUrl("stockfish/stockfish-19-lite-single.js"));
     } catch (error) {
       this.handleError(error);
       return;

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { publicAssetUrl } from "../lib/basePath";
 import {
   getOpponentMultiPv,
   MAX_OPPONENT_MULTIPV,
@@ -67,6 +68,18 @@ describe("OpponentAnalysisEngine bestmove (none)", () => {
     MockWorker.instances[0].emit("readyok");
     return engine;
   }
+
+  it("loads the Stockfish worker from the configured public base path", () => {
+    const engine = new OpponentAnalysisEngine();
+
+    engine.start();
+
+    expect(MockWorker.instances[0]?.scriptUrl).toBe(
+      publicAssetUrl("stockfish/stockfish-19-lite-single.js"),
+    );
+
+    engine.stop();
+  });
 
   it("finishes a terminal position without a move or an error", () => {
     const engine = readyEngine();

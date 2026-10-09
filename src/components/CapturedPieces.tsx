@@ -1,3 +1,4 @@
+import { publicAssetUrl } from "../lib/basePath";
 import {
   capturedPieceColor,
   type CapturedPieceCount,
@@ -46,7 +47,7 @@ function pieceAsset(
   const folder = pieceSet === "minimal" ? "minimal" : "modern";
   const file = `${pieceColor}${type.toUpperCase()}.svg`;
 
-  return `${import.meta.env.BASE_URL}pieces/${folder}/${file}`;
+  return publicAssetUrl(`pieces/${folder}/${file}`);
 }
 
 function CapturedPieces({ pieces, capturer, pieceSet }: CapturedPiecesProps) {
