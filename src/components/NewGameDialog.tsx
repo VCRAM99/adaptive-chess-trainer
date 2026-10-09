@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import Dialog from "./ui/Dialog";
 
@@ -35,13 +35,16 @@ function NewGameDialog({
 
   const [selectedMode, setSelectedMode] = useState<TrainingMode>(initialTrainingMode);
 
-  useEffect(() => {
-    if (!open) return;
+  const openSettingsKey = open ? `${initialPlayerColor}:${initialTrainingMode}` : null;
+  const [appliedSettingsKey, setAppliedSettingsKey] = useState<string | null>(openSettingsKey);
 
+  if (!open && appliedSettingsKey !== null) {
+    setAppliedSettingsKey(null);
+  } else if (open && appliedSettingsKey !== openSettingsKey) {
+    setAppliedSettingsKey(openSettingsKey);
     setSelectedColor(initialPlayerColor);
-
     setSelectedMode(initialTrainingMode);
-  }, [open, initialPlayerColor, initialTrainingMode]);
+  }
 
   function handleStartGame() {
     onStartGame({

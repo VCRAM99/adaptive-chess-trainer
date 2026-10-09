@@ -409,7 +409,7 @@ export function createProfileCloudSaver(deps: {
     try {
       server = await deps.loadProfile(current.userId);
     } catch {
-      server = null;
+      // A failed reload leaves the conflict in place.
     }
 
     if (!job || job.generation !== current.generation) return;
