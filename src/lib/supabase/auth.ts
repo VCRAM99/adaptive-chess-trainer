@@ -1,4 +1,5 @@
 import type { Session, User, AuthChangeEvent } from "@supabase/supabase-js";
+import { appRedirectUrl } from "../basePath";
 import { supabase } from "./client";
 
 export type AuthState = {
@@ -47,6 +48,7 @@ export async function signUpWithEmail(displayName: string, email: string, passwo
     email,
     password,
     options: {
+      emailRedirectTo: appRedirectUrl(),
       data: {
         display_name: displayName,
       },
@@ -67,7 +69,7 @@ export async function signOut() {
 
 export async function sendPasswordResetEmail(email: string) {
   return supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin,
+    redirectTo: appRedirectUrl(),
   });
 }
 
@@ -88,7 +90,7 @@ export async function signInWithGoogle() {
   return supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: window.location.origin,
+      redirectTo: appRedirectUrl(),
     },
   });
 }

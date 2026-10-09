@@ -28,6 +28,7 @@ import { getBoardParticipants } from "./lib/boardOrientation";
 import { getCapturedPiecesByColor, getCapturedPiecesFromSans } from "./lib/capturedPieces";
 import BoardInfoRow from "./components/BoardInfoRow";
 import "./App.css";
+import { publicAssetUrl } from "./lib/basePath";
 import { devLog } from "./lib/devLogger";
 import NewGameDialog, { type NewGameSettings } from "./components/NewGameDialog";
 import ProfilePage from "./pages/ProfilePage";
@@ -1547,7 +1548,7 @@ function App() {
         <div className="app-header__brand">
           <img
             className="app-header__logo"
-            src={`${import.meta.env.BASE_URL}images/chess-trainer-logo.png`}
+            src={publicAssetUrl("images/chess-trainer-logo.png")}
             alt=""
           />
           <h1>ADAPTIVE CHESS TRAINER</h1>
