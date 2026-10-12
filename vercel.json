@@ -19,11 +19,11 @@
   "rewrites": [
     {
       "source": "/app",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/discover",
-      "destination": "/index.html"
+      "destination": "/discover.html"
     }
   ]
 }

@@ -171,7 +171,13 @@ export default function DiscoverPage() {
       </main>
 
       <footer className="discover-footer">
-        <p>© 2026 Varun Ramanathan. Adaptive Chess Trainer.</p>
+        <p>
+          © 2026{" "}
+          <a href="https://varunsr.com" target="_blank" rel="noopener noreferrer">
+            Varun Ramanathan
+          </a>
+          . Adaptive Chess Trainer.
+        </p>
         <nav aria-label="Footer">
           <a href="/app">Open the trainer</a>
           <a href={GITHUB_URL} rel="noreferrer">

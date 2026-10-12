@@ -46,6 +46,12 @@ describe("DiscoverPage", () => {
     expect(screen.getByRole("link", { name: "Open the trainer" }).getAttribute("href")).toBe(
       "/app",
     );
+
+    const portfolio = screen.getByRole("link", { name: "Varun Ramanathan" });
+
+    expect(portfolio.getAttribute("href")).toBe("https://varunsr.com");
+    expect(portfolio.getAttribute("target")).toBe("_blank");
+    expect(portfolio.getAttribute("rel")).toBe("noopener noreferrer");
   });
 
   it("links the sticky navigation to page sections", () => {

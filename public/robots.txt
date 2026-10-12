@@ -1,0 +1,11 @@
+# Indexing policy
+# /discover is the public page search engines should find.
+# /app is the trainer. It stays reachable for players and auth returns,
+# and it is left out of the sitemap so the marketing page is the discovery URL.
+# Assets, licenses, and other public files are not blocked.
+
+User-agent: *
+Allow: /
+Disallow: /app
+
+Sitemap: https://chess.varunsr.com/sitemap.xml
