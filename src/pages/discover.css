@@ -152,7 +152,7 @@
   font-size: clamp(3.4rem, 7vw, 6.4rem);
   font-weight: 620;
   letter-spacing: -0.055em;
-  line-height: 0.92;
+  line-height: 1.02;
 }
 
 .discover h2 {
@@ -171,11 +171,15 @@
   line-height: 1.5;
 }
 
+.discover-hero .discover-lede {
+  margin-top: 2.15rem;
+}
+
 .discover-hero__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 2rem;
+  margin-top: 2.85rem;
 }
 
 .discover-hero__stage {
@@ -225,6 +229,11 @@
 .discover-square img {
   width: 78%;
   height: 78%;
+}
+
+.discover-section,
+.discover-destrier {
+  scroll-margin-top: 5.75rem;
 }
 
 .discover-section {
@@ -636,6 +645,10 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  html:has(.discover) {
+    scroll-behavior: smooth;
+  }
+
   .discover-system.is-playing .discover-flow li {
     animation: discover-step 5.75s ease-in-out infinite;
   }
@@ -735,6 +748,13 @@
   .discover-nav .discover-button {
     margin-left: auto;
   }
+
+  .discover-section,
+  .discover-destrier {
+    scroll-margin-top: 8rem;
+  }
+}
+
 @media (max-width: 640px) {
   .discover-nav {
     padding-inline: 1rem;
@@ -773,6 +793,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html:has(.discover) {
+    scroll-behavior: auto;
+  }
+
   .discover-reveal,
   .discover-mascot--hero,
   .discover-board,
