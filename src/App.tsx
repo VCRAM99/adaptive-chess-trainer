@@ -26,6 +26,7 @@ import { updateOpponentForm } from "./lib/opponentForm";
 import { getDisplayedRating } from "./lib/displayRating";
 import { getBoardParticipants } from "./lib/boardOrientation";
 import { getCapturedPiecesByColor, getCapturedPiecesFromSans } from "./lib/capturedPieces";
+import AppHeaderActions from "./components/AppHeaderActions";
 import BoardInfoRow from "./components/BoardInfoRow";
 import "./App.css";
 import { publicAssetUrl } from "./lib/basePath";
@@ -43,6 +44,7 @@ import {
 } from "./lib/profile/storedGameHistory";
 import { getCheckmateWinner } from "./lib/postGame/gameResult";
 import { applyAccentTheme } from "./lib/preferences/applyAccentTheme";
+import { applyColorScheme } from "./lib/preferences/colorScheme";
 import { loadPreferences, savePreferences } from "./lib/preferences/preferencesStorage";
 import type { AccentTheme } from "./lib/preferences/types";
 import { UserRound, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
@@ -323,6 +325,10 @@ function App() {
   useEffect(() => {
     applyAccentTheme(userPreferences.accentTheme);
   }, [userPreferences.accentTheme]);
+
+  useEffect(() => {
+    return applyColorScheme(userPreferences.colorScheme);
+  }, [userPreferences.colorScheme]);
 
   useEffect(() => {
     return subscribeCloudPersistence((update) => {
@@ -1503,6 +1509,13 @@ function App() {
           accentTheme={userPreferences.accentTheme}
           boardTheme={userPreferences.boardTheme}
           pieceSet={userPreferences.pieceSet}
+          colorScheme={userPreferences.colorScheme}
+          onColorSchemeChange={(colorScheme) => {
+            setUserPreferences((current) => ({
+              ...current,
+              colorScheme,
+            }));
+          }}
           onAccentThemeChange={handleAccentThemeChange}
           onPieceSetChange={(pieceSet) => {
             setUserPreferences((current) => ({
@@ -1556,27 +1569,12 @@ function App() {
           <h1>ADAPTIVE CHESS TRAINER</h1>
         </div>
 
-        <div className="app-header__actions">
-          {!isAuthLoading && !currentUser && (
-            <button
-              type="button"
-              className="auth-nav-button"
-              onClick={() => setIsAuthDialogOpen(true)}
-            >
-              Sign In / Create Account
-            </button>
-          )}
-
-          <button
-            type="button"
-            className="profile-nav-button"
-            onClick={() => setAppPage("profile")}
-            aria-label="Player profile"
-            data-tooltip="PLAYER PROFILE"
-          >
-            <UserRound size={21} strokeWidth={1.8} aria-hidden="true" />
-          </button>
-        </div>
+        <AppHeaderActions
+          showSignIn={!isAuthLoading && !currentUser}
+          onSignIn={() => setIsAuthDialogOpen(true)}
+          onOpenProfile={() => setAppPage("profile")}
+          profileButton={<UserRound size={21} strokeWidth={1.8} aria-hidden="true" />}
+        />
       </header>
 
       {persistenceBanner}

@@ -4,9 +4,12 @@ export type BoardTheme = "grey" | "bamboo" | "green" | "purple";
 
 export type PieceSet = "classic" | "modern" | "minimal";
 
+export type ColorScheme = "system" | "light" | "dark";
+
 export type UserPreferences = {
   version: 1;
   accentTheme: AccentTheme;
   boardTheme: BoardTheme;
   pieceSet: PieceSet;
+  colorScheme: ColorScheme;
 };

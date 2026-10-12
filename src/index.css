@@ -166,6 +166,48 @@
   --transition-fast: 120ms ease;
 
   --transition-normal: 180ms ease;
+
+  --color-on-accent: #111111;
+
+  color-scheme: dark;
+}
+
+:root[data-color-scheme="light"] {
+  --color-background: #f3f3f6;
+
+  --color-surface: #ffffff;
+
+  --color-surface-raised: #f7f7f9;
+
+  --color-surface-hover: #ececf1;
+
+  --color-text: #141418;
+
+  --color-text-secondary: #3c3c44;
+
+  --color-text-muted: #5e5e68;
+
+  --color-border: #e2e2e8;
+
+  --color-border-strong: #c9c9d1;
+
+  --color-success: #0f8a45;
+
+  --color-warning: #8a6408;
+
+  --color-danger: #c33636;
+
+  --difficulty-casual: #0f8a45;
+
+  --difficulty-echo: #8a6408;
+
+  --difficulty-train: #c33636;
+
+  --shadow-dialog: 0 24px 70px rgb(20 20 24 / 0.16);
+
+  --color-on-accent: #111111;
+
+  color-scheme: light;
 }
 
 /* ========================================
@@ -299,7 +341,7 @@ button {
 ::selection {
   background: var(--accent);
 
-  color: #050505;
+  color: var(--color-on-accent);
 }
 
 /* ========================================
@@ -1180,7 +1222,7 @@ button {
 
   border-radius: var(--radius-md);
 
-  color: #050505;
+  color: var(--color-on-accent);
 
   font-weight: 800;
 

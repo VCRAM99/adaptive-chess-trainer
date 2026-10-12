@@ -14,7 +14,7 @@ import { ArrowLeft, UserRound } from "lucide-react";
 
 import type { User } from "@supabase/supabase-js";
 
-import type { AccentTheme, BoardTheme, PieceSet } from "../lib/preferences/types";
+import type { AccentTheme, BoardTheme, ColorScheme, PieceSet } from "../lib/preferences/types";
 
 import { BOARD_THEMES } from "../lib/preferences/boardThemes";
 
@@ -35,11 +35,13 @@ type ProfilePageProps = {
   accentTheme: AccentTheme;
   boardTheme: BoardTheme;
   pieceSet: PieceSet;
+  colorScheme: ColorScheme;
 
   currentUser: User | null;
   isAuthLoading: boolean;
 
   onAccentThemeChange: (theme: AccentTheme) => void;
+  onColorSchemeChange: (colorScheme: ColorScheme) => void;
 
   onBoardThemeChange: (theme: BoardTheme) => void;
 
@@ -65,11 +67,13 @@ function ProfilePage({
   accentTheme,
   boardTheme,
   pieceSet,
+  colorScheme,
   currentUser,
   isAuthLoading,
   onBoardThemeChange,
   onPieceSetChange,
   onAccentThemeChange,
+  onColorSchemeChange,
   onBackToGame,
   onOpenAuthDialog,
   onResetProgress,
@@ -159,8 +163,38 @@ function ProfilePage({
         <div className="profile-section-heading">
           <div>
             <h2>Appearance</h2>
-            <p>Personalize your trainer's accent color and board theme.</p>
+            <p>Personalize your trainer's interface, accent color, and board.</p>
           </div>
+        </div>
+
+        <h3 className="appearance-label" id="interface-theme-label">
+          Interface
+        </h3>
+
+        <div className="piece-set-picker" role="group" aria-labelledby="interface-theme-label">
+          {(
+            [
+              { id: "system", label: "System" },
+              { id: "light", label: "Light" },
+              { id: "dark", label: "Dark" },
+            ] as const
+          ).map((option) => {
+            const isSelected = colorScheme === option.id;
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                className={
+                  isSelected ? "piece-set-option piece-set-option--selected" : "piece-set-option"
+                }
+                onClick={() => onColorSchemeChange(option.id)}
+                aria-pressed={isSelected}
+              >
+                <span>{option.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         <h3 className="appearance-label">Accent Color</h3>

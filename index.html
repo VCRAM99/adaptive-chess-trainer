@@ -2,6 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        try {
+          var scheme = "system";
+          var raw = localStorage.getItem("adaptive-chess-trainer-preferences");
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            var value = parsed && parsed.colorScheme;
+            if (value === "light" || value === "dark" || value === "system") scheme = value;
+          }
+          var resolved =
+            scheme === "system"
+              ? window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark"
+              : scheme;
+          document.documentElement.dataset.colorScheme = resolved;
+          document.documentElement.style.colorScheme = resolved;
+        } catch (error) {}
+      })();
+    </script>
     <link rel="icon" type="image/png" href="%BASE_URL%favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Adaptive Chess Trainer</title>

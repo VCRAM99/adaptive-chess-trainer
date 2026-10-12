@@ -19,6 +19,29 @@ describe("preferencesStorage", () => {
     const preferences = loadPreferences();
 
     expect(preferences.accentTheme).toBe("purple");
+    expect(preferences.colorScheme).toBe("system");
+  });
+
+  it("treats a saved preference without colorScheme as system", () => {
+    localStorage.setItem(
+      "adaptive-chess-trainer-preferences",
+      JSON.stringify({
+        version: 1,
+        accentTheme: "teal",
+        boardTheme: "green",
+        pieceSet: "modern",
+      }),
+    );
+
+    const preferences = loadPreferences();
+
+    expect(preferences.accentTheme).toBe("teal");
+    expect(preferences.boardTheme).toBe("green");
+    expect(preferences.pieceSet).toBe("modern");
+    expect(preferences.colorScheme).toBe("system");
+    expect(
+      JSON.parse(localStorage.getItem("adaptive-chess-trainer-preferences")!).colorScheme,
+    ).toBe("system");
   });
 
   it("saves and loads an accent preference", () => {

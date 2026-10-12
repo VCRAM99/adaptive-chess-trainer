@@ -1,3 +1,4 @@
+import { isColorScheme } from "./colorScheme";
 import type { AccentTheme, BoardTheme, PieceSet, UserPreferences } from "./types";
 
 const PREFERENCES_STORAGE_KEY = "adaptive-chess-trainer-preferences";
@@ -22,6 +23,7 @@ export function createDefaultPreferences(): UserPreferences {
     accentTheme: DEFAULT_ACCENT_THEME,
     boardTheme: DEFAULT_BOARD_THEME,
     pieceSet: DEFAULT_PIECE_SET,
+    colorScheme: "system",
   };
 }
 
@@ -46,7 +48,8 @@ export function isValidPreferences(value: unknown): value is UserPreferences {
     preferences.version === PREFERENCES_VERSION &&
     isAccentTheme(preferences.accentTheme) &&
     isBoardTheme(preferences.boardTheme) &&
-    isPieceSet(preferences.pieceSet)
+    isPieceSet(preferences.pieceSet) &&
+    isColorScheme(preferences.colorScheme)
   );
 }
 
@@ -66,6 +69,7 @@ export function parseStoredPreferences(value: unknown): UserPreferences | null {
       accentTheme: stored.accentTheme,
       boardTheme: isBoardTheme(stored.boardTheme) ? stored.boardTheme : DEFAULT_BOARD_THEME,
       pieceSet: isPieceSet(stored.pieceSet) ? stored.pieceSet : DEFAULT_PIECE_SET,
+      colorScheme: isColorScheme(stored.colorScheme) ? stored.colorScheme : "system",
     };
   }
 
