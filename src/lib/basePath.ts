@@ -1,6 +1,6 @@
 /**
- * Public URL for a file in `public/`, using Vite's `base`.
- * Local development and tests use `/`. Production uses `/chesstrainer/app/`.
+ * Public URL for a file in `public/`.
+ * Vite `base` is `/` in development, tests, and production.
  */
 export function publicAssetUrl(assetPath: string, base = import.meta.env.BASE_URL): string {
   const prefix = base.endsWith("/") ? base : `${base}/`;
@@ -9,10 +9,12 @@ export function publicAssetUrl(assetPath: string, base = import.meta.env.BASE_UR
   return `${prefix}${relativePath}`;
 }
 
-/** Absolute URL auth providers should send the browser back to. */
-export function appRedirectUrl(origin?: string, base = import.meta.env.BASE_URL): string {
-  const resolvedOrigin = origin ?? window.location.origin;
-  const path = base.endsWith("/") ? base : `${base}/`;
+/** Path the chess trainer is served from. Auth providers return here. */
+export const TRAINER_PATH = "/app";
 
-  return new URL(path, resolvedOrigin).href;
+/** Absolute URL auth providers should send the browser back to. */
+export function appRedirectUrl(origin?: string): string {
+  const resolvedOrigin = origin ?? window.location.origin;
+
+  return new URL(TRAINER_PATH, resolvedOrigin).href;
 }

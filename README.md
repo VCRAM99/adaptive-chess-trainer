@@ -2,7 +2,7 @@
 
 Adaptive Chess Trainer is a browser chess application. You play against a Stockfish opponent whose target strength follows an estimated rating, then review the game with a custom move-quality scale.
 
-The live app is [https://adaptive-chess-trainer.vercel.app/chesstrainer/app/](https://adaptive-chess-trainer.vercel.app/chesstrainer/app/). Production builds use `/chesstrainer/app/`. See [Hosting](#hosting).
+The live app is [https://chess.varunsr.com/app](https://chess.varunsr.com/app). See [Hosting](#hosting).
 
 ## Features
 
@@ -72,7 +72,7 @@ Both names are read in `src/lib/supabase/client.ts`. `.env.example` lists them w
 | `npm run test` | Run Vitest in watch mode |
 | `npm run test:run` | Run the test suite once |
 | `npm run build` | Typecheck with `tsc -b`, then build for production |
-| `npm run preview` | Serve the production build at `/chesstrainer/app/` |
+| `npm run preview` | Serve the production build locally |
 | `npm run lint` | Run ESLint |
 
 ## Third-party software
@@ -81,15 +81,13 @@ Opponent play and move analysis use the lite single-threaded Stockfish.js 19 wor
 
 ## Hosting
 
-The app is deployed on its own Vercel project:
+The app is deployed on Vercel at [https://chess.varunsr.com/app](https://chess.varunsr.com/app). `/discover` is a placeholder. `/` redirects to `/discover`. `/chesstrainer/app` and `/chesstrainer/app/` redirect to `/app`.
 
-[https://adaptive-chess-trainer.vercel.app/chesstrainer/app/](https://adaptive-chess-trainer.vercel.app/chesstrainer/app/)
+Vite's base is `/`. Public assets, including Stockfish, are requested from the domain root. `vercel.json` rewrites `/app` and `/discover` to `index.html` so a refresh loads the client. Static files such as `/stockfish/` and `/assets/` are served as files.
 
-`vite.config.ts` sets Vite `base` to `/chesstrainer/app/` for production builds and to `/` for local development. `vercel.json` redirects `/` and `/chesstrainer/app` to `/chesstrainer/app/`, then rewrites that prefix onto the built files. Refreshing the app URL loads the game screen. Game and profile navigation stays in React state.
+`npm run dev` and `npm run preview` use the same paths, usually at `http://127.0.0.1:5173/app` and `http://localhost:4173/app`.
 
-`npm run preview` serves the production build at `http://localhost:4173/chesstrainer/app/`.
-
-Production needs the same environment variables as local development. Vite inlines them at build time. Email confirmation, password recovery, and Google sign-in return to the current origin plus the Vite base. On the live site that is `https://adaptive-chess-trainer.vercel.app/chesstrainer/app/`.
+Email confirmation, password recovery, and Google sign-in return to the current origin plus `/app`. On the live site that is `https://chess.varunsr.com/app`. Supabase must allow `https://chess.varunsr.com/app/**`.
 
 ## Project status
 

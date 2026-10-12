@@ -1,24 +1,29 @@
 {
-    "redirects": [
-      {
-        "source": "/chesstrainer/app",
-        "destination": "/chesstrainer/app/",
-        "permanent": true
-      },
-      {
-        "source": "/",
-        "destination": "/chesstrainer/app/",
-        "permanent": false
-      }
-    ],
-    "rewrites": [
-      {
-        "source": "/chesstrainer/app/",
-        "destination": "/index.html"
-      },
-      {
-        "source": "/chesstrainer/app/:path*",
-        "destination": "/:path*"
-      }
-    ]
-  }
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/discover",
+      "permanent": false
+    },
+    {
+      "source": "/chesstrainer/app",
+      "destination": "/app",
+      "permanent": true
+    },
+    {
+      "source": "/chesstrainer/app/",
+      "destination": "/app",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/app",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/discover",
+      "destination": "/index.html"
+    }
+  ]
+}
