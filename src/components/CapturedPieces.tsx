@@ -72,7 +72,12 @@ function CapturedPieces({ pieces, capturer, pieceSet }: CapturedPiecesProps) {
         return (
           <div className="captured-piece" key={type}>
             {src ? (
-              <img className="captured-piece__icon" src={src} alt="" draggable={false} />
+              <img
+                className={`captured-piece__icon captured-piece__icon--${pieceColor}`}
+                src={src}
+                alt=""
+                draggable={false}
+              />
             ) : (
               <span
                 className={`captured-piece__glyph captured-piece__glyph--${pieceColor}`}
