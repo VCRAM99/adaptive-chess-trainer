@@ -22,7 +22,7 @@ describe("route metadata", () => {
     expect(ROUTE_META.discover.canonical).toBe("https://chess.varunsr.com/discover");
     expect(ROUTE_META.app.title).toBe("Play Chess | Adaptive Chess Trainer");
     expect(ROUTE_META.app.canonical).toBe("https://chess.varunsr.com/");
-    expect(SOCIAL_IMAGE_URL).toBe("https://chess.varunsr.com/og-image.jpg");
+    expect(SOCIAL_IMAGE_URL).toBe("https://chess.varunsr.com/og-image.jpg?v=2");
   });
 
   it("puts one set of social tags into the initial HTML for each route", () => {
@@ -37,9 +37,8 @@ describe("route metadata", () => {
       expect(html.match(/property="og:title"/g)).toHaveLength(1);
       expect(html.match(/property="og:image"/g)).toHaveLength(1);
       expect(html).toContain(`property="og:url" content="${meta.canonical}"`);
-      expect(html).toContain(
-        'property="og:image" content="https://chess.varunsr.com/og-image.jpg"',
-      );
+      expect(html).toContain(`property="og:image" content="${SOCIAL_IMAGE_URL}"`);
+      expect(html).toContain(`name="twitter:image" content="${SOCIAL_IMAGE_URL}"`);
       expect(html).toContain('property="og:image:width" content="1200"');
       expect(html).toContain('property="og:image:height" content="630"');
       expect(html).toContain('name="twitter:card" content="summary_large_image"');

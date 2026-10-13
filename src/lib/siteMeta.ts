@@ -2,7 +2,7 @@ export const SITE_ORIGIN = "https://chess.varunsr.com";
 
 export const SOCIAL_IMAGE_PATH = "/og-image.jpg";
 
-export const SOCIAL_IMAGE_URL = `${SITE_ORIGIN}${SOCIAL_IMAGE_PATH}`;
+export const SOCIAL_IMAGE_URL = `${SITE_ORIGIN}${SOCIAL_IMAGE_PATH}?v=2`;
 
 export const SOCIAL_IMAGE_WIDTH = 1200;
 
