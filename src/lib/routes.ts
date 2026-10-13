@@ -9,21 +9,21 @@ export function normalizePathname(pathname: string): string {
 }
 
 /**
- * `/app` and `/discover` render in the client.
- * Every other path redirects. The old trainer URL redirects to `/app`
- * so an authentication fragment on that URL is not sent to the placeholder.
+ * `/` and `/app` render the trainer. `/discover` renders the marketing page.
+ * The old trainer URL redirects to `/app` so an authentication fragment stays
+ * on the path Supabase is allowed to return to. Any other path opens the trainer.
  */
-export function resolveAppRoute(pathname: string): TrainerRoute | "/app" | "/discover" {
+export function resolveAppRoute(pathname: string): TrainerRoute | "/app" | "/" {
   const path = normalizePathname(pathname);
 
-  if (path === "/app") return "app";
+  if (path === "/" || path === "/app") return "app";
   if (path === "/discover") return "discover";
   if (path === "/chesstrainer/app") return "/app";
 
-  return "/discover";
+  return "/";
 }
 
 /** Keeps the query string and fragment when replacing the path. */
-export function redirectHref(pathname: "/app" | "/discover", search = "", hash = ""): string {
+export function redirectHref(pathname: "/app" | "/", search = "", hash = ""): string {
   return `${pathname}${search}${hash}`;
 }

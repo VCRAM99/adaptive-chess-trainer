@@ -33,7 +33,7 @@ describe("DiscoverPage", () => {
 
     expect(playLinks.length).toBeGreaterThan(0);
     for (const link of playLinks) {
-      expect(link.getAttribute("href")).toBe("/app");
+      expect(link.getAttribute("href")).toBe("/");
     }
 
     const githubLinks = screen.getAllByRole("link", { name: "GitHub" });
@@ -43,9 +43,7 @@ describe("DiscoverPage", () => {
       expect(link.getAttribute("href")).toBe(GITHUB_URL);
     }
 
-    expect(screen.getByRole("link", { name: "Open the trainer" }).getAttribute("href")).toBe(
-      "/app",
-    );
+    expect(screen.getByRole("link", { name: "Open the trainer" }).getAttribute("href")).toBe("/");
 
     const portfolio = screen.getByRole("link", { name: "Varun Ramanathan" });
 

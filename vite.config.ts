@@ -29,7 +29,7 @@ function routeHtmlPlugin(): Plugin {
         writeFileSync(resolve("dist", `${route}.html`), injectRouteMeta(html, route));
       }
 
-      writeFileSync(indexPath, injectRouteMeta(html, "discover"));
+      writeFileSync(indexPath, injectRouteMeta(html, "app"));
     },
     configurePreviewServer(server) {
       server.middlewares.use(rewriteRouteHtml);

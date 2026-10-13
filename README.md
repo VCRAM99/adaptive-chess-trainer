@@ -2,7 +2,7 @@
 
 Adaptive Chess Trainer is a browser chess application. You play against a Stockfish opponent whose target strength follows an estimated rating, then review the game with a custom move-quality scale.
 
-The live app is [https://chess.varunsr.com/app](https://chess.varunsr.com/app). See [Hosting](#hosting).
+The live app is [https://chess.varunsr.com](https://chess.varunsr.com). See [Hosting](#hosting).
 
 ## Features
 
@@ -81,11 +81,11 @@ Opponent play and move analysis use the lite single-threaded Stockfish.js 19 wor
 
 ## Hosting
 
-The app is deployed on Vercel at [https://chess.varunsr.com/app](https://chess.varunsr.com/app). `/discover` is a placeholder. `/` redirects to `/discover`. `/chesstrainer/app` and `/chesstrainer/app/` redirect to `/app`.
+The app is deployed on Vercel at [https://chess.varunsr.com](https://chess.varunsr.com). `/` and `/app` both open the trainer. `/discover` is the marketing page. `/chesstrainer/app` and `/chesstrainer/app/` redirect to `/app`.
 
-Vite's base is `/`. Public assets, including Stockfish, are requested from the domain root. `vercel.json` rewrites `/app` and `/discover` to `index.html` so a refresh loads the client. Static files such as `/stockfish/` and `/assets/` are served as files.
+Vite's base is `/`. Public assets, including Stockfish, are requested from the domain root. `vercel.json` rewrites `/app` to `app.html` and `/discover` to `discover.html`. `/` serves `index.html` with the trainer's metadata. Static files such as `/stockfish/` and `/assets/` are served as files.
 
-`npm run dev` and `npm run preview` use the same paths, usually at `http://127.0.0.1:5173/app` and `http://localhost:4173/app`.
+`npm run dev` and `npm run preview` use the same paths, usually at `http://127.0.0.1:5173/` and `http://localhost:4173/`.
 
 Email confirmation, password recovery, and Google sign-in return to the current origin plus `/app`. On the live site that is `https://chess.varunsr.com/app`. Supabase must allow `https://chess.varunsr.com/app/**`.
 

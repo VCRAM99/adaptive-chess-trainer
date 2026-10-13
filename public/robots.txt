@@ -1,7 +1,8 @@
 # Indexing policy
-# /discover is the public page search engines should find.
-# /app is the trainer. It stays reachable for players and auth returns,
-# and it is left out of the sitemap so the marketing page is the discovery URL.
+# /discover is the marketing page listed in the sitemap.
+# / is the playable trainer and is allowed to load.
+# /app is the same trainer, kept for bookmarks and authentication returns.
+# It is omitted from indexing so the app has one canonical URL.
 # Assets, licenses, and other public files are not blocked.
 
 User-agent: *

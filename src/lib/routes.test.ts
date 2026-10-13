@@ -3,16 +3,16 @@ import { describe, expect, it } from "vitest";
 import { redirectHref, resolveAppRoute } from "./routes";
 
 describe("resolveAppRoute", () => {
-  it("renders the trainer and the discover placeholder", () => {
+  it("renders the trainer at the site root and at /app", () => {
+    expect(resolveAppRoute("/")).toBe("app");
     expect(resolveAppRoute("/app")).toBe("app");
     expect(resolveAppRoute("/app/")).toBe("app");
     expect(resolveAppRoute("/discover")).toBe("discover");
     expect(resolveAppRoute("/discover/")).toBe("discover");
   });
 
-  it("sends the site root and unknown paths to the discover page", () => {
-    expect(resolveAppRoute("/")).toBe("/discover");
-    expect(resolveAppRoute("/profile")).toBe("/discover");
+  it("sends unknown paths to the trainer", () => {
+    expect(resolveAppRoute("/profile")).toBe("/");
   });
 
   it("sends the previous trainer URL to /app", () => {
@@ -26,6 +26,8 @@ describe("redirectHref", () => {
     expect(redirectHref("/app", "?code=abc", "#access_token=token")).toBe(
       "/app?code=abc#access_token=token",
     );
-    expect(redirectHref("/discover", "", "#recovery")).toBe("/discover#recovery");
+    expect(redirectHref("/", "?code=abc", "#access_token=token")).toBe(
+      "/?code=abc#access_token=token",
+    );
   });
 });

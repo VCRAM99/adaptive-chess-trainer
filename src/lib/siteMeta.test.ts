@@ -21,7 +21,7 @@ describe("route metadata", () => {
     );
     expect(ROUTE_META.discover.canonical).toBe("https://chess.varunsr.com/discover");
     expect(ROUTE_META.app.title).toBe("Play Chess | Adaptive Chess Trainer");
-    expect(ROUTE_META.app.canonical).toBe("https://chess.varunsr.com/app");
+    expect(ROUTE_META.app.canonical).toBe("https://chess.varunsr.com/");
     expect(SOCIAL_IMAGE_URL).toBe("https://chess.varunsr.com/og-image.jpg");
   });
 

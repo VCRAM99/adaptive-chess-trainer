@@ -1,11 +1,6 @@
 {
   "redirects": [
     {
-      "source": "/",
-      "destination": "/discover",
-      "permanent": false
-    },
-    {
       "source": "/chesstrainer/app",
       "destination": "/app",
       "permanent": true

@@ -32,7 +32,7 @@ export const ROUTE_META: Record<PublicRoute, RouteMeta> = {
     title: "Play Chess | Adaptive Chess Trainer",
     description:
       "Play against an adaptive chess opponent that adjusts to your estimated skill, with Stockfish-powered analysis and personalized training.",
-    canonical: `${SITE_ORIGIN}/app`,
+    canonical: `${SITE_ORIGIN}/`,
   },
 };
 

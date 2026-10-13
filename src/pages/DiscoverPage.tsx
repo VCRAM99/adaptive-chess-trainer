@@ -155,7 +155,7 @@ export default function DiscoverPage() {
           ))}
         </nav>
 
-        <a className="discover-button discover-button--primary" href="/app">
+        <a className="discover-button discover-button--primary" href="/">
           Play Now
         </a>
       </header>
@@ -179,7 +179,7 @@ export default function DiscoverPage() {
           . Adaptive Chess Trainer.
         </p>
         <nav aria-label="Footer">
-          <a href="/app">Open the trainer</a>
+          <a href="/">Open the trainer</a>
           <a href={GITHUB_URL} rel="noreferrer">
             GitHub
           </a>
@@ -200,7 +200,7 @@ function Hero() {
           change as that estimate changes.
         </p>
         <div className="discover-hero__actions">
-          <a className="discover-button discover-button--primary" href="/app">
+          <a className="discover-button discover-button--primary" href="/">
             Play Now
           </a>
           <a className="discover-button" href={GITHUB_URL} rel="noreferrer">

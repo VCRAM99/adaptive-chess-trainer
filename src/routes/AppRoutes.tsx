@@ -21,7 +21,7 @@ export default function AppRoutes() {
 
   const resolution = resolveAppRoute(pathname);
 
-  if (resolution === "/app" || resolution === "/discover") {
+  if (resolution === "/app" || resolution === "/") {
     const next = redirectHref(resolution, window.location.search, window.location.hash);
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
