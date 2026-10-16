@@ -1,94 +1,89 @@
 # Adaptive Chess Trainer
 
-Adaptive Chess Trainer is a browser chess application. You play against a Stockfish opponent whose target strength follows an estimated rating, then review the game with a custom move-quality scale.
+*A chess training experience that evolves with your skill.*
 
-The live app is [https://chess.varunsr.com](https://chess.varunsr.com). See [Hosting](#hosting).
+**[Play Live Application →](https://chess.varunsr.com/app)**
 
-## Features
+<p align="center">
+  <img src="public/og-image.jpg" alt="Adaptive Chess Trainer, with the Destrier knight and the line Train smarter. Play stronger." width="850">
+</p>
 
-- Play on an interactive board, including promotions, undo during a game, and board orientation.
-- Choose a training mode:
-  - **Casual** plays below your estimated level.
-  - **Echo** plays near your estimated level.
-  - **Train** plays above your estimated level.
-- Estimate a player rating from completed games and use it when choosing the opponent's target strength.
-- Analyze a finished game and label moves on seven tiers, from strongest to weakest: Diamond, Platinum, Gold, Silver, Bronze, Steel, and Wood.
-- Keep a guest profile in the browser, including game history and statistics.
-- Sign in with email and password or Google through Supabase, then store that account's profile and preferences in the cloud. Guest progress can be imported into an empty account.
-- Change the accent color, board theme, and piece set.
+## Overview
 
-## Stack
+Adaptive Chess Trainer is a browser chess application. You play a full game against a Stockfish opponent whose target strength follows an estimate of your play, instead of a single fixed rating that stays put for the whole session.
 
-- React 19 and TypeScript
-- Vite
-- chess.js for move rules
-- [react-chessboard](https://github.com/Clariity/react-chessboard) for the board
-- Stockfish 19, through the Stockfish.js worker in `public/stockfish/`
-- Supabase for authentication and cloud storage
-- Vitest and Testing Library
+That estimate moves as you play. The engine evaluates your decisions, the estimate updates, and the opponent’s next target follows the selected training mode. After the game, each move is reviewed on a seven-tier quality scale so you can see which decisions held up.
 
-## Architecture
+## Key Features
 
-`src/App.tsx` is the game shell. It owns the live game, review navigation, and account session. Supporting code is split by job:
+- **Adaptive Opponent.** A Stockfish-powered opponent whose playing strength is set from your estimated skill and the training mode you chose.
+- **Three Difficulty Modes.** Casual plays below your estimated level, Echo plays near it, and Train plays above it.
+- **Real-Time Skill Estimation.** The rating estimate updates during the game from how your moves compare with the engine’s evaluation.
+- **Post-Game Analysis.** Finished games are reviewed move by move and labeled on seven tiers, from strongest to weakest: Diamond, Platinum, Gold, Silver, Bronze, Steel, and Wood.
+- **Player Profiles.** Guest progress stays in the browser. Signed-in players keep a cloud profile with results, rating, accuracy, move-quality counts, trends, and recent games.
+- **Gameplay Controls.** Play with promotions, undo, and board flip. Personalize the accent color, board theme, piece set, and interface appearance.
 
-- `src/engine/` starts the Stockfish workers and reads their UCI output. The live opponent, move analysis, and post-game review each use their own worker.
-- `src/lib/` holds move rules, opponent selection, the rating estimate, post-game classification, profiles, preferences, and Supabase persistence.
-- `src/components/` and `src/pages/ProfilePage.tsx` render the board, game panel, dialogs, and profile.
-- `src/dev/` contains manual opponent-calibration scripts. They are not part of the app or the test script.
+## Application Showcase
 
-Guest data stays in `localStorage`. A signed-in profile is saved through Supabase with a revision check so a stale write does not replace a newer cloud profile.
+#### Adaptive Difficulty
 
-## Local setup
+Casual, Echo, and Train set the opponent below, near, or above your estimated rating. The target is that estimate plus the mode’s offset, then limited to the strength range Stockfish is asked to play.
 
-Requirements: Node.js 24 LTS and npm.
+<p align="center">
+  <img src="public/difficulty-selector-preview.png" alt="Training mode selector with Casual, Echo, and Train." width="850">
+</p>
 
-```bash
-npm install
-cp .env.example .env.local
-```
+#### Post-Game Analysis
 
-Edit `.env.local` with the URL and publishable key from your Supabase project settings. The app throws on startup if either value is missing. Do not commit `.env.local`.
+After the game, Stockfish evaluations are turned into the seven move-quality tiers so you can review individual decisions, not only the final result.
 
-```bash
-npm run dev
-```
+<p align="center">
+  <img src="public/post-game-analysis-preview.png" alt="Post-game review with a move classified on the custom quality scale." width="850">
+</p>
 
-Vite prints a local URL, usually `http://127.0.0.1:5173/`.
+#### Player Profile
 
-## Environment variables
+The profile keeps the estimated rating, peak rating, results, accuracy, average centipawn loss, move-quality counts, progress trends, and recent games. Guests store this on the device. A signed-in account syncs it through Supabase, and guest progress can be imported into an empty account.
 
-| Name | Purpose |
+<p align="center">
+  <img src="public/profile-preview.png" alt="Player profile with career statistics, progress, and recent games." width="850">
+</p>
+
+## Tech Stack
+
+| Category | Technologies |
 | --- | --- |
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key used by the browser client |
+| Frontend | React, TypeScript, Vite |
+| Chess Engine | Stockfish 19, chess.js |
+| Chess Interface | react-chessboard |
+| Backend & Data | Supabase |
+| Testing | Vitest |
+| Deployment | Vercel |
 
-Both names are read in `src/lib/supabase/client.ts`. `.env.example` lists them with non-working placeholders. Copy that file to `.env.local` and replace the placeholders there.
+The live trainer is deployed at [chess.varunsr.com/app](https://chess.varunsr.com/app). Opponent play and analysis run in the browser through the Stockfish.js 19 Lite worker.
 
-## Scripts
+## Engineering Highlights
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Start the Vite development server |
-| `npm run test` | Run Vitest in watch mode |
-| `npm run test:run` | Run the test suite once |
-| `npm run build` | Typecheck with `tsc -b`, then build for production |
-| `npm run preview` | Serve the production build locally |
-| `npm run lint` | Run ESLint |
+**Adaptive Difficulty Engine**
 
-## Third-party software
+Each training mode applies a fixed offset to the current rating estimate: below it for Casual, slightly below it for Echo, and above it for Train. As the estimate changes from move to move, the opponent’s target strength is recalculated for the next search, within Stockfish’s configured Elo bounds.
 
-Opponent play and move analysis use the lite single-threaded Stockfish.js 19 worker in `public/stockfish/`. Piece artwork is credited in [`public/pieces/ATTRIBUTION.md`](public/pieces/ATTRIBUTION.md). Notices, the GPLv3 text, and corresponding-source information are in [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
+**Stockfish Integration**
 
-## Hosting
+The app runs Stockfish.js in Web Workers. The opponent search requests multiple principal variations (MultiPV) and chooses a move that fits the target strength. Separate analysis passes evaluate the player’s moves during the game and again in the post-game review.
 
-The app is deployed on Vercel at [https://chess.varunsr.com](https://chess.varunsr.com). `/` and `/app` both open the trainer. `/discover` is the marketing page. `/chesstrainer/app` and `/chesstrainer/app/` redirect to `/app`.
+**Move Classification**
 
-Vite's base is `/`. Public assets, including Stockfish, are requested from the domain root. `vercel.json` rewrites `/app` to `app.html` and `/discover` to `discover.html`. `/` serves `index.html` with the trainer's metadata. Static files such as `/stockfish/` and `/assets/` are served as files.
+Post-game review compares each played move with the engine evaluation and maps that result onto seven custom tiers, from Diamond down to Wood. The scale is the application’s own labeling of those evaluations, not a Stockfish feature.
 
-`npm run dev` and `npm run preview` use the same paths, usually at `http://127.0.0.1:5173/` and `http://localhost:4173/`.
+## Testing & Reliability
 
-Email confirmation, password recovery, and Google sign-in return to the current origin plus `/app`. On the live site that is `https://chess.varunsr.com/app`. Supabase must allow `https://chess.varunsr.com/app/**`.
+The project uses Vitest and Testing Library. The suite covers chess rules, opponent selection, rating updates, move classification, profiles, authentication return URLs, and persistence safety, including revision checks that keep a stale cloud write from replacing a newer profile. The latest full run is 608 tests across 76 files, all passing.
 
-## Project status
+## Licensing & Attribution
 
-The training app, guest profiles, Supabase email and Google sign-in, revision-checked cloud saves, and the Vitest suite are in this repository. Version `0.0.0` in `package.json` is still the development version.
+Opponent play and move analysis use the lite single-threaded Stockfish.js 19 worker shipped in `public/stockfish/`. Stockfish.js 19 Lite is © 2026 Chess.com, LLC, licensed under the GNU GPLv3, and is based on Stockfish by T. Romstad, M. Costalba, J. Kiiski, G. Linscott, and other contributors. That license applies to Stockfish.js. It does not relicense the original Adaptive Chess Trainer application.
+
+The GPLv3 text and corresponding-source notes are in [`licenses/stockfish-GPL-3.0.txt`](licenses/stockfish-GPL-3.0.txt) and [`licenses/stockfish-corresponding-source.md`](licenses/stockfish-corresponding-source.md). The full third-party notice is [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
+
+Piece artwork for the Modern and Minimal sets is credited in [`public/pieces/ATTRIBUTION.md`](public/pieces/ATTRIBUTION.md). Modern (Chessnut, by Alexis Luengas) is Apache License 2.0. Minimal (Spatial, by Maurizio Monge) is MIT.
